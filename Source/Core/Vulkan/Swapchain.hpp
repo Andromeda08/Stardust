@@ -22,6 +22,8 @@ public:
 
     vk::Extent2D extent() const { return mExtent; }
 
+    vk::Format format() const { return mFormat; }
+
     vk::PhysicalDevice physicalDevice() const { return mPhysicalDevice; }
 
     const Device& device() const { return mDevice; }
