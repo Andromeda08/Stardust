@@ -4,6 +4,7 @@ CommandBuffers::CommandBuffers(const Device& device, uint32_t size)
 : m_device(device)
 {
     m_pool = std::make_unique<CommandPool>(m_device, device.graphics_index());
+    m_pool_single_time = std::make_unique<CommandPool>(m_device, device.graphics_index());
 
     m_buffers.resize(size);
     vk::CommandBufferAllocateInfo alloc_info;
@@ -24,5 +25,37 @@ vk::CommandBuffer CommandBuffers::begin(size_t index)
 void CommandBuffers::end(size_t index)
 {
     vkEndCommandBuffer(m_buffers[index]);
+}
+
+vk::CommandBuffer CommandBuffers::begin_single_time()
+{
+    vk::CommandBufferAllocateInfo alloc_info;
+    alloc_info.setLevel(vk::CommandBufferLevel::ePrimary);
+    alloc_info.setCommandPool(m_pool_single_time->handle());
+    alloc_info.setCommandBufferCount(1);
+
+    vk::CommandBuffer cmd_buffer;
+    auto result = m_device.handle().allocateCommandBuffers(&alloc_info, &cmd_buffer);
+
+    vk::CommandBufferBeginInfo begin_info;
+    begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+    cmd_buffer.begin(&begin_info);
+
+    return cmd_buffer;
+}
+
+void CommandBuffers::end_single_time(vk::CommandBuffer cmd_buffer)
+{
+    cmd_buffer.end();
+
+    vk::SubmitInfo submit_info;
+    submit_info.setCommandBufferCount(1);
+    submit_info.setPCommandBuffers(&cmd_buffer);
+
+    auto result = m_device.graphics_queue().submit(1, &submit_info, nullptr);
+    m_device.graphics_queue().waitIdle();
+
+    m_device.handle().freeCommandBuffers(m_pool_single_time->handle(), 1, &cmd_buffer);
 }
 
