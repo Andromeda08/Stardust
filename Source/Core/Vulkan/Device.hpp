@@ -18,7 +18,7 @@ public:
 
     void waitIdle() const;
 
-    uint32_t findMemoryType(uint32_t filter, vk::MemoryPropertyFlags flags);
+    uint32_t findMemoryType(uint32_t filter, vk::MemoryPropertyFlags flags) const;
 
     vk::Device handle() const { return mDevice; }
 

@@ -81,7 +81,7 @@ void Device::waitIdle() const
     mDevice.waitIdle();
 }
 
-uint32_t Device::findMemoryType(uint32_t filter, vk::MemoryPropertyFlags flags) {
+uint32_t Device::findMemoryType(uint32_t filter, vk::MemoryPropertyFlags flags) const {
     auto props = mPhysicalDevice.getMemoryProperties();
     for (uint32_t i = 0; i < props.memoryTypeCount; i++)
     {
