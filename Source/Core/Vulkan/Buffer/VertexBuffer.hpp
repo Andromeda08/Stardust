@@ -9,6 +9,8 @@
 class VertexBuffer
 {
 public:
+    NON_COPIABLE(VertexBuffer)
+
     explicit VertexBuffer(const std::vector<Vertex>& vertices,
                           const CommandBuffers& cmd_buffers,
                           const Device& device);

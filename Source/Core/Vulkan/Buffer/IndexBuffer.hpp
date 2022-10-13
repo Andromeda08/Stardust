@@ -10,6 +10,8 @@
 class IndexBuffer
 {
 public:
+    NON_COPIABLE(IndexBuffer)
+
     explicit IndexBuffer(const std::vector<uint32_t>& indices,
                          const CommandBuffers& cmd_buffers,
                          const Device& device);
