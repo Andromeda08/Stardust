@@ -19,6 +19,8 @@ Application::Application(const ApplicationSettings& app_settings)
     selectRayTracingDevice();
 
     createSwapChain();
+
+    createVMA();
 }
 
 void Application::run()
@@ -88,6 +90,17 @@ void Application::createSwapChain()
         mRenderFinishedSemaphores.emplace_back(*mDevice);
         mInFlightFences.emplace_back(*mDevice);
     }
+}
+
+void Application::createVMA()
+{
+    VmaAllocatorCreateInfo create_info = {};
+
+    create_info.physicalDevice = mDevice->physicalDevice();
+    create_info.device = mDevice->handle();
+    create_info.instance = mInstance->handle();
+
+    vmaCreateAllocator(&create_info, &mAllocator);
 }
 
 void Application::cleanup()

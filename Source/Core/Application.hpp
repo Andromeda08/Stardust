@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include "Macro.hpp"
 #include "Struct/ApplicationSettings.hpp"
@@ -34,6 +35,11 @@ private:
     void createSwapChain();
 
     /**
+     * @brief Initialize VMA object
+     */
+    void createVMA();
+
+    /**
      * @brief Free resources.
      */
     void cleanup();
@@ -55,6 +61,9 @@ private:
     std::unique_ptr<class Surface>   mSurface;
     std::unique_ptr<class Device>    mDevice;
     std::unique_ptr<Swapchain>       mSwapChain;
+
+    // Vulkan Memory Allocator
+    VmaAllocator mAllocator;
 
     // Vulkan synchronization objects
     std::vector<Fence>     mInFlightFences = {};
