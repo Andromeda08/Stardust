@@ -6,6 +6,7 @@
 #include "Macro.hpp"
 #include "Struct/ApplicationSettings.hpp"
 #include "Vulkan/Swapchain.hpp"
+#include "Vulkan/Command/CommandBuffers.hpp"
 #include "Vulkan/Synchronization/Fence.hpp"
 #include "Vulkan/Synchronization/Semaphore.hpp"
 
@@ -13,6 +14,9 @@ class Application {
 public:
     NON_COPIABLE(Application)
 
+    /**
+     * @brief Create Application with specified settings
+     */
     explicit Application(const ApplicationSettings& app_settings);
 
     /**
@@ -21,6 +25,8 @@ public:
     void run();
 
     std::vector<const char*> deviceExtensions() const { return mRequiredDeviceExtensions; }
+
+    VmaAllocator getAllocator() const { return mAllocator; }
 
 private:
     /**
@@ -61,6 +67,8 @@ private:
     std::unique_ptr<class Surface>   mSurface;
     std::unique_ptr<class Device>    mDevice;
     std::unique_ptr<Swapchain>       mSwapChain;
+
+    std::unique_ptr<CommandBuffers>  mCommandBuffers;
 
     // Vulkan Memory Allocator
     VmaAllocator mAllocator;

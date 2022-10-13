@@ -21,6 +21,8 @@ Application::Application(const ApplicationSettings& app_settings)
     createSwapChain();
 
     createVMA();
+
+    mCommandBuffers = std::make_unique<CommandBuffers>(*mDevice);
 }
 
 void Application::run()
