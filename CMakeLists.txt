@@ -18,6 +18,8 @@ add_executable(${PROJECT_NAME}
         # Application
         Source/Core/Struct/ApplicationSettings.hpp
         Source/Core/Application.cpp Source/Core/Application.hpp
+        # Resources
+        Source/Core/Resources/Vertex.hpp
         # GLFW Window
         Source/Core/Window.cpp Source/Core/Window.cpp
         Source/Core/Struct/WindowSettings.hpp
@@ -31,10 +33,13 @@ add_executable(${PROJECT_NAME}
         # Synchronization objects
         Source/Core/Vulkan/Synchronization/Semaphore.cpp Source/Core/Vulkan/Synchronization/Semaphore.hpp
         Source/Core/Vulkan/Synchronization/Fence.cpp Source/Core/Vulkan/Synchronization/Fence.hpp
+        # Commands
         Source/Core/Vulkan/Command/CommandPool.cpp Source/Core/Vulkan/Command/CommandPool.hpp
         Source/Core/Vulkan/Command/CommandBuffers.cpp Source/Core/Vulkan/Command/CommandBuffers.hpp
+        # Buffers
         Source/Core/Vulkan/Buffer/Buffer.cpp Source/Core/Vulkan/Buffer/Buffer.hpp
-        )
+        Source/Core/Vulkan/Buffer/VertexBuffer.cpp Source/Core/Vulkan/Buffer/VertexBuffer.hpp
+        Source/Core/Vulkan/Buffer/IndexBuffer.cpp Source/Core/Vulkan/Buffer/IndexBuffer.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
