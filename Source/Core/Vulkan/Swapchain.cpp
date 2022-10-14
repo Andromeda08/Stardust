@@ -3,9 +3,9 @@
 #include <limits>
 #include <stdexcept>
 
-#include "ImageView.hpp"
-
-Swapchain::Swapchain(const Device &device, vk::PresentModeKHR preferredPresentMode)
+Swapchain::Swapchain(const Device &device,
+                     vk::PresentModeKHR preferredPresentMode,
+                     uint32_t frames)
 : mDevice(device)
 , mPhysicalDevice(device.physicalDevice())
 {
@@ -19,7 +19,7 @@ Swapchain::Swapchain(const Device &device, vk::PresentModeKHR preferredPresentMo
     mFormat = format.format;
     mPresentMode = pickPresentMode(supportDetails.presentModes, preferredPresentMode);
     mExtent = pickExtent(supportDetails.capabilities);
-    mMinImages = 2;
+    mMinImages = frames;
 
     vk::SwapchainCreateInfoKHR createInfo = {};
 

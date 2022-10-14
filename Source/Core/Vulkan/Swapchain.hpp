@@ -3,29 +3,30 @@
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include "Device.hpp"
-#include "ImageView.hpp"
-#include "GraphicsPipeline/RenderPass.hpp"
 #include "DepthBuffer.hpp"
+#include "Device.hpp"
+#include "Image/Image.hpp"
+#include "Image/ImageView.hpp"
+#include "GraphicsPipeline/RenderPass.hpp"
 #include "../Macro.hpp"
 
 class Swapchain {
 public:
     NON_COPIABLE(Swapchain)
 
-    explicit Swapchain(const Device& device, vk::PresentModeKHR preferredPresentMode = vk::PresentModeKHR::eMailbox);
+    explicit Swapchain(const Device& device,
+                       vk::PresentModeKHR preferredPresentMode = vk::PresentModeKHR::eMailbox,
+                       uint32_t frames = 2);
 
+    /**
+     * @brief Build frame buffers after a render pass and depth buffer have been created.
+     */
     void createFrameBuffers(const RenderPass& renderPass, const DepthBuffer& depthBuffer);
 
+    /**
+     * @return Framebuffer for the frame specified by index.
+     */
     vk::Framebuffer framebuffer(size_t idx) const { return mFrameBuffers[idx]; }
-
-    vk::SwapchainKHR handle() const { return mSwapchain; }
-
-    const std::vector<vk::ImageView>& imageViews() const { return mImageViews; }
-
-    const std::vector<vk::Image>& images() const { return mImages; }
-
-    vk::PresentModeKHR presentMode() const { return mPresentMode; }
 
     vk::Extent2D extent() const { return mExtent; }
 
@@ -33,9 +34,7 @@ public:
 
     vk::Format format() const { return mFormat; }
 
-    vk::PhysicalDevice physicalDevice() const { return mPhysicalDevice; }
-
-    const Device& device() const { return mDevice; }
+    const vk::SwapchainKHR& handle() const { return mSwapchain; }
 
     void destroy();
 
@@ -50,6 +49,7 @@ private:
     SwapChainSupportDetails querySwapChainSupport();
 
     static vk::SurfaceFormatKHR pickFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
+
     static vk::PresentModeKHR pickPresentMode(const std::vector<vk::PresentModeKHR>& presentModes,
                                               const vk::PresentModeKHR& preferred);
 
@@ -68,7 +68,7 @@ private:
 
     uint32_t mMinImages {};
 
-    const vk::PhysicalDevice mPhysicalDevice;
+    const vk::PhysicalDevice& mPhysicalDevice;
 
     const Device& mDevice;
 };
