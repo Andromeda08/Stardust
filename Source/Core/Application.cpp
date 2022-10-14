@@ -24,7 +24,7 @@ Application::Application(const ApplicationSettings& app_settings)
     mWindow   = std::make_unique<Window>(app_settings.windowSettings);
     mInstance = std::make_unique<Instance>(*mWindow);
 
-    setup_vk_debug_msgr();
+    setupDebugMessenger();
 
     mSurface  = std::make_unique<Surface>(*mInstance);
 
@@ -189,6 +189,25 @@ void Application::draw()
     mCurrentFrame = (mCurrentFrame + 1) % 2;
 }
 
+void Application::setupDebugMessenger()
+{
+    VkDebugUtilsMessengerCreateInfoEXT create_info { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+
+    create_info.messageSeverity = Debug::vk_debug_msg_severities();
+    create_info.messageType     = Debug::vk_debug_msg_types();
+    create_info.pfnUserCallback = Debug::vk_debug_callback;
+
+    auto result = Debug::create_vk_debug_msgr_ext(static_cast<VkInstance>(mInstance->handle()),
+                                                  &create_info,
+                                                  nullptr,
+                                                  &mDebugMessenger);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to set up debug messenger.");
+    }
+}
+
 void Application::selectRayTracingDevice()
 {
     const auto& physicalDevices = mInstance->physicalDevices();
@@ -255,8 +274,7 @@ void Application::createVMA()
     vmaCreateAllocator(&create_info, &mAllocator);
 }
 
-void Application::createGraphicsPipeline(const std::string& vert_shader_source,
-                                         const std::string& frag_shader_source)
+void Application::createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source)
 {
     auto vert_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eVertex,
                                                         vert_shader_source,
@@ -303,7 +321,7 @@ void Application::updateUniformBuffer(size_t index)
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0, 0, 1));
+    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
     auto view = glm::lookAt(glm::vec3(2, 2, 2), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
     auto proj = glm::perspective(glm::radians(75.0f), mSwapChain->aspectRatio(), 0.1f, 10.0f);
 
@@ -318,6 +336,10 @@ void Application::updateUniformBuffer(size_t index)
 void Application::cleanup()
 {
     mSwapChain->destroy();
+
+    Debug::destroy_vk_debug_msgr_ext(static_cast<VkInstance>(mInstance->handle()),
+                                     mDebugMessenger,
+                                     nullptr);
 }
 
 #pragma region printer_utilities
@@ -329,56 +351,6 @@ void Application::printDevices()
     for (const auto& pd : foundDevices) {
         auto props = pd.getProperties();
         std::cout << "- " << props.deviceName << " [" << to_string(props.deviceType) << "]" << std::endl;
-    }
-}
-
-#pragma endregion
-
-#pragma region debug_messenger
-
-VKAPI_ATTR VkBool32 VKAPI_CALL Application::vk_debug_callback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageTtype,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData
-) {
-    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-    {
-        std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
-    }
-
-    return VK_FALSE;
-}
-
-VkResult Application::create_vk_debug_msgr_ext(
-    VkInstance instance,
-    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkDebugUtilsMessengerEXT* pDebugMessenger
-) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-
-    // If (func == nullptr) the function wasn't loaded.
-    if (func != nullptr)
-    {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    else
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void Application::destroy_vk_debug_msgr_ext(
-    VkInstance instance,
-    VkDebugUtilsMessengerEXT debugMessenger,
-    const VkAllocationCallbacks* pAllocator
-) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-
-    if (func != nullptr)
-    {
-        func(instance, debugMessenger, pAllocator);
     }
 }
 
