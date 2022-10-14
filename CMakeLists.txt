@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.23)
 project(VkRaytracing)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 # Set up dependencies
 find_package(Vulkan REQUIRED)
@@ -39,7 +40,12 @@ add_executable(${PROJECT_NAME}
         # Buffers
         Source/Core/Vulkan/Buffer/Buffer.cpp Source/Core/Vulkan/Buffer/Buffer.hpp
         Source/Core/Vulkan/Buffer/VertexBuffer.cpp Source/Core/Vulkan/Buffer/VertexBuffer.hpp
-        Source/Core/Vulkan/Buffer/IndexBuffer.cpp Source/Core/Vulkan/Buffer/IndexBuffer.hpp)
+        Source/Core/Vulkan/Buffer/IndexBuffer.cpp Source/Core/Vulkan/Buffer/IndexBuffer.hpp
+        # Graphics Pipeline
+        Source/Core/Vulkan/GraphicsPipeline/RenderPass.cpp Source/Core/Vulkan/GraphicsPipeline/RenderPass.hpp
+        Source/Core/Vulkan/GraphicsPipeline/ShaderModule.cpp Source/Core/Vulkan/GraphicsPipeline/ShaderModule.hpp
+        Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.cpp Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp
+        Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
