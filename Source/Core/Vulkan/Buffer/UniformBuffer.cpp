@@ -27,3 +27,15 @@ void UniformBuffer::update(const UniformBufferObject& ubo) const
     std::memcpy(data, &ubo, sizeof(UniformBufferObject));
     vkUnmapMemory(m_device.handle(), m_buffer->memory());
 }
+
+vk::DescriptorSetLayoutBinding UniformBuffer::layout_binding(uint32_t binding)
+{
+    vk::DescriptorSetLayoutBinding ubo_binding;
+
+    ubo_binding.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+    ubo_binding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+    ubo_binding.setBinding(binding);
+    ubo_binding.setDescriptorCount(1);
+
+    return ubo_binding;
+}

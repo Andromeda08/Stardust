@@ -18,6 +18,8 @@ public:
 
     void update(const UniformBufferObject& ubo) const;
 
+    static vk::DescriptorSetLayoutBinding layout_binding(uint32_t binding);
+
     vk::Buffer handle() const { return m_buffer->handle(); }
 
     const Buffer& buffer() const { return *m_buffer; }
