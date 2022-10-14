@@ -30,6 +30,7 @@ Buffer::~Buffer()
     if (m_buffer)
     {
         m_device.handle().destroyBuffer(m_buffer, nullptr);
+        m_device.handle().freeMemory(m_memory, nullptr);
         m_buffer = VK_NULL_HANDLE;
     }
 }
