@@ -20,8 +20,5 @@ VertexBuffer::VertexBuffer(const std::vector<Vertex>& vertices,
                                         vk::MemoryPropertyFlagBits::eDeviceLocal,
                                         m_device);
 
-    Buffer::copy_buffer(cmd_buffers, m_buffer->handle(), staging.handle(), buffer_size);
-
-    m_device.handle().destroyBuffer(staging.handle(), nullptr);
-    m_device.handle().freeMemory(staging.memory(), nullptr);
+    Buffer::copy_buffer(cmd_buffers, staging.handle(), m_buffer->handle(), buffer_size);
 }
