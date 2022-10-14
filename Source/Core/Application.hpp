@@ -6,6 +6,8 @@
 #include "Macro.hpp"
 #include "Struct/ApplicationSettings.hpp"
 #include "Vulkan/Swapchain.hpp"
+#include "Vulkan/Buffer/IndexBuffer.hpp"
+#include "Vulkan/Buffer/VertexBuffer.hpp"
 #include "Vulkan/Command/CommandBuffers.hpp"
 #include "Vulkan/Synchronization/Fence.hpp"
 #include "Vulkan/Synchronization/Semaphore.hpp"
@@ -24,11 +26,42 @@ public:
      */
     void run();
 
+    void draw();
+
     std::vector<const char*> deviceExtensions() const { return mRequiredDeviceExtensions; }
 
     VmaAllocator getAllocator() const { return mAllocator; }
 
 private:
+    void setup_vk_debug_msgr()
+    {
+        VkDebugUtilsMessengerCreateInfoEXT create_info{};
+
+        create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                                      | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                                      | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                                  | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                                  | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        create_info.pfnUserCallback = vk_debug_callback;
+        // (optional)
+        create_info.pUserData = nullptr;
+
+        // Create Debug Messenger
+        if (create_vk_debug_msgr_ext(static_cast<VkInstance>(mInstance->handle()), &create_info, nullptr, &mDebugMessenger) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to set up debug messenger.");
+        }
+    }
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageTtype,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData
+    );
+
     /**
      * @brief Selects a Physical Device that supports VK_KHR_ray_tracing_pipeline and has a Graphics Queue
      * then attempts to create a Logical Device.
@@ -44,6 +77,12 @@ private:
      * @brief Initialize VMA object
      */
     void createVMA();
+
+    /**
+     * @brief Creates the raster Graphics Pipeline
+     */
+    void createGraphicsPipeline(const std::string& vert_shader_source,
+                                const std::string& frag_shader_source);
 
     /**
      * @brief Free resources.
@@ -70,6 +109,16 @@ private:
 
     std::unique_ptr<CommandBuffers>  mCommandBuffers;
 
+#pragma region render_test
+    std::unique_ptr<class RenderPass> mRenderPass;
+
+    std::unique_ptr<VertexBuffer> mVertexBuffer;
+    std::unique_ptr<IndexBuffer> mIndexBuffer;
+
+    vk::PipelineLayout mPipelineLayout;
+    vk::Pipeline mGraphicsPipeline;
+#pragma endregion
+
     // Vulkan Memory Allocator
     VmaAllocator mAllocator;
 
@@ -89,4 +138,19 @@ private:
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
+
+    VkDebugUtilsMessengerEXT mDebugMessenger;
+
+    static VkResult create_vk_debug_msgr_ext(
+        VkInstance instance,
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDebugUtilsMessengerEXT* pDebugMessenger
+    );
+
+    static void destroy_vk_debug_msgr_ext(
+        VkInstance instance,
+        VkDebugUtilsMessengerEXT debugMessenger,
+        const VkAllocationCallbacks* pAllocator
+    );
 };
