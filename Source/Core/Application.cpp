@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <iostream>
 #include <stdexcept>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Window.hpp"
 #include "Vulkan/Device.hpp"
 #include "Vulkan/Instance.hpp"
@@ -37,10 +40,40 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mSwapChain->createFrameBuffers(*mRenderPass);
 
+    vk::DescriptorSetLayoutBinding ubo_binding;
+    ubo_binding.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+    ubo_binding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+    ubo_binding.setBinding(0);
+    ubo_binding.setDescriptorCount(1);
+
+    std::vector<vk::DescriptorSetLayoutBinding> bindings = { ubo_binding };
+
+    vk::DescriptorSetLayoutCreateInfo layout_create_info;
+    layout_create_info.setBindingCount(bindings.size());
+    layout_create_info.setPBindings(bindings.data());
+    auto result = mDevice->handle().createDescriptorSetLayout(&layout_create_info, nullptr, &mDescriptorSetLayout);
+
     createGraphicsPipeline("basic.vert.spv", "basic.frag.spv");
 
     mVertexBuffer = std::make_unique<VertexBuffer>(test_vertices, *mCommandBuffers, *mDevice);
     mIndexBuffer = std::make_unique<IndexBuffer>(test_indices, *mCommandBuffers, *mDevice);
+
+    mUniformBuffers.resize(2);
+    for (size_t i = 0; i < 2; i++)
+    {
+        mUniformBuffers[i] = std::make_unique<UniformBuffer>(*mDevice);
+        updateUniformBuffer(i);
+    }
+
+    mDescriptorSets = std::make_unique<DescriptorSets>(bindings, mDescriptorSetLayout, *mDevice);
+    for (size_t i = 0; i < 2; i++)
+    {
+        vk::DescriptorBufferInfo ubo_info;
+        ubo_info.setBuffer(mUniformBuffers[i]->handle());
+        ubo_info.setOffset(0);
+        ubo_info.setRange(sizeof(UniformBufferObject));
+        mDescriptorSets->update_descriptor_set(i, 0, ubo_info);
+    }
 }
 
 void Application::run()
@@ -67,6 +100,8 @@ void Application::draw()
 
     vk::Semaphore semaphore = mImageAvailableSemaphores[mCurrentFrame].handle();
     auto result = hDevice.acquireNextImageKHR(mSwapChain->handle(), UINT64_MAX, semaphore, nullptr);
+
+    updateUniformBuffer(mCurrentFrame);
 
     res = hDevice.resetFences(1, &wait);
     auto cmd_buffer = mCommandBuffers->get_buffer(mCurrentFrame);
@@ -107,6 +142,13 @@ void Application::draw()
     std::vector<vk::DeviceSize> offsets = { 0 };
     cmd_buffer.bindVertexBuffers(0, 1, vertex_buffers.data(), offsets.data());
     cmd_buffer.bindIndexBuffer(mIndexBuffer->handle().handle(), 0, vk::IndexType::eUint32);
+    cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                  mPipelineLayout,
+                                  0,
+                                  1,
+                                  &mDescriptorSets->get_set(mCurrentFrame),
+                                  0,
+                                  nullptr);
 
     cmd_buffer.drawIndexed(static_cast<uint32_t>(test_indices.size()), 1, 0, 0,0);
     cmd_buffer.endRenderPass();
@@ -231,8 +273,8 @@ void Application::createGraphicsPipeline(const std::string& vert_shader_source,
     scissor.setExtent(mSwapChain->extent());
 
     vk::PipelineLayoutCreateInfo create_info;
-    create_info.setSetLayoutCount(0);
-    create_info.setPSetLayouts(nullptr);
+    create_info.setSetLayoutCount(1);
+    create_info.setPSetLayouts(&mDescriptorSetLayout);
 
     auto result = mDevice->handle().createPipelineLayout(&create_info, nullptr, &mPipelineLayout);
 
@@ -253,6 +295,24 @@ void Application::createGraphicsPipeline(const std::string& vert_shader_source,
     mGraphicsPipeline = builder.create_pipeline();
 }
 
+void Application::updateUniformBuffer(size_t index)
+{
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    auto current_time = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0, 0, 1));
+    auto view = glm::lookAt(glm::vec3(2, 2, 2), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+    auto proj = glm::perspective(glm::radians(75.0f), mSwapChain->aspectRatio(), 0.1f, 10.0f);
+
+    UniformBufferObject ubo {
+        .view_projection = proj * view,
+        .model = model
+    };
+
+    mUniformBuffers[index]->update(ubo);
+}
+
 void Application::cleanup()
 {
     mSwapChain->destroy();
@@ -271,6 +331,8 @@ void Application::printDevices()
 }
 
 #pragma endregion
+
+#pragma region debug_messenger
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Application::vk_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -317,3 +379,5 @@ void Application::destroy_vk_debug_msgr_ext(
         func(instance, debugMessenger, pAllocator);
     }
 }
+
+#pragma endregion

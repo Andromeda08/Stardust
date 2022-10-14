@@ -28,6 +28,8 @@ public:
 
     vk::Extent2D extent() const { return mExtent; }
 
+    float aspectRatio() const { return (float) mExtent.width / (float) mExtent.height; }
+
     vk::Format format() const { return mFormat; }
 
     vk::PhysicalDevice physicalDevice() const { return mPhysicalDevice; }

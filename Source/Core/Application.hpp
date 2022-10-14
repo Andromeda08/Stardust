@@ -7,8 +7,10 @@
 #include "Struct/ApplicationSettings.hpp"
 #include "Vulkan/Swapchain.hpp"
 #include "Vulkan/Buffer/IndexBuffer.hpp"
+#include "Vulkan/Buffer/UniformBuffer.hpp"
 #include "Vulkan/Buffer/VertexBuffer.hpp"
 #include "Vulkan/Command/CommandBuffers.hpp"
+#include "Vulkan/Descriptor/DescriptorSets.hpp"
 #include "Vulkan/Synchronization/Fence.hpp"
 #include "Vulkan/Synchronization/Semaphore.hpp"
 
@@ -84,6 +86,8 @@ private:
     void createGraphicsPipeline(const std::string& vert_shader_source,
                                 const std::string& frag_shader_source);
 
+    void updateUniformBuffer(size_t index);
+
     /**
      * @brief Free resources.
      */
@@ -114,6 +118,10 @@ private:
 
     std::unique_ptr<VertexBuffer> mVertexBuffer;
     std::unique_ptr<IndexBuffer> mIndexBuffer;
+    std::vector<std::unique_ptr<UniformBuffer>> mUniformBuffers;
+
+    vk::DescriptorSetLayout mDescriptorSetLayout;
+    std::unique_ptr<DescriptorSets> mDescriptorSets;
 
     vk::PipelineLayout mPipelineLayout;
     vk::Pipeline mGraphicsPipeline;

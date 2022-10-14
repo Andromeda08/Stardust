@@ -45,7 +45,7 @@ add_executable(${PROJECT_NAME}
         Source/Core/Vulkan/GraphicsPipeline/RenderPass.cpp Source/Core/Vulkan/GraphicsPipeline/RenderPass.hpp
         Source/Core/Vulkan/GraphicsPipeline/ShaderModule.cpp Source/Core/Vulkan/GraphicsPipeline/ShaderModule.hpp
         Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.cpp Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp
-        Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp)
+        Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp Source/Core/Resources/UniformBufferObject.hpp Source/Core/Vulkan/Buffer/UniformBuffer.cpp Source/Core/Vulkan/Buffer/UniformBuffer.hpp Source/Core/Vulkan/Descriptor/DescriptorSets.cpp Source/Core/Vulkan/Descriptor/DescriptorSets.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
