@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include "Device.hpp"
-#include "../Macro.hpp"
+#include "../Device.hpp"
+#include "../../Macro.hpp"
 
 class ImageView {
 public:
@@ -10,16 +10,10 @@ public:
 
     ImageView(const Device& device, vk::Image image, vk::Format format, vk::ImageAspectFlagBits imageAspectFlags);
 
-    vk::ImageView handle() const { return mImageView; }
-
-    const Device& device() const { return mDevice; }
+    const vk::ImageView& handle() const { return mImageView; }
 
 private:
     vk::ImageView mImageView;
 
-    const vk::Image mImage;
-
     const vk::Format mFormat;
-
-    const Device& mDevice;
 };

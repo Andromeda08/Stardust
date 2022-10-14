@@ -1,9 +1,7 @@
 #include "ImageView.hpp"
 
 ImageView::ImageView(const Device& device, vk::Image image, vk::Format format, vk::ImageAspectFlagBits imageAspectFlags)
-: mDevice(device)
-, mImage(image)
-, mFormat(format)
+: mFormat(format)
 {
     vk::ComponentMapping componentMapping = {};
     componentMapping.setR(vk::ComponentSwizzle::eIdentity);
@@ -25,6 +23,5 @@ ImageView::ImageView(const Device& device, vk::Image image, vk::Format format, v
     createInfo.setComponents(componentMapping);
     createInfo.setSubresourceRange(imageSubresourceRange);
 
-    auto result = mDevice.handle().createImageView(&createInfo, nullptr, &mImageView);
+    auto result = device.handle().createImageView(&createInfo, nullptr, &mImageView);
 }
-
