@@ -13,17 +13,15 @@ public:
 
     explicit CommandBuffers(const Device& device, uint32_t size = 16);
 
-    vk::CommandBuffer begin(size_t index);
+    vk::CommandBuffer begin(size_t index) const;
 
-    void end(size_t index);
+    void end(size_t index) const;
 
     vk::CommandBuffer begin_single_time() const;
 
     void end_single_time(vk::CommandBuffer cmd_buffer) const;
 
-    vk::CommandBuffer get(size_t index) { return m_buffers[index]; }
-
-    vk::CommandBuffer operator[](size_t index) { return get(index); }
+    vk::CommandBuffer get_buffer(size_t index) const { return m_buffers[index]; }
 
     uint32_t size() const { return static_cast<uint32_t>(m_buffers.size()); }
 

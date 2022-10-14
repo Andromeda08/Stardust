@@ -14,7 +14,7 @@ CommandBuffers::CommandBuffers(const Device& device, uint32_t size)
     auto result = m_device.handle().allocateCommandBuffers(&alloc_info, m_buffers.data());
 }
 
-vk::CommandBuffer CommandBuffers::begin(size_t index)
+vk::CommandBuffer CommandBuffers::begin(size_t index) const
 {
     vk::CommandBufferBeginInfo begin_info;
     begin_info.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
@@ -22,12 +22,12 @@ vk::CommandBuffer CommandBuffers::begin(size_t index)
     return m_buffers[index];
 }
 
-void CommandBuffers::end(size_t index)
+void CommandBuffers::end(size_t index) const
 {
     vkEndCommandBuffer(m_buffers[index]);
 }
 
-vk::CommandBuffer CommandBuffers::begin_single_time()
+vk::CommandBuffer CommandBuffers::begin_single_time() const
 {
     vk::CommandBufferAllocateInfo alloc_info;
     alloc_info.setLevel(vk::CommandBufferLevel::ePrimary);
@@ -40,12 +40,12 @@ vk::CommandBuffer CommandBuffers::begin_single_time()
     vk::CommandBufferBeginInfo begin_info;
     begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
-    cmd_buffer.begin(&begin_info);
+    result = cmd_buffer.begin(&begin_info);
 
     return cmd_buffer;
 }
 
-void CommandBuffers::end_single_time(vk::CommandBuffer cmd_buffer)
+void CommandBuffers::end_single_time(vk::CommandBuffer cmd_buffer) const
 {
     cmd_buffer.end();
 
