@@ -129,7 +129,7 @@ private:
         vk::PipelineRasterizationStateCreateInfo res;
 
         res.setPolygonMode(wireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill);
-        res.setCullMode(vk::CullModeFlagBits::eNone);
+        res.setCullMode(vk::CullModeFlagBits::eBack);
         res.setFrontFace(vk::FrontFace::eCounterClockwise);
         res.setDepthClampEnable(false);
         res.setDepthBiasEnable(false);
