@@ -32,8 +32,6 @@ Application::Application(const ApplicationSettings& app_settings)
 
     createSwapChain();
 
-    createVMA();
-
     mCommandBuffers = std::make_unique<CommandBuffers>(*mDevice);
 
     mDepthBuffer = std::make_unique<DepthBuffer>(mSwapChain->extent(), *mDevice, *mCommandBuffers);
@@ -42,11 +40,7 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mSwapChain->createFrameBuffers(*mRenderPass, *mDepthBuffer);
 
-    vk::DescriptorSetLayoutBinding ubo_binding;
-    ubo_binding.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-    ubo_binding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
-    ubo_binding.setBinding(0);
-    ubo_binding.setDescriptorCount(1);
+    auto ubo_binding = UniformBuffer::layout_binding(0);
 
     std::vector<vk::DescriptorSetLayoutBinding> bindings = { ubo_binding };
 

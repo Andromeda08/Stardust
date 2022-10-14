@@ -30,13 +30,14 @@ public:
      */
     void run();
 
-    void draw();
-
     std::vector<const char*> deviceExtensions() const { return mRequiredDeviceExtensions; }
 
-    VmaAllocator getAllocator() const { return mAllocator; }
-
 private:
+    /**
+     * @brief Draw frame :D
+     */
+    void draw();
+
     /**
      * @brief Sets up the vulkan debug messenger
      */
@@ -117,7 +118,7 @@ private:
     std::vector<Semaphore> mRenderFinishedSemaphores = {};
     std::vector<Semaphore> mImageAvailableSemaphores = {};
 
-    // Device extensions for ray tracing
+    // Device extensions with ray tracing in mind
     const std::vector<const char*> mRequiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
