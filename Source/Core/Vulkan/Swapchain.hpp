@@ -1,9 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include "Device.hpp"
 #include "ImageView.hpp"
+#include "GraphicsPipeline/RenderPass.hpp"
 #include "../Macro.hpp"
 
 class Swapchain {
@@ -12,9 +14,13 @@ public:
 
     explicit Swapchain(const Device& device, vk::PresentModeKHR preferredPresentMode = vk::PresentModeKHR::eMailbox);
 
+    void createFrameBuffers(const RenderPass& renderPass);
+
+    vk::Framebuffer framebuffer(size_t idx) const { return mFrameBuffers[idx]; }
+
     vk::SwapchainKHR handle() const { return mSwapchain; }
 
-    const std::vector<std::shared_ptr<ImageView>>& imageViews() const { return mImageViews; }
+    const std::vector<vk::ImageView>& imageViews() const { return mImageViews; }
 
     const std::vector<vk::Image>& images() const { return mImages; }
 
@@ -43,6 +49,7 @@ private:
     static vk::SurfaceFormatKHR pickFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
     static vk::PresentModeKHR pickPresentMode(const std::vector<vk::PresentModeKHR>& presentModes,
                                               const vk::PresentModeKHR& preferred);
+
     vk::Extent2D pickExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
 private:
@@ -52,8 +59,9 @@ private:
     vk::Format         mFormat {};
     vk::Extent2D       mExtent {};
 
-    std::vector<vk::Image>                  mImages;
-    std::vector<std::shared_ptr<ImageView>> mImageViews;
+    std::vector<vk::Image>       mImages;
+    std::vector<vk::ImageView>   mImageViews;
+    std::vector<vk::Framebuffer> mFrameBuffers;
 
     uint32_t mMinImages {};
 

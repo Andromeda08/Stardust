@@ -19,7 +19,7 @@ Swapchain::Swapchain(const Device &device, vk::PresentModeKHR preferredPresentMo
     mFormat = format.format;
     mPresentMode = pickPresentMode(supportDetails.presentModes, preferredPresentMode);
     mExtent = pickExtent(supportDetails.capabilities);
-    mMinImages = supportDetails.capabilities.minImageCount + 1;
+    mMinImages = 2;
 
     vk::SwapchainCreateInfoKHR createInfo = {};
 
@@ -29,7 +29,7 @@ Swapchain::Swapchain(const Device &device, vk::PresentModeKHR preferredPresentMo
     createInfo.setImageColorSpace(format.colorSpace);
     createInfo.setImageExtent(mExtent);
     createInfo.setImageArrayLayers(1);
-    createInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst);
+    createInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
     createInfo.setPreTransform(supportDetails.capabilities.currentTransform);
     createInfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
     createInfo.setPresentMode(mPresentMode);
@@ -53,14 +53,54 @@ Swapchain::Swapchain(const Device &device, vk::PresentModeKHR preferredPresentMo
 
     auto result = mDevice.handle().createSwapchainKHR(&createInfo, nullptr, &mSwapchain);
 
+    mImages.resize(2);
     mImages = mDevice.handle().getSwapchainImagesKHR(mSwapchain);
 
     mImageViews.resize(mImages.size());
-    for (const auto image : mImages)
+    for (size_t i = 0; i < mImageViews.size(); i++)
     {
-        mImageViews.push_back(std::make_shared<ImageView>(mDevice, image, mFormat, vk::ImageAspectFlagBits::eColor));
+        vk::ComponentMapping componentMapping = {};
+        componentMapping.setR(vk::ComponentSwizzle::eIdentity);
+        componentMapping.setG(vk::ComponentSwizzle::eIdentity);
+        componentMapping.setB(vk::ComponentSwizzle::eIdentity);
+        componentMapping.setA(vk::ComponentSwizzle::eIdentity);
+
+        vk::ImageSubresourceRange imageSubresourceRange = {};
+        imageSubresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+        imageSubresourceRange.setBaseMipLevel(0);
+        imageSubresourceRange.setLevelCount(1);
+        imageSubresourceRange.setBaseArrayLayer(0);
+        imageSubresourceRange.setLayerCount(1);
+
+        vk::ImageViewCreateInfo ImageViewcreateInfo = {};
+        ImageViewcreateInfo.setImage(mImages[i]);
+        ImageViewcreateInfo.setFormat(mFormat);
+        ImageViewcreateInfo.setViewType(vk::ImageViewType::e2D);
+        ImageViewcreateInfo.setComponents(componentMapping);
+        ImageViewcreateInfo.setSubresourceRange(imageSubresourceRange);
+
+        auto res = mDevice.handle().createImageView(&ImageViewcreateInfo, nullptr, &mImageViews[i]);
     }
 }
+
+void Swapchain::createFrameBuffers(const RenderPass& renderPass)
+{
+    mFrameBuffers.resize(2);
+
+    for (size_t i = 0; i < 2; i++)
+    {
+        vk::ImageView attachment = mImageViews[i];
+        vk::FramebufferCreateInfo create_info;
+        create_info.setRenderPass(renderPass.handle());
+        create_info.setAttachmentCount(1);
+        create_info.setPAttachments(&attachment);
+        create_info.setWidth(mExtent.width);
+        create_info.setHeight(mExtent.height);
+        create_info.setLayers(1);
+        auto result = mDevice.handle().createFramebuffer(&create_info, nullptr, &mFrameBuffers[i]);
+    }
+}
+
 
 Swapchain::SwapChainSupportDetails Swapchain::querySwapChainSupport()
 {
