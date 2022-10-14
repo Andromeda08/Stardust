@@ -19,7 +19,6 @@ vk::CommandBuffer CommandBuffers::begin(size_t index) const
     vk::CommandBufferBeginInfo begin_info;
     begin_info.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
     m_buffers[index].begin(&begin_info);
-    //vkBeginCommandBuffer(m_buffers[index], reinterpret_cast<const VkCommandBufferBeginInfo*>(&begin_info));
     return m_buffers[index];
 }
 
