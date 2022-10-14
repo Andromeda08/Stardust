@@ -10,6 +10,8 @@ public:
 
     ImageView(const Device& device, vk::Image image, vk::Format format, vk::ImageAspectFlagBits imageAspectFlags);
 
+    vk::ImageView handle() const { return mImageView; }
+
     const Device& device() const { return mDevice; }
 
 private:
