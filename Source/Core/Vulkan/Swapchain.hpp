@@ -6,6 +6,7 @@
 #include "Device.hpp"
 #include "ImageView.hpp"
 #include "GraphicsPipeline/RenderPass.hpp"
+#include "DepthBuffer.hpp"
 #include "../Macro.hpp"
 
 class Swapchain {
@@ -14,7 +15,7 @@ public:
 
     explicit Swapchain(const Device& device, vk::PresentModeKHR preferredPresentMode = vk::PresentModeKHR::eMailbox);
 
-    void createFrameBuffers(const RenderPass& renderPass);
+    void createFrameBuffers(const RenderPass& renderPass, const DepthBuffer& depthBuffer);
 
     vk::Framebuffer framebuffer(size_t idx) const { return mFrameBuffers[idx]; }
 

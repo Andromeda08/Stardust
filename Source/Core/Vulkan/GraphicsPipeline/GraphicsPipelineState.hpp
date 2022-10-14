@@ -170,6 +170,13 @@ private:
     static inline vk::PipelineDepthStencilStateCreateInfo make_depth_stencil_state()
     {
         vk::PipelineDepthStencilStateCreateInfo res;
+
+        res.setDepthTestEnable(true);
+        res.setDepthWriteEnable(true);
+        res.setDepthCompareOp(vk::CompareOp::eLess);
+        res.setDepthBoundsTestEnable(false);
+        res.setStencilTestEnable(false);
+
         return res;
     }
 

@@ -83,17 +83,17 @@ Swapchain::Swapchain(const Device &device, vk::PresentModeKHR preferredPresentMo
     }
 }
 
-void Swapchain::createFrameBuffers(const RenderPass& renderPass)
+void Swapchain::createFrameBuffers(const RenderPass& renderPass, const DepthBuffer& depthBuffer)
 {
     mFrameBuffers.resize(2);
 
     for (size_t i = 0; i < 2; i++)
     {
-        vk::ImageView attachment = mImageViews[i];
+        std::vector<vk::ImageView> attachments = { mImageViews[i], depthBuffer.view() };
         vk::FramebufferCreateInfo create_info;
         create_info.setRenderPass(renderPass.handle());
-        create_info.setAttachmentCount(1);
-        create_info.setPAttachments(&attachment);
+        create_info.setAttachmentCount(attachments.size());
+        create_info.setPAttachments(attachments.data());
         create_info.setWidth(mExtent.width);
         create_info.setHeight(mExtent.height);
         create_info.setLayers(1);

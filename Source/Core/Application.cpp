@@ -36,9 +36,11 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mCommandBuffers = std::make_unique<CommandBuffers>(*mDevice);
 
-    mRenderPass = std::make_unique<RenderPass>(*mDevice, mSwapChain->format());
+    mDepthBuffer = std::make_unique<DepthBuffer>(mSwapChain->extent(), *mDevice, *mCommandBuffers);
 
-    mSwapChain->createFrameBuffers(*mRenderPass);
+    mRenderPass = std::make_unique<RenderPass>(*mDevice, mSwapChain->format(), mDepthBuffer->format());
+
+    mSwapChain->createFrameBuffers(*mRenderPass, *mDepthBuffer);
 
     vk::DescriptorSetLayoutBinding ubo_binding;
     ubo_binding.setStageFlags(vk::ShaderStageFlagBits::eVertex);
@@ -113,13 +115,17 @@ void Application::draw()
     vk::Rect2D render_area;
     render_area.setExtent(mSwapChain->extent());
     render_area.setOffset({0,0});
-    vk::ClearValue clear_color = { std::array<float, 4>{ 0.13f, 0.13f, 0.17f, 1.0f } };
+
+    std::array<vk::ClearValue, 2> clear_values {};
+    clear_values[0].setColor(std::array<float, 4>{ 0.13f, 0.13f, 0.17f, 1.0f });
+    clear_values[1].setDepthStencil({1.0f, 0 });
+
     vk::RenderPassBeginInfo render_pass_info;
     render_pass_info.setRenderPass(mRenderPass->handle());
     render_pass_info.setFramebuffer(mSwapChain->framebuffer(mCurrentFrame));
     render_pass_info.setRenderArea(render_area);
-    render_pass_info.setClearValueCount(1);
-    render_pass_info.setPClearValues(&clear_color);
+    render_pass_info.setClearValueCount(clear_values.size());
+    render_pass_info.setPClearValues(clear_values.data());
 
     cmd_buffer.beginRenderPass(&render_pass_info, vk::SubpassContents::eInline);
     cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline);
@@ -280,11 +286,7 @@ void Application::createGraphicsPipeline(const std::string& vert_shader_source,
 
     GraphicsPipelineState pipeline_state;
     pipeline_state.add_binding_description(Vertex::binding_description());
-    pipeline_state.add_attribute_descriptions({
-        { 0, 0, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, position)) },
-        { 1, 0, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Vertex, color)) },
-        { 2, 0, vk::Format::eR32G32Sfloat, static_cast<uint32_t>(offsetof(Vertex, uv)) },
-    });
+    pipeline_state.add_attribute_descriptions(Vertex::attribute_description());
     pipeline_state.add_scissor(scissor);
     pipeline_state.add_viewport(viewport);
 

@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include "Macro.hpp"
 #include "Struct/ApplicationSettings.hpp"
+#include "Vulkan/DepthBuffer.hpp"
 #include "Vulkan/Swapchain.hpp"
 #include "Vulkan/Buffer/IndexBuffer.hpp"
 #include "Vulkan/Buffer/UniformBuffer.hpp"
@@ -110,6 +111,8 @@ private:
     std::unique_ptr<class Surface>   mSurface;
     std::unique_ptr<class Device>    mDevice;
     std::unique_ptr<Swapchain>       mSwapChain;
+
+    std::unique_ptr<DepthBuffer>     mDepthBuffer;
 
     std::unique_ptr<CommandBuffers>  mCommandBuffers;
 
