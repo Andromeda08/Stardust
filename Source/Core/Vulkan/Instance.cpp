@@ -26,6 +26,11 @@ Instance::Instance(const Window& window)
         requiredExtensions.insert(glfwExtension);
     }
 
+#if defined (__APPLE__)
+    requiredExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+#endif
+
     std::vector<const char*> foundExtensions;
     for (const auto& extension : extensions)
     {
@@ -49,6 +54,10 @@ Instance::Instance(const Window& window)
     createInfo.setPpEnabledLayerNames(foundLayers.data());
     createInfo.setEnabledExtensionCount(foundExtensions.size());
     createInfo.setPpEnabledExtensionNames(foundExtensions.data());
+
+#if defined(__APPLE__)
+    createInfo.setFlags(vk::InstanceCreateFlags(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR));
+#endif
 
     auto result = vk::createInstance(&createInfo, nullptr, &mInstance);
 

@@ -51,6 +51,8 @@ private:
      */
     void selectRayTracingDevice();
 
+    void selectDevice();
+
     /**
      * @brief Builds the swap chain and synchronization objects
      */
@@ -123,6 +125,10 @@ private:
     std::vector<Fence>     mInFlightFences = {};
     std::vector<Semaphore> mRenderFinishedSemaphores = {};
     std::vector<Semaphore> mImageAvailableSemaphores = {};
+
+    std::vector<const char*> mDefaultExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    };
 
     // Device extensions with ray tracing in mind
     const std::vector<const char*> mRequiredDeviceExtensions = {

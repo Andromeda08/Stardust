@@ -71,7 +71,6 @@ private:
         {
             result.push_back({ vertices[i], colors[i], normals[i],uvs[i] });
         }
-        std::cout << "Vertex count : " << result.size() << std::endl;
         return result;
     }
 
@@ -101,7 +100,6 @@ private:
                 }
             }
         }
-        std::cout << "Index count : " << indices.size() << std::endl;
         return indices;
     }
 };

@@ -270,6 +270,13 @@ void Application::selectRayTracingDevice()
     mDevice = std::make_unique<Device>(*mSurface, *result, extensions);
 }
 
+void Application::selectDevice()
+{
+    const auto& devices = mInstance->physicalDevices();
+    auto result = devices[0];
+    mDevice = std::make_unique<Device>(*mSurface, result, mDefaultExtensions);
+}
+
 void Application::createSwapChain()
 {
     mSwapChain = std::make_unique<Swapchain>(*mDevice);
