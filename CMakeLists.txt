@@ -21,6 +21,7 @@ add_executable(${PROJECT_NAME}
         Source/Core/Struct/ApplicationSettings.hpp
         Source/Core/Application.cpp Source/Core/Application.hpp
         # Resources
+        Source/Core/Resources/Geometry.hpp
         Source/Core/Resources/UniformBufferObject.hpp
         Source/Core/Resources/Vertex.hpp
         # GLFW Window
@@ -53,7 +54,7 @@ add_executable(${PROJECT_NAME}
         Source/Core/Vulkan/GraphicsPipeline/RenderPass.cpp Source/Core/Vulkan/GraphicsPipeline/RenderPass.hpp
         Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.cpp Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp
         Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp
-        Source/Core/Vulkan/DepthBuffer.cpp Source/Core/Vulkan/DepthBuffer.hpp)
+        Source/Core/Vulkan/DepthBuffer.cpp Source/Core/Vulkan/DepthBuffer.hpp Source/Core/Vulkan/Buffer/InstanceBuffer.cpp Source/Core/Vulkan/Buffer/InstanceBuffer.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
