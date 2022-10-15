@@ -4,6 +4,7 @@
 #include <array>
 #include <chrono>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -49,10 +50,33 @@ Application::Application(const ApplicationSettings& app_settings)
     layout_create_info.setPBindings(bindings.data());
     auto result = mDevice->handle().createDescriptorSetLayout(&layout_create_info, nullptr, &mDescriptorSetLayout);
 
-    createGraphicsPipeline("basic.vert.spv", "basic.frag.spv");
+    createGraphicsPipeline("phong.vert.spv", "phong.frag.spv");
 
-    mVertexBuffer = std::make_unique<VertexBuffer>(test_vertices, *mCommandBuffers, *mDevice);
-    mIndexBuffer = std::make_unique<IndexBuffer>(test_indices, *mCommandBuffers, *mDevice);
+    mGeometry = std::make_unique<SphereGeometry>(1.5f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
+    //mGeometry = std::make_unique<CubeGeometry>(0.5f);
+
+    std::default_random_engine random((unsigned)time(nullptr));
+    std::uniform_int_distribution<int> uniform_dist(-175, 175);
+    std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
+    std::uniform_real_distribution<float> scale_mod(1.0f, 5.0f);
+
+    for (int i = 0; i < 2048; i++)
+    {
+        float x = (float) uniform_dist(random);
+        float y = (float) uniform_dist(random);
+        float z = (float) uniform_dist(random);
+
+        mInstanceData.push_back({
+            glm::vec3{ x, y, z },
+            glm::vec3{ uniform_float(random), uniform_float(random), uniform_float(random) },
+            glm::vec3{ scale_mod(random) }
+        });
+    }
+
+    mInstanceBuffer = std::make_unique<InstanceBuffer>(mInstanceData, *mCommandBuffers, *mDevice);
+
+    mVertexBuffer = std::make_unique<VertexBuffer>(mGeometry->vertices(), *mCommandBuffers, *mDevice);
+    mIndexBuffer = std::make_unique<IndexBuffer>(mGeometry->indices(), *mCommandBuffers, *mDevice);
 
     mUniformBuffers.resize(2);
     for (size_t i = 0; i < 2; i++)
@@ -141,6 +165,7 @@ void Application::draw()
     std::vector<vk::Buffer> vertex_buffers = { mVertexBuffer->handle().handle() };
     std::vector<vk::DeviceSize> offsets = { 0 };
     cmd_buffer.bindVertexBuffers(0, 1, vertex_buffers.data(), offsets.data());
+    cmd_buffer.bindVertexBuffers(1, 1, &mInstanceBuffer->handle().handle(), offsets.data());
     cmd_buffer.bindIndexBuffer(mIndexBuffer->handle().handle(), 0, vk::IndexType::eUint32);
     cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                   mPipelineLayout,
@@ -150,7 +175,7 @@ void Application::draw()
                                   0,
                                   nullptr);
 
-    cmd_buffer.drawIndexed(static_cast<uint32_t>(test_indices.size()), 1, 0, 0,0);
+    cmd_buffer.drawIndexed(mIndexBuffer->index_count(), 2048, 0, 0,0);
     cmd_buffer.endRenderPass();
     cmd_buffer.end();
 #pragma endregion
@@ -296,9 +321,31 @@ void Application::createGraphicsPipeline(const std::string& vert_shader_source, 
 
     auto result = mDevice->handle().createPipelineLayout(&create_info, nullptr, &mPipelineLayout);
 
+    vk::VertexInputBindingDescription instance_binding;
+    instance_binding.setBinding(1);
+    instance_binding.setStride(sizeof(InstanceData));
+    instance_binding.setInputRate(vk::VertexInputRate::eInstance);
+
+    vk::VertexInputAttributeDescription instance_attrib;
+    instance_attrib.setLocation(4);
+    instance_attrib.setFormat(vk::Format::eR32G32B32A32Sfloat);
+    instance_attrib.setBinding(1);
+    instance_attrib.setOffset(0);
+
     GraphicsPipelineState pipeline_state;
-    pipeline_state.add_binding_description(Vertex::binding_description());
-    pipeline_state.add_attribute_descriptions(Vertex::attribute_description());
+    pipeline_state.add_binding_descriptions({
+        { 0, sizeof(Vertex), vk::VertexInputRate::eVertex },
+        { 1, sizeof(InstanceData), vk::VertexInputRate::eInstance }
+    });
+    pipeline_state.add_attribute_descriptions({
+        { 0, 0, vk::Format::eR32G32B32Sfloat, 0 },
+        { 1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color) },
+        { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal) },
+        { 3, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv) },
+        { 4, 1, vk::Format::eR32G32B32Sfloat, 0 },
+        { 5, 1, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, color) },
+        { 6, 1, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, scale) }
+    });
     pipeline_state.add_scissor(scissor);
     pipeline_state.add_viewport(viewport);
 
@@ -315,9 +362,9 @@ void Application::updateUniformBuffer(size_t index)
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
-    auto view = glm::lookAt(glm::vec3(2, 2, 2), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
-    auto proj = glm::perspective(glm::radians(75.0f), mSwapChain->aspectRatio(), 0.1f, 10.0f);
+    auto model = glm::mat4(1.0f); //glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
+    auto view = glm::lookAt(glm::vec3(350, 0, 350), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+    auto proj = glm::perspective(glm::radians(45.0f), mSwapChain->aspectRatio(), 0.1f, 1000.0f);
 
     UniformBufferObject ubo {
         .view_projection = proj * view,

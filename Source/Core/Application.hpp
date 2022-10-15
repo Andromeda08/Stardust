@@ -4,11 +4,13 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include "Macro.hpp"
+#include "Resources/Geometry.hpp"
 #include "Struct/ApplicationSettings.hpp"
 #include "Vulkan/DebugMessenger.hpp"
 #include "Vulkan/DepthBuffer.hpp"
 #include "Vulkan/Swapchain.hpp"
 #include "Vulkan/Buffer/IndexBuffer.hpp"
+#include "Vulkan/Buffer/InstanceBuffer.hpp"
 #include "Vulkan/Buffer/UniformBuffer.hpp"
 #include "Vulkan/Buffer/VertexBuffer.hpp"
 #include "Vulkan/Command/CommandBuffers.hpp"
@@ -101,8 +103,12 @@ private:
 #pragma region render_test
     std::unique_ptr<class RenderPass> mRenderPass;
 
+    std::vector<InstanceData> mInstanceData;
+    std::unique_ptr<Geometry> mGeometry;
+
     std::unique_ptr<VertexBuffer>               mVertexBuffer;
     std::unique_ptr<IndexBuffer>                mIndexBuffer;
+    std::unique_ptr<InstanceBuffer>             mInstanceBuffer;
     std::vector<std::unique_ptr<UniformBuffer>> mUniformBuffers;
 
     vk::DescriptorSetLayout         mDescriptorSetLayout;
