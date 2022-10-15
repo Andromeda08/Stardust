@@ -6,7 +6,6 @@
 #include "../Command/CommandBuffers.hpp"
 #include "../../Resources/Vertex.hpp"
 
-
 class IndexBuffer
 {
 public:
@@ -16,6 +15,8 @@ public:
                          const CommandBuffers& cmd_buffers,
                          const Device& device);
 
+    uint32_t index_count() const { return static_cast<uint32_t>(m_indices.size()); }
+
     const Buffer& handle() const { return *m_buffer; }
 
     const Device& device() const { return m_device; }
@@ -23,7 +24,7 @@ public:
 private:
     std::unique_ptr<Buffer> m_buffer;
 
-    const std::vector<uint32_t>& m_indices;
+    const std::vector<uint32_t> m_indices;
 
     const Device& m_device;
 };
