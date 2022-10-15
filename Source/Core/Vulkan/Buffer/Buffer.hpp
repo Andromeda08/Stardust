@@ -30,7 +30,7 @@ public:
                             vk::Buffer dst,
                             vk::DeviceSize buffer_size);
 
-    vk::Buffer handle() const { return m_buffer; }
+    const vk::Buffer& handle() const { return m_buffer; }
 
     vk::DeviceMemory memory() const { return m_memory; }
 
