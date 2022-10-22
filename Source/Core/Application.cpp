@@ -52,15 +52,15 @@ Application::Application(const ApplicationSettings& app_settings)
 
     createGraphicsPipeline("phong.vert.spv", "phong.frag.spv");
 
-    mGeometry = std::make_unique<SphereGeometry>(1.5f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
-    //mGeometry = std::make_unique<CubeGeometry>(0.5f);
+    //mGeometry = std::make_unique<SphereGeometry>(1.5f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
+    mGeometry = std::make_unique<CubeGeometry>(1.5f);
 
     std::default_random_engine random((unsigned)time(nullptr));
-    std::uniform_int_distribution<int> uniform_dist(-175, 175);
+    std::uniform_int_distribution<int> uniform_dist(-600, 600);
     std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
     std::uniform_real_distribution<float> scale_mod(1.0f, 5.0f);
 
-    for (int i = 0; i < 2048; i++)
+    for (int i = 0; i < 8128; i++)
     {
         float x = (float) uniform_dist(random);
         float y = (float) uniform_dist(random);
@@ -175,7 +175,7 @@ void Application::draw()
                                   0,
                                   nullptr);
 
-    cmd_buffer.drawIndexed(mIndexBuffer->index_count(), 2048, 0, 0,0);
+    cmd_buffer.drawIndexed(mIndexBuffer->index_count(), 8128, 0, 0,0);
     cmd_buffer.endRenderPass();
     cmd_buffer.end();
 #pragma endregion
@@ -369,8 +369,8 @@ void Application::updateUniformBuffer(size_t index)
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-    auto model = glm::mat4(1.0f); //glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
-    auto view = glm::lookAt(glm::vec3(350, 0, 350), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
+    auto view = glm::lookAt(glm::vec3(450, 0, 450), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
     auto proj = glm::perspective(glm::radians(45.0f), mSwapChain->aspectRatio(), 0.1f, 1000.0f);
 
     UniformBufferObject ubo {

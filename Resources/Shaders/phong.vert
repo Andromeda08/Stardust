@@ -42,7 +42,7 @@ mat4 scale_matrix(vec3 delta)
 void main() {
     vec3 pos = vec3(inPosition.x, -inPosition.y, inPosition.z);
 
-    gl_Position = ubo.view_projection * translate_matrix(instanceTranslate) * scale_matrix(instanceScale) * vec4(pos, 1.0);
+    gl_Position = ubo.view_projection * translate_matrix(instanceTranslate) * scale_matrix(instanceScale) * ubo.model * vec4(pos, 1.0);
 
     fragPos = (ubo.model * vec4(inPosition.x, -inPosition.y, inPosition.z, 1.0)).xyz;
     fragColor = instanceColor;
