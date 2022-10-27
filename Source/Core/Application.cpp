@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "Window.hpp"
 #include "Vulkan/Device.hpp"
 #include "Vulkan/Instance.hpp"
@@ -32,7 +33,8 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mSurface  = std::make_unique<Surface>(*mInstance);
 
-    selectRayTracingDevice();
+    if (mRayTracing) selectRayTracingDevice();
+    else             selectDevice();
 
     createSwapChain();
 
@@ -77,7 +79,6 @@ Application::Application(const ApplicationSettings& app_settings)
     }
 
     mInstanceBuffer = std::make_unique<InstanceBuffer>(mInstanceData, *mCommandBuffers, *mDevice);
-
     mVertexBuffer = std::make_unique<VertexBuffer>(mGeometry->vertices(), *mCommandBuffers, *mDevice);
     mIndexBuffer = std::make_unique<IndexBuffer>(mGeometry->indices(), *mCommandBuffers, *mDevice);
 
@@ -99,29 +100,84 @@ Application::Application(const ApplicationSettings& app_settings)
     }
 #pragma endregion
 
-    vk::DynamicLoader dl;
-    auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-    vk::DispatchLoaderDynamic dld(mInstance->handle(), vkGetInstanceProcAddr, mDevice->handle());
+    if (mRayTracing)
+    {
+        vk::DynamicLoader dl;
+        auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        vk::DispatchLoaderDynamic dld(mInstance->handle(), vkGetInstanceProcAddr, mDevice->handle());
 
-    auto sphere = std::make_unique<SphereGeometry>(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
-    Mesh test_mesh {
-        .vertex_buffer = std::make_unique<VertexBuffer>(sphere->vertices(), *mCommandBuffers, *mDevice),
-        .index_buffer = std::make_unique<IndexBuffer>(sphere->indices(), *mCommandBuffers, *mDevice)
-    };
+        auto sphere = std::make_unique<SphereGeometry>(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
+        Mesh test_mesh {
+            .vertex_buffer = std::make_unique<VertexBuffer>(sphere->vertices(), *mCommandBuffers, *mDevice),
+            .index_buffer = std::make_unique<IndexBuffer>(sphere->indices(), *mCommandBuffers, *mDevice)
+        };
 
-    vk::DebugUtilsObjectNameInfoEXT s1;
-    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.vertex_buffer->handle().buffer()));
-    s1.setObjectType(vk::ObjectType::eBuffer);
-    s1.setPObjectName("Blas Vertex Buffer");
-    auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+        vk::DebugUtilsObjectNameInfoEXT s1;
+        s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.vertex_buffer->handle().buffer()));
+        s1.setObjectType(vk::ObjectType::eBuffer);
+        s1.setPObjectName("Blas Vertex Buffer");
+        auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
 
-    vk::DebugUtilsObjectNameInfoEXT s2;
-    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.index_buffer->handle().buffer()));
-    s1.setObjectType(vk::ObjectType::eBuffer);
-    s1.setPObjectName("Blas Index Buffer");
-    auto r2 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+        vk::DebugUtilsObjectNameInfoEXT s2;
+        s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.index_buffer->handle().buffer()));
+        s1.setObjectType(vk::ObjectType::eBuffer);
+        s1.setPObjectName("Blas Index Buffer");
+        auto r2 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
 
-    auto test_blas = BlasInfo::create_blas(test_mesh, *mCommandBuffers, dld);
+        auto test_blas = BlasInfo::create_blas(test_mesh, *mCommandBuffers, dld);
+        std::cout << test_blas.blas_address << std::endl;
+        std::cout << test_blas.buffer->address() << std::endl;
+
+        vk::TransformMatrixKHR vkI({
+            std::array<float, 4>{ 1.0f, 0.0f, 0.0f, 0.0f },
+            std::array<float, 4>{ 0.0f, 1.0f, 0.0f, 0.0f },
+            std::array<float, 4>{ 0.0f, 0.0f, 1.0f, 0.0f }
+        });
+
+        std::vector<vk::TransformMatrixKHR> transforms;
+
+        std::vector<vk::AccelerationStructureInstanceKHR> instances(5);
+        for (size_t i = 0; i < instances.size(); i++)
+        {
+            transforms.push_back(vk::TransformMatrixKHR({
+                std::array<float, 4>{ 1.0f, 0.0f, 0.0f, 1.0f * i },
+                std::array<float, 4>{ 0.0f, 1.0f, 0.0f, 1.0f * i },
+                std::array<float, 4>{ 0.0f, 0.0f, 1.0f, 1.0f * i }
+            }));
+
+            instances[i].setInstanceCustomIndex(i);
+            instances[i].setTransform(transforms[i]);
+            instances[i].setMask(0xff);
+            instances[i].setInstanceShaderBindingTableRecordOffset(0);
+            instances[i].setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+            instances[i].setAccelerationStructureReference(test_blas.buffer->address());
+        }
+
+        vk::DeviceSize ibsize = instances.size() * sizeof(vk::AccelerationStructureInstanceKHR);
+        auto staging = Buffer::make_staging_buffer(ibsize, *mDevice);
+
+        void* data;
+        vkMapMemory(mDevice->handle(), staging.memory(), 0, ibsize, 0, &data);
+        memcpy(data, instances.data(), (size_t) ibsize);
+        vkUnmapMemory(mDevice->handle(), staging.memory());
+
+        auto instance_buffer = std::make_unique<Buffer>(ibsize,
+                                            vk::BufferUsageFlagBits::eTransferDst
+                                            | vk::BufferUsageFlagBits::eShaderDeviceAddress
+                                            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+                                            vk::MemoryPropertyFlagBits::eDeviceLocal
+                                            | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                            *mDevice);
+
+        Buffer::copy_buffer(*mCommandBuffers, staging.handle(), instance_buffer->handle(), ibsize);
+
+
+        auto test_tlas = TlasInfo::create_tlas(instances.size(),
+                                               instance_buffer->address(),
+                                               dld,
+                                               *mDevice,
+                                               *mCommandBuffers);
+    }
 }
 
 void Application::run()
@@ -315,17 +371,6 @@ void Application::createSwapChain()
         mRenderFinishedSemaphores.emplace_back(*mDevice);
         mInFlightFences.emplace_back(*mDevice);
     }
-}
-
-void Application::createVMA()
-{
-    VmaAllocatorCreateInfo create_info = {};
-
-    create_info.physicalDevice = mDevice->physicalDevice();
-    create_info.device = mDevice->handle();
-    create_info.instance = mInstance->handle();
-
-    vmaCreateAllocator(&create_info, &mAllocator);
 }
 
 void Application::createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source)

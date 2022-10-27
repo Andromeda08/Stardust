@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "../Device.hpp"
 #include "../Buffer/Buffer.hpp"
 #include "../Command/CommandBuffers.hpp"
 
@@ -21,5 +22,9 @@ struct TlasInfo
     std::unique_ptr<Buffer>      buffer;
     std::unique_ptr<Buffer>      scratch_buffer;
 
-    //static TlasInfo create_tlas(uint32_t instance_count, vk::DeviceAddress instance_address);
+    static TlasInfo create_tlas(uint32_t instance_count,
+                                vk::DeviceAddress instance_address,
+                                vk::DispatchLoaderDynamic dispatch,
+                                const Device& device,
+                                const CommandBuffers& command_buffers);
 };

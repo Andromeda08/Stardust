@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include "Macro.hpp"
 #include "Resources/Geometry.hpp"
@@ -35,14 +34,8 @@ public:
     std::vector<const char*> deviceExtensions() const { return mRequiredDeviceExtensions; }
 
 private:
-    /**
-     * @brief Draw frame :D
-     */
     void draw();
 
-    /**
-     * @brief Sets up the vulkan debug messenger
-     */
     void setupDebugMessenger();
 
     /**
@@ -59,13 +52,7 @@ private:
     void createSwapChain();
 
     /**
-     * @brief Initialize VMA object
-     * Requires the Instance and Device to exist
-     */
-    void createVMA();
-
-    /**
-     * @brief Creates the raster Graphics Pipeline
+     * @brief Creates the raster Graphics Pipeline with the specified shaders
      */
     void createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source);
 
@@ -90,8 +77,8 @@ private:
 
 private:
     ApplicationSettings mSettings {};
+    bool mRayTracing {true};
 
-    VmaAllocator             mAllocator;
     VkDebugUtilsMessengerEXT mDebugMessenger;
 
     std::unique_ptr<class Window>    mWindow;
@@ -101,12 +88,6 @@ private:
     std::unique_ptr<Swapchain>       mSwapChain;
     std::unique_ptr<DepthBuffer>     mDepthBuffer;
     std::unique_ptr<CommandBuffers>  mCommandBuffers;
-
-#pragma region ray_tracing
-
-
-
-#pragma endregion
 
 #pragma region render_test
     std::unique_ptr<class RenderPass> mRenderPass;
@@ -136,7 +117,6 @@ private:
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
-    // Device extensions with ray tracing in mind
     const std::vector<const char*> mRequiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
