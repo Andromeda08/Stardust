@@ -20,7 +20,11 @@ Instance::Instance(const Window& window)
     // Enumerate and check available instance extensions.
     auto extensions = vk::enumerateInstanceExtensionProperties();
 
-    std::set<std::string> requiredExtensions { VK_KHR_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME };
+    std::set<std::string> requiredExtensions {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+        "VK_EXT_debug_utils"
+    };
     for (const auto glfwExtension : Window::get_instance_extensions())
     {
         requiredExtensions.insert(glfwExtension);

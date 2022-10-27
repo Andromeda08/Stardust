@@ -57,6 +57,21 @@ Device::Device(const Surface& surface, vk::PhysicalDevice physicalDevice, const 
     // Device features
     vk::PhysicalDeviceFeatures deviceFeatures {};
 
+    vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeaturesExt;
+    descriptorIndexingFeaturesExt.setRuntimeDescriptorArray(true);
+
+    vk::PhysicalDeviceBufferDeviceAddressFeaturesEXT bufferDeviceAddressFeaturesExt;
+    bufferDeviceAddressFeaturesExt.setBufferDeviceAddress(true);
+    bufferDeviceAddressFeaturesExt.setPNext(&descriptorIndexingFeaturesExt);
+
+    vk::PhysicalDeviceAccelerationStructureFeaturesKHR as_features;
+    as_features.setAccelerationStructure(true);
+    as_features.setPNext(&bufferDeviceAddressFeaturesExt);
+
+    vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rt_features;
+    rt_features.setRayTracingPipeline(true);
+    rt_features.setPNext(&as_features);
+
     // Create Device
     vk::DeviceCreateInfo createInfo;
 
@@ -67,7 +82,7 @@ Device::Device(const Surface& surface, vk::PhysicalDevice physicalDevice, const 
     createInfo.setPpEnabledExtensionNames(requiredExtensions.data());
     createInfo.setQueueCreateInfoCount(static_cast<uint32_t>(queueCreateInfos.size()));
     createInfo.setPQueueCreateInfos(queueCreateInfos.data());
-    createInfo.setPNext(nullptr);
+    createInfo.setPNext(&rt_features);
 
     auto result = mPhysicalDevice.createDevice(&createInfo, nullptr, &mDevice);
 

@@ -51,3 +51,33 @@ void Buffer::copy_buffer(const CommandBuffers& cmd,
 
     cmd.end_single_time(cmd_buffer);
 }
+
+Buffer::Buffer(vk::DeviceSize buffer_size, vk::BufferUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
+               const Device &device, vk::DispatchLoaderDynamic dispatch)
+: m_device(device)
+{
+    vk::Result result;
+
+    vk::BufferCreateInfo buffer_info;
+    buffer_info.setSharingMode(vk::SharingMode::eExclusive);
+    buffer_info.setSize(buffer_size);
+    buffer_info.setUsage(usage_flags);
+
+    result = m_device.handle().createBuffer(&buffer_info, nullptr, &m_buffer, dispatch);
+
+    vk::MemoryRequirements memory_requirements = m_device.handle().getBufferMemoryRequirements(m_buffer, dispatch);
+    vk::MemoryAllocateInfo alloc_info;
+    alloc_info.setAllocationSize(memory_requirements.size);
+    alloc_info.setMemoryTypeIndex(m_device.findMemoryType(memory_requirements.memoryTypeBits, property_flags));
+
+    result = m_device.handle().allocateMemory(&alloc_info, nullptr, &m_memory, dispatch);
+
+    m_device.handle().bindBufferMemory(m_buffer, m_memory, 0, dispatch);
+
+    vk::DebugUtilsObjectNameInfoEXT s1;
+    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(m_buffer));
+    s1.setObjectType(vk::ObjectType::eBuffer);
+    s1.setPObjectName("Buffer");
+    device.handle().setDebugUtilsObjectNameEXT(&s1, dispatch);
+
+}

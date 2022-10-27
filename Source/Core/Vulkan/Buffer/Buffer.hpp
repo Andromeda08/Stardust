@@ -14,6 +14,12 @@ public:
            vk::MemoryPropertyFlags property_flags,
            const Device& device);
 
+    Buffer(vk::DeviceSize buffer_size,
+           vk::BufferUsageFlags usage_flags,
+           vk::MemoryPropertyFlags property_flags,
+           const Device& device,
+           vk::DispatchLoaderDynamic dispatch);
+
     ~Buffer();
 
     static Buffer make_staging_buffer(vk::DeviceSize buffer_size,
@@ -31,6 +37,9 @@ public:
                             vk::DeviceSize buffer_size);
 
     const vk::Buffer& handle() const { return m_buffer; }
+    const vk::Buffer& buffer() const { return m_buffer; }
+
+    vk::DeviceAddress address() const { return m_device.handle().getBufferAddress(m_buffer); }
 
     vk::DeviceMemory memory() const { return m_memory; }
 

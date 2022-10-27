@@ -18,6 +18,9 @@ public:
     uint32_t index_count() const { return static_cast<uint32_t>(m_indices.size()); }
 
     const Buffer& handle() const { return *m_buffer; }
+    const Buffer& buffer() const { return *m_buffer; }
+
+    vk::DeviceAddress address() const { return m_device.handle().getBufferAddress(m_buffer->handle()); }
 
     const Device& device() const { return m_device; }
 

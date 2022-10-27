@@ -16,7 +16,10 @@ VertexBuffer::VertexBuffer(const std::vector<Vertex>& vertices,
     vkUnmapMemory(m_device.handle(), staging.memory());
 
     m_buffer = std::make_unique<Buffer>(buffer_size,
-                                        vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+                                        vk::BufferUsageFlagBits::eTransferDst
+                                        | vk::BufferUsageFlagBits::eVertexBuffer
+                                        | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+                                        | vk::BufferUsageFlagBits::eShaderDeviceAddress,
                                         vk::MemoryPropertyFlagBits::eDeviceLocal,
                                         m_device);
 

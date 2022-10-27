@@ -16,12 +16,15 @@
 #include "Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp"
 #include "Vulkan/GraphicsPipeline/RenderPass.hpp"
 #include "Vulkan/GraphicsPipeline/ShaderModule.hpp"
+#include "Vulkan/Raytracing/AccelerationStructure.hpp"
 #include "Resources/Vertex.hpp"
+#include "Vulkan/Raytracing/Mesh.hpp"
 
 Application::Application(const ApplicationSettings& app_settings)
 : mSettings(app_settings)
 , mCurrentFrame(0)
 {
+#pragma region setup
     mWindow   = std::make_unique<Window>(app_settings.windowSettings);
     mInstance = std::make_unique<Instance>(*mWindow);
 
@@ -94,6 +97,31 @@ Application::Application(const ApplicationSettings& app_settings)
         ubo_info.setRange(sizeof(UniformBufferObject));
         mDescriptorSets->update_descriptor_set(i, 0, ubo_info);
     }
+#pragma endregion
+
+    vk::DynamicLoader dl;
+    auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+    vk::DispatchLoaderDynamic dld(mInstance->handle(), vkGetInstanceProcAddr, mDevice->handle());
+
+    auto sphere = std::make_unique<SphereGeometry>(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
+    Mesh test_mesh {
+        .vertex_buffer = std::make_unique<VertexBuffer>(sphere->vertices(), *mCommandBuffers, *mDevice),
+        .index_buffer = std::make_unique<IndexBuffer>(sphere->indices(), *mCommandBuffers, *mDevice)
+    };
+
+    vk::DebugUtilsObjectNameInfoEXT s1;
+    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.vertex_buffer->handle().buffer()));
+    s1.setObjectType(vk::ObjectType::eBuffer);
+    s1.setPObjectName("Blas Vertex Buffer");
+    auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+
+    vk::DebugUtilsObjectNameInfoEXT s2;
+    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.index_buffer->handle().buffer()));
+    s1.setObjectType(vk::ObjectType::eBuffer);
+    s1.setPObjectName("Blas Index Buffer");
+    auto r2 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+
+    auto test_blas = BlasInfo::create_blas(test_mesh, *mCommandBuffers, dld);
 }
 
 void Application::run()

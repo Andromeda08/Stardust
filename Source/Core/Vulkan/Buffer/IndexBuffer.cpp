@@ -16,7 +16,10 @@ IndexBuffer::IndexBuffer(const std::vector<uint32_t>& indices,
     vkUnmapMemory(m_device.handle(), staging.memory());
 
     m_buffer = std::make_unique<Buffer>(buffer_size,
-                                        vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+                                        vk::BufferUsageFlagBits::eTransferDst
+                                        | vk::BufferUsageFlagBits::eIndexBuffer
+                                        | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+                                        | vk::BufferUsageFlagBits::eShaderDeviceAddress,
                                         vk::MemoryPropertyFlagBits::eDeviceLocal,
                                         m_device);
 
