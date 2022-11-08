@@ -22,7 +22,7 @@ public:
 
     vk::Device handle() const { return mDevice; }
 
-    vk::PhysicalDevice physicalDevice() const { return mPhysicalDevice; }
+    const vk::PhysicalDevice& physicalDevice() const { return mPhysicalDevice; }
 
     const Surface& surface() const { return mSurface; }
 

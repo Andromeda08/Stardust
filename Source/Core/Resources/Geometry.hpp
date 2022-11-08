@@ -27,7 +27,7 @@ class SphereGeometry : public Geometry
 {
 public:
     SphereGeometry(float radius = 1.0f, glm::vec3 color = { 0.5f, 0.5f, 0.5f }, int resolution = 40)
-    : Geometry()
+        : Geometry()
     {
         this->m_vertices = gen_vertices(resolution, resolution, radius, color);
         this->m_indices  = gen_indices(resolution, resolution);
@@ -39,8 +39,8 @@ private:
         std::vector<glm::vec3> vertices, colors, normals;
         std::vector<glm::vec2> uvs;
 
-        float sector_step = 2 * std::numbers::pi_v<float> / sector_count;
-        float stack_step  = std::numbers::pi_v<float> / stack_count;
+        float sector_step = 2 * M_PI / sector_count;
+        float stack_step  = M_PI / stack_count;
         float sector_angle, stack_angle;
 
         float r_inv = 1.0f / radius;
@@ -48,7 +48,7 @@ private:
         for (int i = 0; i <= stack_count; i++)
         {
             float x, y, z, xy;
-            stack_angle = std::numbers::pi_v<float> / 2 - (float) i * stack_step;
+            stack_angle = M_PI / 2 - (float) i * stack_step;
             xy = radius * cosf(stack_angle);
             z = radius * sinf(stack_angle);
 

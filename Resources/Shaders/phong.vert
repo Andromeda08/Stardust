@@ -12,8 +12,10 @@ layout (location = 2) in vec3 inNormal;
 layout (location = 3) in vec2 inUV;
 
 layout (location = 4) in vec3 instanceTranslate;
-layout (location = 5) in vec3 instanceColor;
-layout (location = 6) in vec3 instanceScale;
+layout (location = 5) in vec3 instanceScale;
+layout (location = 6) in vec3 instanceRotationAxis;
+layout (location = 7) in vec3 instanceRotationAngle;
+layout (location = 8) in vec3 instanceColor;
 
 layout (location = 0) out vec3 fragPos;
 layout (location = 1) out vec3 fragColor;

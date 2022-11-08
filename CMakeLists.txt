@@ -2,7 +2,20 @@ cmake_minimum_required(VERSION 3.23)
 project(VkRaytracing)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_EXE_LINKER_FLAGS "-static")
+
+if (WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
+
+IF(APPLE)
+    set(CMAKE_CXX_STANDARD 17)
+
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+ENDIF()
 
 # Set up dependencies
 find_package(Vulkan REQUIRED)
@@ -15,7 +28,6 @@ add_executable(${PROJECT_NAME}
         Source/main.cpp
         # Utilities
         Source/Core/Macro.hpp
-        Source/Core/Vulkan/ThirdParty/Vma.cpp
         Source/Core/Vulkan/DebugMessenger.hpp
         # Application
         Source/Core/Struct/ApplicationSettings.hpp
@@ -56,8 +68,8 @@ add_executable(${PROJECT_NAME}
         Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp
         Source/Core/Vulkan/DepthBuffer.cpp Source/Core/Vulkan/DepthBuffer.hpp
         Source/Core/Vulkan/Buffer/InstanceBuffer.cpp Source/Core/Vulkan/Buffer/InstanceBuffer.hpp
-        Source/Core/Vulkan/Raytracing/Mesh.hpp
-        Source/Core/Vulkan/Raytracing/AccelerationStructure.hpp Source/Core/Vulkan/Raytracing/AccelerationStructure.cpp)
+
+        Source/Core/Scene/Mesh.hpp Source/Core/Scene/Mesh.cpp Source/Core/Scene/IData.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)

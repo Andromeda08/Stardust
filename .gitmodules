@@ -7,3 +7,6 @@
 [submodule "ThirdParty/volk"]
 	path = ThirdParty/volk
 	url = https://github.com/zeux/volk.git
+[submodule "ThirdParty/spv-reflect"]
+	path = ThirdParty/spv-reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect.git

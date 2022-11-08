@@ -1,12 +1,12 @@
 #include "InstanceBuffer.hpp"
 
-InstanceBuffer::InstanceBuffer(const std::vector<InstanceData>& instance_data,
+InstanceBuffer::InstanceBuffer(const std::vector<IData>& instance_data,
                                const CommandBuffers &cmd_buffers,
                                const Device &device)
 : m_device(device)
 , m_data(instance_data)
 {
-    vk::DeviceSize buffer_size = sizeof(InstanceData) * instance_data.size();
+    vk::DeviceSize buffer_size = sizeof(IData) * instance_data.size();
 
     auto staging = Buffer::make_staging_buffer(buffer_size, m_device);
 

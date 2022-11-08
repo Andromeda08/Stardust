@@ -6,24 +6,23 @@
 #include "../Command/CommandBuffers.hpp"
 #include "../../Resources/Geometry.hpp"
 #include "../../Resources/Vertex.hpp"
+#include "../../Scene/IData.hpp"
 
 class InstanceBuffer
 {
 public:
-    NON_COPIABLE(InstanceBuffer)
-
-    InstanceBuffer(const std::vector<InstanceData>& data,
-                   const CommandBuffers& cmd_buffers,
-                   const Device& device);
+    explicit InstanceBuffer(const std::vector<IData>& data, const CommandBuffers& cmd_buffers, const Device& device);
 
     const Buffer& handle() const { return *m_buffer; }
+
+    const Buffer& buffer() const { return *m_buffer; }
 
     const Device& device() const { return m_device; }
 
 private:
     std::unique_ptr<Buffer> m_buffer;
 
-    const std::vector<InstanceData>& m_data;
+    const std::vector<IData>& m_data;
 
     const Device& m_device;
 };

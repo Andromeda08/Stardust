@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-Device::Device(const Surface& surface, vk::PhysicalDevice physicalDevice, const std::vector<const char*>& requiredExtensions)
+Device::Device(const Surface& surface, vk::PhysicalDevice physicalDevice, const std::vector<const char*>&requiredExtensions)
 : mPhysicalDevice(physicalDevice)
 , mSurface(surface)
 {
@@ -14,11 +14,11 @@ Device::Device(const Surface& surface, vk::PhysicalDevice physicalDevice, const 
     // Find queues
     const auto queueFamilies   = mPhysicalDevice.getQueueFamilyProperties();
     const auto graphicsFamily = findQueue(queueFamilies, vk::QueueFlagBits::eGraphics, {});
-    const auto computeFamily  = findQueue(queueFamilies, vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
+    //const auto computeFamily  = findQueue(queueFamilies, vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
 
     // Get index using iterator dark magic
     mGraphicsFamilyIdx = static_cast<uint32_t>(graphicsFamily - std::begin(queueFamilies));
-    mComputeFamilyIdx  = static_cast<uint32_t>(computeFamily  - std::begin(queueFamilies));
+    //mComputeFamilyIdx  = static_cast<uint32_t>(computeFamily  - std::begin(queueFamilies));
 
     // Get present family index
     uint32_t presentIndex = 0;
@@ -88,7 +88,7 @@ Device::Device(const Surface& surface, vk::PhysicalDevice physicalDevice, const 
 
     mDevice.getQueue(mGraphicsFamilyIdx, 0, &mGraphicsQueue);
     mDevice.getQueue(mPresentFamilyIdx, 0, &mPresentQueue);
-    mDevice.getQueue(mComputeFamilyIdx, 0, &mComputeQueue);
+    //mDevice.getQueue(mComputeFamilyIdx, 0, &mComputeQueue);
 }
 
 void Device::waitIdle() const
