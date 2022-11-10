@@ -1,12 +1,11 @@
 #include "AccelerationStructure.hpp"
 
-#include <iostream>
-#include "Mesh.hpp"
+#include "RtMesh.hpp"
 #include "../Buffer/IndexBuffer.hpp"
 #include "../Buffer/VertexBuffer.hpp"
 #include "../../Resources/Vertex.hpp"
 
-BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffers& command_buffers, vk::DispatchLoaderDynamic dispatch)
+BlasInfo BlasInfo::create_blas(const RtMesh& mesh, const CommandBuffers& command_buffers, vk::DispatchLoaderDynamic dispatch)
 {
     vk::Device device = mesh.vertex_buffer->device().handle();
 

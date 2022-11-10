@@ -8,7 +8,9 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Math.hpp"
 #include "Window.hpp"
+#include "Resources/Vertex.hpp"
 #include "Vulkan/Device.hpp"
 #include "Vulkan/Instance.hpp"
 #include "Vulkan/Surface.hpp"
@@ -17,14 +19,19 @@
 #include "Vulkan/GraphicsPipeline/RenderPass.hpp"
 #include "Vulkan/GraphicsPipeline/ShaderModule.hpp"
 #include "Vulkan/Raytracing/AccelerationStructure.hpp"
-#include "Resources/Vertex.hpp"
-#include "Vulkan/Raytracing/Mesh.hpp"
+#include "Vulkan/Raytracing/RtMesh.hpp"
+
+constexpr uint32_t g_instance_count = 8128;
 
 Application::Application(const ApplicationSettings& app_settings)
 : mSettings(app_settings)
 , mCurrentFrame(0)
 {
-#pragma region setup
+#if defined(__APPLE__)
+    // Yeah, we're not going to do this any time soon.
+    mSettings.raytracing = false
+#endif
+
     mWindow   = std::make_unique<Window>(app_settings.windowSettings);
     mInstance = std::make_unique<Instance>(*mWindow);
 
@@ -32,7 +39,7 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mSurface  = std::make_unique<Surface>(*mInstance);
 
-    selectRayTracingDevice();
+    (mSettings.raytracing) ? selectRayTracingDevice() : selectDevice();
 
     createSwapChain();
 
@@ -55,29 +62,30 @@ Application::Application(const ApplicationSettings& app_settings)
 
     createGraphicsPipeline("phong.vert.spv", "phong.frag.spv");
 
-    //mGeometry = std::make_unique<SphereGeometry>(1.5f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
+#pragma region create_geometries
     mGeometry = std::make_unique<CubeGeometry>(1.5f);
 
-    std::default_random_engine random((unsigned)time(nullptr));
-    std::uniform_int_distribution<int> uniform_dist(-600, 600);
+    std::default_random_engine rand(static_cast<unsigned>(time(nullptr)));
+    std::uniform_int_distribution<int> uniform_dist(-450, 450);
     std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
     std::uniform_real_distribution<float> scale_mod(1.0f, 5.0f);
 
-    for (int i = 0; i < 8128; i++)
-    {
-        float x = (float) uniform_dist(random);
-        float y = (float) uniform_dist(random);
-        float z = (float) uniform_dist(random);
+    std::vector<IData> v = {};
 
-        mInstanceData.push_back({
-            glm::vec3{ x, y, z },
-            glm::vec3{ uniform_float(random), uniform_float(random), uniform_float(random) },
-            glm::vec3{ scale_mod(random) }
-        });
+    for (int i = 0; i < g_instance_count; i++)
+    {
+        auto x = (float) uniform_dist(rand);
+        auto y = (float) uniform_dist(rand);
+        auto z = (float) uniform_dist(rand);
+
+        (i % 2 == 0)
+        ? mInstanceData.push_back({ glm::vec3{ x, y, z }, glm::vec3{ scale_mod(rand) }, glm::vec3{ 1 }, 0.0f,
+                                    glm::vec3{ uniform_float(rand), uniform_float(rand), uniform_float(rand) }})
+        : v.push_back({ glm::vec3{ x, y, z }, glm::vec3{ scale_mod(rand) }, glm::vec3{ 1 }, 0.0f,
+                                   glm::vec3{ uniform_float(rand), uniform_float(rand), uniform_float(rand) }});
     }
 
     mInstanceBuffer = std::make_unique<InstanceBuffer>(mInstanceData, *mCommandBuffers, *mDevice);
-
     mVertexBuffer = std::make_unique<VertexBuffer>(mGeometry->vertices(), *mCommandBuffers, *mDevice);
     mIndexBuffer = std::make_unique<IndexBuffer>(mGeometry->indices(), *mCommandBuffers, *mDevice);
 
@@ -97,31 +105,97 @@ Application::Application(const ApplicationSettings& app_settings)
         ubo_info.setRange(sizeof(UniformBufferObject));
         mDescriptorSets->update_descriptor_set(i, 0, ubo_info);
     }
+
+    Geometry* test_geometry = new SphereGeometry(2.5f, glm::vec3{0.5f, 0.0f, 0.5f}, 60);
+    mTestMesh = std::make_unique<Mesh>(test_geometry, v, mGraphicsPipeline, *mDevice, *mCommandBuffers);
+
 #pragma endregion
 
-    vk::DynamicLoader dl;
-    auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-    vk::DispatchLoaderDynamic dld(mInstance->handle(), vkGetInstanceProcAddr, mDevice->handle());
+#pragma region raytracing_setup
+    if (mSettings.raytracing)
+    {
+        auto rt_start = std::chrono::high_resolution_clock::now();
 
-    auto sphere = std::make_unique<SphereGeometry>(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
-    Mesh test_mesh {
-        .vertex_buffer = std::make_unique<VertexBuffer>(sphere->vertices(), *mCommandBuffers, *mDevice),
-        .index_buffer = std::make_unique<IndexBuffer>(sphere->indices(), *mCommandBuffers, *mDevice)
-    };
+        vk::DynamicLoader dl;
+        auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        vk::DispatchLoaderDynamic dld(mInstance->handle(), vkGetInstanceProcAddr, mDevice->handle());
 
-    vk::DebugUtilsObjectNameInfoEXT s1;
-    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.vertex_buffer->handle().buffer()));
-    s1.setObjectType(vk::ObjectType::eBuffer);
-    s1.setPObjectName("Blas Vertex Buffer");
-    auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+        auto sphere = std::make_unique<SphereGeometry>(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
+        RtMesh test_mesh{
+            .vertex_buffer = std::make_unique<VertexBuffer>(sphere->vertices(), *mCommandBuffers, *mDevice),
+            .index_buffer = std::make_unique<IndexBuffer>(sphere->indices(), *mCommandBuffers, *mDevice)
+        };
 
-    vk::DebugUtilsObjectNameInfoEXT s2;
-    s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.index_buffer->handle().buffer()));
-    s1.setObjectType(vk::ObjectType::eBuffer);
-    s1.setPObjectName("Blas Index Buffer");
-    auto r2 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+        vk::DebugUtilsObjectNameInfoEXT s1;
+        s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.vertex_buffer->handle().buffer()));
+        s1.setObjectType(vk::ObjectType::eBuffer);
+        s1.setPObjectName("Blas Vertex Buffer");
+        auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
 
-    auto test_blas = BlasInfo::create_blas(test_mesh, *mCommandBuffers, dld);
+        vk::DebugUtilsObjectNameInfoEXT s2;
+        s1.setObjectHandle((uint64_t) static_cast<VkBuffer>(test_mesh.index_buffer->handle().buffer()));
+        s1.setObjectType(vk::ObjectType::eBuffer);
+        s1.setPObjectName("Blas Index Buffer");
+        auto r2 = mDevice->handle().setDebugUtilsObjectNameEXT(&s1, dld);
+
+        auto test_blas = BlasInfo::create_blas(test_mesh, *mCommandBuffers, dld);
+
+        //std::cout << test_blas.blas_address << std::endl;
+        //std::cout << test_blas.buffer->address() << std::endl;
+
+        std::vector<vk::TransformMatrixKHR> transforms;
+        std::vector<vk::AccelerationStructureInstanceKHR> instances(g_instance_count / 2);
+
+        for (size_t i = 0; i < instances.size(); i++)
+        {
+            glm::mat4 m = glm::mat4(1.0f);
+            m = glm::scale(m, v[i].scale);
+            m = glm::translate(m, v[i].translate);
+
+            auto model = Math::model(v[i].translate, v[i].scale);
+
+            transforms.push_back(Math::glmToKhr(model));
+
+            instances[i].setInstanceCustomIndex(i);
+            instances[i].setTransform(transforms[i]);
+            instances[i].setMask(0xff);
+            instances[i].setInstanceShaderBindingTableRecordOffset(0);
+            instances[i].setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+            instances[i].setAccelerationStructureReference(test_blas.buffer->address());
+        }
+
+        vk::DeviceSize ibsize = instances.size() * sizeof(vk::AccelerationStructureInstanceKHR);
+        auto staging = Buffer::make_staging_buffer(ibsize, *mDevice);
+
+        void *data;
+        vkMapMemory(mDevice->handle(), staging.memory(), 0, ibsize, 0, &data);
+        memcpy(data, instances.data(), (size_t) ibsize);
+        vkUnmapMemory(mDevice->handle(), staging.memory());
+
+        auto instance_buffer = std::make_unique<Buffer>(ibsize,
+                                                        vk::BufferUsageFlagBits::eTransferDst
+                                                        | vk::BufferUsageFlagBits::eShaderDeviceAddress
+                                                        | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+                                                        vk::MemoryPropertyFlagBits::eDeviceLocal
+                                                        | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                                        *mDevice);
+
+        Buffer::copy_buffer(*mCommandBuffers, staging.handle(), instance_buffer->handle(), ibsize);
+
+
+        auto test_tlas = TlasInfo::create_tlas(instances.size(),
+                                               instance_buffer->address(),
+                                               dld,
+                                               *mDevice,
+                                               *mCommandBuffers);
+
+        auto rt_end = std::chrono::high_resolution_clock::now();
+        auto duration = duration_cast<std::chrono::milliseconds>(rt_end - rt_start);
+        std::cout << "Acceleration Structure build time: " << duration.count() << "ms\n"
+            << "\tBottom Level : " << test_mesh.vertex_buffer->vertex_count() << " Vertices\n"
+            << "\tTop Level    : " << instances.size() << " Instances" << std::endl;
+    }
+#pragma endregion
 }
 
 void Application::run()
@@ -143,7 +217,7 @@ void Application::draw()
     auto hDevice = mDevice->handle();
 
     auto wait = mInFlightFences[mCurrentFrame].handle();
-    auto res =hDevice.waitForFences(1, &wait, true, UINT64_MAX);
+    auto res = hDevice.waitForFences(1, &wait, true, UINT64_MAX);
     res = hDevice.resetFences(1, &wait);
 
     vk::Semaphore semaphore = mImageAvailableSemaphores[mCurrentFrame].handle();
@@ -174,6 +248,7 @@ void Application::draw()
     render_pass_info.setPClearValues(clear_values.data());
 
     cmd_buffer.beginRenderPass(&render_pass_info, vk::SubpassContents::eInline);
+    // Pipeline binding
     cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline);
 
     vk::Viewport viewport;
@@ -190,11 +265,6 @@ void Application::draw()
     scissor.setExtent(mSwapChain->extent());
     cmd_buffer.setScissor(0, 1, &scissor);
 
-    std::vector<vk::Buffer> vertex_buffers = { mVertexBuffer->handle().handle() };
-    std::vector<vk::DeviceSize> offsets = { 0 };
-    cmd_buffer.bindVertexBuffers(0, 1, vertex_buffers.data(), offsets.data());
-    cmd_buffer.bindVertexBuffers(1, 1, &mInstanceBuffer->handle().handle(), offsets.data());
-    cmd_buffer.bindIndexBuffer(mIndexBuffer->handle().handle(), 0, vk::IndexType::eUint32);
     cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                   mPipelineLayout,
                                   0,
@@ -203,7 +273,14 @@ void Application::draw()
                                   0,
                                   nullptr);
 
-    cmd_buffer.drawIndexed(mIndexBuffer->index_count(), 8128, 0, 0,0);
+    std::vector<vk::DeviceSize> offsets = { 0 };
+    cmd_buffer.bindVertexBuffers(0, 1, &mVertexBuffer->buffer().handle(), offsets.data());
+    cmd_buffer.bindVertexBuffers(1, 1, &mInstanceBuffer->handle().handle(), offsets.data());
+    cmd_buffer.bindIndexBuffer(mIndexBuffer->handle().handle(), 0, vk::IndexType::eUint32);
+    //cmd_buffer.drawIndexed(mIndexBuffer->index_count(), g_instance_count / 2, 0, 0,0);
+
+    mTestMesh->draw(cmd_buffer);
+
     cmd_buffer.endRenderPass();
     cmd_buffer.end();
 #pragma endregion
@@ -317,17 +394,6 @@ void Application::createSwapChain()
     }
 }
 
-void Application::createVMA()
-{
-    VmaAllocatorCreateInfo create_info = {};
-
-    create_info.physicalDevice = mDevice->physicalDevice();
-    create_info.device = mDevice->handle();
-    create_info.instance = mInstance->handle();
-
-    vmaCreateAllocator(&create_info, &mAllocator);
-}
-
 void Application::createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source)
 {
     auto vert_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eVertex,
@@ -370,7 +436,7 @@ void Application::createGraphicsPipeline(const std::string& vert_shader_source, 
     GraphicsPipelineState pipeline_state;
     pipeline_state.add_binding_descriptions({
         { 0, sizeof(Vertex), vk::VertexInputRate::eVertex },
-        { 1, sizeof(InstanceData), vk::VertexInputRate::eInstance }
+        { 1, sizeof(IData), vk::VertexInputRate::eInstance }
     });
     pipeline_state.add_attribute_descriptions({
         { 0, 0, vk::Format::eR32G32B32Sfloat, 0 },
@@ -378,8 +444,10 @@ void Application::createGraphicsPipeline(const std::string& vert_shader_source, 
         { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal) },
         { 3, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv) },
         { 4, 1, vk::Format::eR32G32B32Sfloat, 0 },
-        { 5, 1, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, color) },
-        { 6, 1, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, scale) }
+        { 5, 1, vk::Format::eR32G32B32Sfloat, offsetof(IData, scale) },
+        { 6, 1, vk::Format::eR32G32B32Sfloat, offsetof(IData, rotation_axis) },
+        { 7, 1, vk::Format::eR32Sfloat, offsetof(IData, rotation_angle) },
+        { 8, 1, vk::Format::eR32G32B32Sfloat, offsetof(IData, color) }
     });
     pipeline_state.add_scissor(scissor);
     pipeline_state.add_viewport(viewport);
@@ -397,9 +465,9 @@ void Application::updateUniformBuffer(size_t index)
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
+    auto model = glm::mat4(1.0f); //glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
     auto view = glm::lookAt(glm::vec3(450, 0, 450), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
-    auto proj = glm::perspective(glm::radians(45.0f), mSwapChain->aspectRatio(), 0.1f, 1000.0f);
+    auto proj = glm::perspective(glm::radians(45.0f), mSwapChain->aspectRatio(), 0.1f, 2000.0f);
 
     UniformBufferObject ubo {
         .view_projection = proj * view,

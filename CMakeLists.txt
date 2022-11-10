@@ -69,7 +69,12 @@ add_executable(${PROJECT_NAME}
         Source/Core/Vulkan/DepthBuffer.cpp Source/Core/Vulkan/DepthBuffer.hpp
         Source/Core/Vulkan/Buffer/InstanceBuffer.cpp Source/Core/Vulkan/Buffer/InstanceBuffer.hpp
 
-        Source/Core/Scene/Mesh.hpp Source/Core/Scene/Mesh.cpp Source/Core/Scene/IData.hpp)
+        Source/Core/Scene/Mesh.hpp Source/Core/Scene/Mesh.cpp
+        Source/Core/Scene/IData.hpp
+
+        Source/Core/Vulkan/Raytracing/AccelerationStructure.cpp
+        Source/Core/Vulkan/Raytracing/AccelerationStructure.hpp
+        Source/Core/Vulkan/Raytracing/RtMesh.hpp Source/Core/Math.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)

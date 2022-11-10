@@ -5,7 +5,7 @@
 #include "../Buffer/Buffer.hpp"
 #include "../Command/CommandBuffers.hpp"
 
-struct Mesh;
+struct RtMesh;
 
 struct BlasInfo
 {
@@ -13,7 +13,7 @@ struct BlasInfo
     std::unique_ptr<Buffer>      buffer;
     vk::DeviceAddress            blas_address {0};
 
-    static BlasInfo create_blas(const Mesh& mesh, const CommandBuffers& command_buffers, vk::DispatchLoaderDynamic dispatch);
+    static BlasInfo create_blas(const RtMesh& mesh, const CommandBuffers& command_buffers, vk::DispatchLoaderDynamic dispatch);
 };
 
 struct TlasInfo

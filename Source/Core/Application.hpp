@@ -102,12 +102,6 @@ private:
     std::unique_ptr<DepthBuffer>     mDepthBuffer;
     std::unique_ptr<CommandBuffers>  mCommandBuffers;
 
-#pragma region ray_tracing
-
-
-
-#pragma endregion
-
 #pragma region render_test
     std::unique_ptr<class RenderPass> mRenderPass;
 
