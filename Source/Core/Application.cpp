@@ -29,7 +29,7 @@ Application::Application(const ApplicationSettings& app_settings)
 {
 #if defined(__APPLE__)
     // Yeah, we're not going to do this any time soon.
-    mSettings.raytracing = false
+    mSettings.raytracing = false;
 #endif
 
     mWindow   = std::make_unique<Window>(app_settings.windowSettings);
@@ -379,6 +379,14 @@ void Application::selectDevice()
 {
     const auto& devices = mInstance->physicalDevices();
     auto result = devices[0];
+
+    if (mSettings.logging)
+    {
+        Application::printDevices();
+        auto props = result.getProperties();
+        std::cout << "Selected device: " << props.deviceName << std::endl;
+    }
+
     mDevice = std::make_unique<Device>(*mSurface, result, mDefaultExtensions);
 }
 
