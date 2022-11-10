@@ -6,5 +6,7 @@ struct ApplicationSettings
 {
     bool logging = false;
 
+    bool raytracing = true;
+
     WindowSettings windowSettings = {};
 };

@@ -4,6 +4,7 @@
 int main() {
     ApplicationSettings settings = {
         .logging = true,
+        .raytracing = true,
         .windowSettings = {}
     };
 

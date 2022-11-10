@@ -1,11 +1,11 @@
 #include "AccelerationStructure.hpp"
 
-#include "Mesh.hpp"
+#include "RtMesh.hpp"
 #include "../Buffer/IndexBuffer.hpp"
 #include "../Buffer/VertexBuffer.hpp"
 #include "../../Resources/Vertex.hpp"
 
-BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffers& command_buffers, vk::DispatchLoaderDynamic dispatch)
+BlasInfo BlasInfo::create_blas(const RtMesh& mesh, const CommandBuffers& command_buffers, vk::DispatchLoaderDynamic dispatch)
 {
     vk::Device device = mesh.vertex_buffer->device().handle();
 
@@ -85,4 +85,73 @@ BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffers& command_b
     command_buffers.end_single_time(command_buffer);
 
     return blas;
+}
+
+TlasInfo TlasInfo::create_tlas(uint32_t instance_count,
+                               vk::DeviceAddress instance_address,
+                               vk::DispatchLoaderDynamic dispatch,
+                               const Device& device,
+                               const CommandBuffers& command_buffers)
+{
+    vk::Device d = device.handle();
+
+    vk::AccelerationStructureGeometryInstancesDataKHR geometry_instances;
+    geometry_instances.setArrayOfPointers(false);
+    geometry_instances.setData(instance_address);
+
+    vk::AccelerationStructureGeometryKHR geometry;
+    geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+    geometry.setGeometry(geometry_instances);
+
+    vk::AccelerationStructureBuildGeometryInfoKHR build_info;
+    build_info.setType(vk::AccelerationStructureTypeKHR::eTopLevel);
+    build_info.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+    build_info.setMode(vk::BuildAccelerationStructureModeKHR::eBuild);
+    build_info.setGeometryCount(1);
+    build_info.setPGeometries(&geometry);
+
+    vk::AccelerationStructureBuildSizesInfoKHR build_sizes;
+    d.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
+                                            &build_info,
+                                            &instance_count,
+                                            &build_sizes,
+                                            dispatch);
+
+    TlasInfo tlas;
+    tlas.buffer = std::make_unique<Buffer>(build_sizes.accelerationStructureSize,
+                                           vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+                                           | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                           vk::MemoryPropertyFlagBits::eHostVisible
+                                           | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                           device);
+
+    vk::AccelerationStructureCreateInfoKHR create_info;
+    create_info.setBuffer(tlas.buffer->handle());
+    create_info.setOffset(0);
+    create_info.setSize(build_sizes.accelerationStructureSize);
+    create_info.setType(vk::AccelerationStructureTypeKHR::eTopLevel);
+    auto r = d.createAccelerationStructureKHR(&create_info, nullptr, &tlas.tlas, dispatch);
+
+    tlas.scratch_buffer = std::make_unique<Buffer>(build_sizes.buildScratchSize,
+                                                   vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                                   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                                   device,
+                                                   dispatch);
+
+    build_info.setDstAccelerationStructure(tlas.tlas);
+    build_info.setScratchData(tlas.scratch_buffer->address());
+
+    vk::AccelerationStructureBuildRangeInfoKHR build_range_info;
+    build_range_info.setPrimitiveCount(instance_count);
+    const vk::AccelerationStructureBuildRangeInfoKHR* p_build_range_infos[1] = { &build_range_info };
+
+    auto command_buffer = command_buffers.begin_single_time();
+    command_buffer.buildAccelerationStructuresKHR(1,
+                                                  &build_info,
+                                                  p_build_range_infos,
+                                                  dispatch);
+
+    command_buffers.end_single_time(command_buffer);
+
+    return tlas;
 }
