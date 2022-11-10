@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "../Device.hpp"
 #include "../Buffer/Buffer.hpp"
 #include "../Command/CommandBuffers.hpp"
 
