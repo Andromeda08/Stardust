@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include "Macro.hpp"
 #include "Resources/Geometry.hpp"
@@ -17,6 +16,7 @@
 #include "Vulkan/Descriptor/DescriptorSets.hpp"
 #include "Vulkan/Synchronization/Fence.hpp"
 #include "Vulkan/Synchronization/Semaphore.hpp"
+#include "Scene/Mesh.hpp"
 
 class Application {
 public:
@@ -59,12 +59,6 @@ private:
     void createSwapChain();
 
     /**
-     * @brief Initialize VMA object
-     * Requires the Instance and Device to exist
-     */
-    void createVMA();
-
-    /**
      * @brief Creates the raster Graphics Pipeline
      */
     void createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source);
@@ -79,19 +73,18 @@ private:
      */
     void cleanup();
 
-    #pragma region print_utilities
+#pragma region print_utilities
 
     /**
      * @brief Prints the list of detected physical devices.
      */
     void printDevices();
 
-    #pragma endregion
+#pragma endregion
 
 private:
     ApplicationSettings mSettings {};
 
-    VmaAllocator             mAllocator;
     VkDebugUtilsMessengerEXT mDebugMessenger;
 
     std::unique_ptr<class Window>    mWindow;
@@ -105,7 +98,9 @@ private:
 #pragma region render_test
     std::unique_ptr<class RenderPass> mRenderPass;
 
-    std::vector<InstanceData> mInstanceData;
+    std::unique_ptr<Mesh> mTestMesh;
+
+    std::vector<IData> mInstanceData;
     std::unique_ptr<Geometry> mGeometry;
 
     std::unique_ptr<VertexBuffer>               mVertexBuffer;
@@ -128,6 +123,7 @@ private:
 
     std::vector<const char*> mDefaultExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        "VK_KHR_portability_subset"
     };
 
     // Device extensions with ray tracing in mind
