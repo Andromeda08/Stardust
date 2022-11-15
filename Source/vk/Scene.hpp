@@ -43,7 +43,7 @@ namespace re
                 });
             }
 
-            m_objects.push_back(std::make_unique<InstancedGeometry>(new SphereGeometry(2.0f), m_instance_data, m_command_buffers));
+            m_objects.push_back(std::make_unique<InstancedGeometry>(new CubeGeometry(2.0f), m_instance_data, m_command_buffers));
         }
 
         virtual void draw(size_t current_frame, vk::CommandBuffer cmd) const
