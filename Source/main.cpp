@@ -1,5 +1,5 @@
 #include <memory>
-#include "Core/Application.hpp"
+#include "Application.hpp"
 
 int main() {
     ApplicationSettings settings = {
