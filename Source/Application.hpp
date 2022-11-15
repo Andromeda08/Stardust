@@ -2,21 +2,22 @@
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
-#include "Macro.hpp"
 #include "Resources/Geometry.hpp"
 #include "Struct/ApplicationSettings.hpp"
+#include "Utility/Macro.hpp"
 #include "Vulkan/DebugMessenger.hpp"
 #include "Vulkan/DepthBuffer.hpp"
 #include "Vulkan/Swapchain.hpp"
-#include "Vulkan/Buffer/IndexBuffer.hpp"
-#include "Vulkan/Buffer/InstanceBuffer.hpp"
-#include "Vulkan/Buffer/UniformBuffer.hpp"
-#include "Vulkan/Buffer/VertexBuffer.hpp"
-#include "Vulkan/Command/CommandBuffers.hpp"
+#include "Vulkan/Command/CommandBuffer.hpp"
 #include "Vulkan/Descriptor/DescriptorSets.hpp"
+#include "Vulkan/Raytracing/AccelerationStructure.hpp"
 #include "Vulkan/Synchronization/Fence.hpp"
 #include "Vulkan/Synchronization/Semaphore.hpp"
-#include "Scene/Mesh.hpp"
+
+#include <vk/Buffer.hpp>
+#include <vk/Sampler.hpp>
+#include <vk/Scene.hpp>
+#include <vk/Texture.hpp>
 
 class Application {
 public:
@@ -51,6 +52,9 @@ private:
      */
     void selectRayTracingDevice();
 
+    /**
+     * @brief Selects the first discrete GPU it finds for rendering.
+     */
     void selectDevice();
 
     /**
@@ -61,7 +65,7 @@ private:
     /**
      * @brief Creates the raster Graphics Pipeline
      */
-    void createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source);
+    vk::Pipeline createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source);
 
     /**
      * @brief Updates the specified uniform buffer.
@@ -93,23 +97,21 @@ private:
     std::unique_ptr<class Device>    mDevice;
     std::unique_ptr<Swapchain>       mSwapChain;
     std::unique_ptr<DepthBuffer>     mDepthBuffer;
-    std::unique_ptr<CommandBuffers>  mCommandBuffers;
+    std::unique_ptr<CommandBuffer>   mCommandBuffers;
 
 #pragma region render_test
+
+    std::unique_ptr<re::Scene> mReScene;
+
     std::unique_ptr<class RenderPass> mRenderPass;
-
-    std::unique_ptr<Mesh> mTestMesh;
-
-    std::vector<IData> mInstanceData;
-    std::unique_ptr<Geometry> mGeometry;
-
-    std::unique_ptr<VertexBuffer>               mVertexBuffer;
-    std::unique_ptr<IndexBuffer>                mIndexBuffer;
-    std::unique_ptr<InstanceBuffer>             mInstanceBuffer;
-    std::vector<std::unique_ptr<UniformBuffer>> mUniformBuffers;
 
     vk::DescriptorSetLayout         mDescriptorSetLayout;
     std::unique_ptr<DescriptorSets> mDescriptorSets;
+
+    std::unique_ptr<re::Sampler> mSampler2D;
+    std::unique_ptr<re::Texture> mTexture2D;
+
+    std::vector<std::unique_ptr<re::UniformBuffer<re::UniformData>>> mUniformBuffers;
 
     vk::PipelineLayout mPipelineLayout;
     vk::Pipeline       mGraphicsPipeline;
