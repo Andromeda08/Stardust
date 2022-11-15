@@ -2,8 +2,9 @@
 
 layout (set = 0, binding = 0) uniform UniformBufferObject
 {
-    mat4 view_projection;
-    mat4 model;
+    mat4  view_projection;
+    mat4  model;
+    float time;
 } ubo;
 
 layout (location = 0) in vec3 inPosition;
@@ -49,7 +50,7 @@ void main() {
     gl_Position = ubo.view_projection * model * vec4(pos, 1.0);
 
     fragPos = (model * vec4(inPosition.x, -inPosition.y, inPosition.z, 1.0)).xyz;
-    fragColor = instanceColor;
+    fragColor = instanceColor * sin(2.0 * ubo.time);
     fragNormal = inNormal;
     fragUV = inUV;
 }
