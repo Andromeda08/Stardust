@@ -10,7 +10,6 @@
 #include "Vulkan/Swapchain.hpp"
 #include "Vulkan/Command/CommandBuffer.hpp"
 #include "Vulkan/Descriptor/DescriptorSets.hpp"
-#include "Vulkan/Raytracing/AccelerationStructure.hpp"
 #include "Vulkan/Synchronization/Fence.hpp"
 #include "Vulkan/Synchronization/Semaphore.hpp"
 
@@ -100,7 +99,6 @@ private:
     std::unique_ptr<CommandBuffer>   mCommandBuffers;
 
 #pragma region render_test
-
     std::unique_ptr<re::Scene> mReScene;
 
     std::unique_ptr<class RenderPass> mRenderPass;

@@ -1,6 +1,4 @@
 #include "Application.hpp"
-
-#include <algorithm>
 #include <array>
 #include <chrono>
 #include <iostream>
@@ -8,7 +6,6 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include "Window.hpp"
 #include "Vulkan/Device.hpp"
 #include "Vulkan/Instance.hpp"
@@ -18,7 +15,6 @@
 #include "Vulkan/GraphicsPipeline/RenderPass.hpp"
 #include "Vulkan/GraphicsPipeline/ShaderModule.hpp"
 #include "Vulkan/Descriptor/DescriptorSetLayout.hpp"
-#include "Vulkan/Raytracing/RtMesh.hpp"
 
 constexpr uint32_t g_instance_count = 8128;
 
