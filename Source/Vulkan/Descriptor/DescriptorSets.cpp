@@ -38,8 +38,6 @@ void DescriptorSets::update_descriptor_set(uint32_t index,
                                            uint32_t binding,
                                            const vk::DescriptorBufferInfo& buffer_info)
 {
-    std::vector<vk::WriteDescriptorSet> writes;
-
     vk::WriteDescriptorSet write;
     write.setDstBinding(binding);
     write.setDstSet(m_sets[index]);
@@ -47,8 +45,19 @@ void DescriptorSets::update_descriptor_set(uint32_t index,
     write.setDescriptorType(m_bindings[binding].descriptorType);
     write.setPBufferInfo(&buffer_info);
     write.setDstArrayElement(0);
-    write.setPNext(nullptr);
-    writes.push_back(write);
+    m_device.handle().updateDescriptorSets(1, &write, 0, nullptr);
+}
 
-    m_device.handle().updateDescriptorSets(static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+void DescriptorSets::update_descriptor_set(uint32_t index,
+                                           uint32_t binding,
+                                           const vk::DescriptorImageInfo& image_info)
+{
+    vk::WriteDescriptorSet write;
+    write.setDstBinding(binding);
+    write.setDstSet(m_sets[index]);
+    write.setDescriptorCount(1);
+    write.setDescriptorType(m_bindings[binding].descriptorType);
+    write.setPImageInfo(&image_info);
+    write.setDstArrayElement(0);
+    m_device.handle().updateDescriptorSets(1, &write, 0, nullptr);
 }
