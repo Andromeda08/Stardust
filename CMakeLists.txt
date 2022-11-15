@@ -25,57 +25,62 @@ add_subdirectory(ThirdParty/glm)
 
 # Create executable
 add_executable(${PROJECT_NAME}
+        ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
         Source/main.cpp
         # Utilities
-        Source/Core/Macro.hpp
-        Source/Core/Vulkan/DebugMessenger.hpp
+        Source/Utility/Macro.hpp
+        Source/Utility/Math.hpp
+        Source/Vulkan/DebugMessenger.hpp
         # Application
-        Source/Core/Struct/ApplicationSettings.hpp
-        Source/Core/Application.cpp Source/Core/Application.hpp
+        Source/Struct/ApplicationSettings.hpp
+        Source/Application.cpp Source/Application.hpp
         # Resources
-        Source/Core/Resources/Geometry.hpp
-        Source/Core/Resources/UniformBufferObject.hpp
-        Source/Core/Resources/Vertex.hpp
+        Source/Resources/Geometry.hpp
+        Source/Resources/UniformBufferObject.hpp
+        Source/Resources/Vertex.hpp
         # GLFW Window
-        Source/Core/Window.cpp Source/Core/Window.cpp
-        Source/Core/Struct/WindowSettings.hpp
+        Source/Window.cpp Source/Window.cpp
+        Source/Struct/WindowSettings.hpp
         # Vulkan Instance and Logical device
-        Source/Core/Vulkan/Instance.cpp Source/Core/Vulkan/Instance.hpp
-        Source/Core/Vulkan/Device.cpp Source/Core/Vulkan/Device.hpp
+        Source/Vulkan/Instance.cpp Source/Vulkan/Instance.hpp
+        Source/Vulkan/Device.cpp Source/Vulkan/Device.hpp
         # Images
-        Source/Core/Vulkan/Image/ImageView.cpp Source/Core/Vulkan/Image/ImageView.hpp
-        Source/Core/Vulkan/Image/Image.cpp Source/Core/Vulkan/Image/Image.hpp
+        Source/Vulkan/Image/ImageView.cpp Source/Vulkan/Image/ImageView.hpp
+        Source/Vulkan/Image/Image.cpp Source/Vulkan/Image/Image.hpp
         # Presentation
-        Source/Core/Vulkan/Surface.cpp Source/Core/Vulkan/Surface.hpp
-        Source/Core/Vulkan/Swapchain.cpp Source/Core/Vulkan/Swapchain.hpp
+        Source/Vulkan/Surface.cpp Source/Vulkan/Surface.hpp
+        Source/Vulkan/Swapchain.cpp Source/Vulkan/Swapchain.hpp
         # Synchronization objects
-        Source/Core/Vulkan/Synchronization/Semaphore.cpp Source/Core/Vulkan/Synchronization/Semaphore.hpp
-        Source/Core/Vulkan/Synchronization/Fence.cpp Source/Core/Vulkan/Synchronization/Fence.hpp
+        Source/Vulkan/Synchronization/Semaphore.cpp Source/Vulkan/Synchronization/Semaphore.hpp
+        Source/Vulkan/Synchronization/Fence.cpp Source/Vulkan/Synchronization/Fence.hpp
         # Commands
-        Source/Core/Vulkan/Command/CommandPool.cpp Source/Core/Vulkan/Command/CommandPool.hpp
-        Source/Core/Vulkan/Command/CommandBuffers.cpp Source/Core/Vulkan/Command/CommandBuffers.hpp
-        # Buffers
-        Source/Core/Vulkan/Buffer/Buffer.cpp Source/Core/Vulkan/Buffer/Buffer.hpp
-        Source/Core/Vulkan/Buffer/VertexBuffer.cpp Source/Core/Vulkan/Buffer/VertexBuffer.hpp
-        Source/Core/Vulkan/Buffer/IndexBuffer.cpp Source/Core/Vulkan/Buffer/IndexBuffer.hpp
-        Source/Core/Vulkan/Buffer/UniformBuffer.cpp Source/Core/Vulkan/Buffer/UniformBuffer.hpp
+        Source/Vulkan/Command/CommandPool.cpp Source/Vulkan/Command/CommandPool.hpp
+        Source/Vulkan/Command/CommandBuffers.cpp Source/Vulkan/Command/CommandBuffer.hpp
         # Descriptors
-        Source/Core/Vulkan/Descriptor/DescriptorSets.cpp Source/Core/Vulkan/Descriptor/DescriptorSets.hpp
+        Source/Vulkan/Descriptor/DescriptorSets.cpp Source/Vulkan/Descriptor/DescriptorSets.hpp
+        Source/Vulkan/Descriptor/DescriptorSetLayout.hpp Source/Vulkan/Descriptor/DescriptorSetLayout.cpp
         # Graphics Pipeline
-        Source/Core/Vulkan/GraphicsPipeline/ShaderModule.cpp Source/Core/Vulkan/GraphicsPipeline/ShaderModule.hpp
-        Source/Core/Vulkan/GraphicsPipeline/RenderPass.cpp Source/Core/Vulkan/GraphicsPipeline/RenderPass.hpp
-        Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.cpp Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp
-        Source/Core/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp
-        Source/Core/Vulkan/DepthBuffer.cpp Source/Core/Vulkan/DepthBuffer.hpp
-        Source/Core/Vulkan/Buffer/InstanceBuffer.cpp Source/Core/Vulkan/Buffer/InstanceBuffer.hpp
+        Source/Vulkan/GraphicsPipeline/ShaderModule.cpp Source/Vulkan/GraphicsPipeline/ShaderModule.hpp
+        Source/Vulkan/GraphicsPipeline/RenderPass.cpp Source/Vulkan/GraphicsPipeline/RenderPass.hpp
+        Source/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.cpp Source/Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp
+        Source/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp
+        Source/Vulkan/DepthBuffer.cpp Source/Vulkan/DepthBuffer.hpp
 
-        Source/Core/Scene/Mesh.hpp Source/Core/Scene/Mesh.cpp
-        Source/Core/Scene/IData.hpp
-
-        Source/Core/Vulkan/Raytracing/AccelerationStructure.cpp
-        Source/Core/Vulkan/Raytracing/AccelerationStructure.hpp
-        Source/Core/Vulkan/Raytracing/RtMesh.hpp Source/Core/Math.hpp)
+        Source/vk/Buffer.hpp
+        Source/vk/VertexData.hpp
+        Source/vk/UniformData.hpp
+        Source/vk/InstanceData.hpp
+        Source/vk/InstancedGeometry.hpp
+        Source/vk/Mesh.hpp
+        Source/vk/Scene.hpp
+        Source/vk/Texture.hpp
+        Source/vk/Image.hpp
+        Source/vk/Sampler.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC
+        ${Vulkan_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ThirdParty/spv-reflect
+        ThirdParty/stb)
