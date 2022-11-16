@@ -88,7 +88,7 @@ Application::Application(const ApplicationSettings& app_settings)
     mReScene = std::make_unique<re::Scene>(*mCommandBuffers);
 
 #pragma region raytracing_setup
-#if defined(__APPLE__)
+#if !defined(__APPLE__)
     if (mSettings.raytracing)
     {
         auto rt_start = std::chrono::high_resolution_clock::now();
@@ -402,7 +402,7 @@ inline T round_up(T k, T alignment) {
     return (k + alignment - 1) & ~(alignment - 1);
 }
 
-#if defined(__APPLE__)
+#if !defined(__APPLE__)
 void Application::createRayTracingScene()
 {
     vk::Result result;

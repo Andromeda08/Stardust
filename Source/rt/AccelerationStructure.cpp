@@ -1,22 +1,19 @@
 #include "AccelerationStructure.hpp"
 
-#include "../Buffer/IndexBuffer.hpp"
-#include "../Buffer/VertexBuffer.hpp"
-#include "../../Resources/Vertex.hpp"
-#include "../../Scene/Mesh.hpp"
-
-BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffer& command_buffers, vk::DispatchLoaderDynamic dispatch)
+BlasInfo BlasInfo::create_blas(const re::Mesh& mesh, const CommandBuffer& command_buffers)
 {
-    vk::Device device = mesh.m_vertex_buffer->device().handle();
+    auto& d = command_buffers.device();
+    auto device = command_buffers.device().handle();
+    auto dispatch = command_buffers.device().dispatch();
 
     // Setup geometry data using the vertex and index buffers of the input Mesh
     vk::AccelerationStructureGeometryTrianglesDataKHR triangle_data;
     triangle_data.setVertexFormat(vk::Format::eR32G32B32Sfloat);
-    triangle_data.setVertexData(mesh.m_vertex_buffer->address());
-    triangle_data.setVertexStride(sizeof(Vertex));
-    triangle_data.setMaxVertex(mesh.m_vertex_buffer->vertex_count());
-    triangle_data.setIndexType(vk::IndexType::eUint32);
-    triangle_data.setIndexData(mesh.m_index_buffer->address());
+    triangle_data.setVertexData(mesh.vertex_buffer().address());
+    triangle_data.setVertexStride(sizeof(re::VertexData));
+    triangle_data.setMaxVertex(mesh.vertex_buffer().count());
+    triangle_data.setIndexType(mesh.index_buffer().type());
+    triangle_data.setIndexData(mesh.index_buffer().address());
 
     vk::AccelerationStructureGeometryKHR geometry;
     // Build triangle geometry on blas
@@ -33,7 +30,7 @@ BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffer& command_bu
     build_info.setGeometryCount(1);
     build_info.setPGeometries(&geometry);
 
-    const uint32_t triangle_count = mesh.m_index_buffer->index_count() / 3;
+    const uint32_t triangle_count = mesh.index_buffer().count() / 3;
     device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
                                                   &build_info,
                                                   &triangle_count,
@@ -41,15 +38,15 @@ BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffer& command_bu
                                                   dispatch);
 
     BlasInfo blas;
-    blas.buffer = std::make_unique<Buffer>(build_sizes.accelerationStructureSize,
-                                           vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                                           vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                                           mesh.m_vertex_buffer->device());
+    blas.buffer = std::make_unique<re::Buffer>(build_sizes.accelerationStructureSize,
+                                            vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                            command_buffers);
 
     // Create acceleration structure
     vk::AccelerationStructureCreateInfoKHR create_info;
     create_info.setType(vk::AccelerationStructureTypeKHR::eBottomLevel);
-    create_info.setBuffer(blas.buffer->handle());
+    create_info.setBuffer(blas.buffer->buffer());
     create_info.setOffset(0);
     create_info.setSize(build_sizes.accelerationStructureSize);
     auto result = device.createAccelerationStructureKHR(&create_info,
@@ -63,17 +60,16 @@ BlasInfo BlasInfo::create_blas(const Mesh& mesh, const CommandBuffer& command_bu
     blas.blas_address = device.getAccelerationStructureAddressKHR(&device_address_info, dispatch);
 
     // Build BLAS
-    auto scratch_buffer = std::make_unique<Buffer>(build_sizes.buildScratchSize,
-                                                   vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                                                   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                   mesh.m_vertex_buffer->device(),
-                                                   dispatch);
+    auto scratch_buffer = std::make_unique<re::Buffer>(build_sizes.buildScratchSize,
+                                                       vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                                       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                                       command_buffers);
 
     build_info.setDstAccelerationStructure(blas.blas);
     build_info.setScratchData(scratch_buffer->address());
 
     vk::AccelerationStructureBuildRangeInfoKHR build_range_info;
-    build_range_info.setPrimitiveCount(mesh.m_index_buffer->index_count() / 3);
+    build_range_info.setPrimitiveCount(mesh.index_buffer().count() / 3);
     const vk::AccelerationStructureBuildRangeInfoKHR* p_build_range_infos[1] = { &build_range_info };
 
     auto command_buffer = command_buffers.begin_single_time();
@@ -119,25 +115,22 @@ TlasInfo TlasInfo::create_tlas(uint32_t instance_count,
                                             dispatch);
 
     TlasInfo tlas;
-    tlas.buffer = std::make_unique<Buffer>(build_sizes.accelerationStructureSize,
-                                           vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
-                                           | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                                           vk::MemoryPropertyFlagBits::eHostVisible
-                                           | vk::MemoryPropertyFlagBits::eHostCoherent,
-                                           device);
+    tlas.buffer = std::make_unique<re::Buffer>(build_sizes.accelerationStructureSize,
+                                               vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                               vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                               command_buffers);
 
     vk::AccelerationStructureCreateInfoKHR create_info;
-    create_info.setBuffer(tlas.buffer->handle());
+    create_info.setBuffer(tlas.buffer->buffer());
     create_info.setOffset(0);
     create_info.setSize(build_sizes.accelerationStructureSize);
     create_info.setType(vk::AccelerationStructureTypeKHR::eTopLevel);
     auto r = dh.createAccelerationStructureKHR(&create_info, nullptr, &tlas.tlas, dispatch);
 
-    tlas.scratch_buffer = std::make_unique<Buffer>(build_sizes.buildScratchSize,
+    tlas.scratch_buffer = std::make_unique<re::Buffer>(build_sizes.buildScratchSize,
                                                    vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
                                                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                   device,
-                                                   dispatch);
+                                                   command_buffers);
 
     build_info.setDstAccelerationStructure(tlas.tlas);
     build_info.setScratchData(tlas.scratch_buffer->address());

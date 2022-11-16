@@ -45,6 +45,13 @@ namespace re
 
         const vk::Buffer& buffer() const { return m_buffer; }
 
+        vk::DeviceAddress address() const
+        {
+            vk::BufferDeviceAddressInfo addr_info;
+            addr_info.setBuffer(m_buffer);
+            return m_device.handle().getBufferAddress(&addr_info, m_device.dispatch());
+        }
+
         /**
          * @brief Copies specified data to target buffer.
          */

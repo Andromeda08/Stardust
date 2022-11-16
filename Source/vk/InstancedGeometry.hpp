@@ -43,6 +43,12 @@ namespace re
             cmd.drawIndexed(m_mesh->index_buffer().count(), m_instance_data.size(), 0, 0, 0);
         }
 
+        const Mesh& mesh() const { return m_mesh; }
+
+        const std::vector<InstanceData>& instance_data() const { return m_instance_data; }
+
+        uint32_t instance_count() const { return m_instance_data.size(); }
+
     private:
         std::unique_ptr<Mesh>                         m_mesh;
         std::unique_ptr<InstanceBuffer<InstanceData>> m_instance_buffer;

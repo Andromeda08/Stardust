@@ -17,11 +17,15 @@ Device::Device(const Instance& instance,
     // Find queues
     const auto queueFamilies   = mPhysicalDevice.getQueueFamilyProperties();
     const auto graphicsFamily = findQueue(queueFamilies, vk::QueueFlagBits::eGraphics, {});
+#if !defined(__APPLE__)
     const auto computeFamily  = findQueue(queueFamilies, vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
+#endif
 
     // Get index using iterator dark magic
     mGraphicsFamilyIdx = static_cast<uint32_t>(graphicsFamily - std::begin(queueFamilies));
+#if !defined(__APPLE__)
     mComputeFamilyIdx  = static_cast<uint32_t>(computeFamily  - std::begin(queueFamilies));
+#endif
 
     // Get present family index
     uint32_t presentIndex = 0;
@@ -33,7 +37,11 @@ Device::Device(const Instance& instance,
     }
 
     // => set of unique queues
-    const std::set<uint32_t> uniqueQueueFamilies = { mGraphicsFamilyIdx, mComputeFamilyIdx, mPresentFamilyIdx };
+    const std::set<uint32_t> uniqueQueueFamilies = { mGraphicsFamilyIdx, mPresentFamilyIdx };
+
+#if !defined(__APPLE__)
+    uniqueQueueFamilies.push_back(mComputeFamilyIdx);
+#endif
 
     // Create queues
     float queuePriority = 1.0f;
@@ -92,7 +100,10 @@ Device::Device(const Instance& instance,
 
     mDevice.getQueue(mGraphicsFamilyIdx, 0, &mGraphicsQueue);
     mDevice.getQueue(mPresentFamilyIdx, 0, &mPresentQueue);
+
+#if !defined(__APPLE__)
     mDevice.getQueue(mComputeFamilyIdx, 0, &mComputeQueue);
+#endif
 
     vk::DynamicLoader dl;
     auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");

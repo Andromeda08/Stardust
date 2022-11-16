@@ -37,8 +37,10 @@ public:
     uint32_t  present_index() const { return mPresentFamilyIdx; }
     vk::Queue present_queue() const { return mPresentQueue; }
 
+#if !defined(__APPLE__)
     uint32_t  compute_index() const { return mComputeFamilyIdx; }
     vk::Queue compute_queue() const { return mComputeQueue; }
+#endif
 
     #pragma endregion
 
@@ -73,6 +75,8 @@ private:
     uint32_t  mPresentFamilyIdx {};
     vk::Queue mPresentQueue {};
 
+#if !defined(__APPLE__)
     uint32_t  mComputeFamilyIdx {};
     vk::Queue mComputeQueue {};
+#endif
 };
