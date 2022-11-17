@@ -93,5 +93,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         ThirdParty/stb)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${PYTHON} cshaders.py
+        COMMAND ${PYTHON} compile_shaders.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
