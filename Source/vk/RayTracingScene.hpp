@@ -41,12 +41,17 @@ namespace re
                 });
             }
 
-            m_objects = std::make_unique<InstancedGeometry>(new SphereGeometry(2.0f), m_instance_data, m_command_buffers);
+            m_objects = std::make_unique<InstancedGeometry>(new CubeGeometry(2.0f), m_instance_data, m_command_buffers);
         }
 
         void build_acceleration_structures()
         {
             m_accelerator = RtAccelerator::create_accelerator(*m_objects, m_command_buffers);
+        }
+
+        void draw(vk::CommandBuffer cmd)
+        {
+            m_objects->draw_instanced(cmd);
         }
 
         void trace_rays(vk::CommandBuffer cmd)

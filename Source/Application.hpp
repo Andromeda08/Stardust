@@ -14,6 +14,7 @@
 #include "Vulkan/Synchronization/Semaphore.hpp"
 
 #include <vk/Buffer.hpp>
+#include <vk/RayTracingScene.hpp>
 #include <vk/Sampler.hpp>
 #include <vk/Scene.hpp>
 #include <vk/Texture.hpp>
@@ -99,7 +100,7 @@ private:
     std::unique_ptr<CommandBuffer>   mCommandBuffers;
 
 #pragma region render_test
-    std::unique_ptr<re::Scene> mReScene;
+    std::unique_ptr<re::RayTracingScene> mReScene;
 
     std::unique_ptr<class RenderPass> mRenderPass;
 

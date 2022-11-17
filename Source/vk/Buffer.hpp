@@ -47,9 +47,7 @@ namespace re
 
         vk::DeviceAddress address() const
         {
-            vk::BufferDeviceAddressInfo addr_info;
-            addr_info.setBuffer(m_buffer);
-            return m_device.handle().getBufferAddress(&addr_info, m_device.dispatch());
+            return m_device.handle().getBufferAddress(m_buffer);
         }
 
         /**

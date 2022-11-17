@@ -78,7 +78,8 @@ add_executable(${PROJECT_NAME}
         Source/vk/Sampler.hpp
         Source/vk/RayTracingScene.hpp
 
-        Source/rt/AccelerationStructure.cpp Source/rt/AccelerationStructure.hpp
+        Source/rt/AccelerationStructure.cpp
+        Source/rt/AccelerationStructure.hpp
         Source/rt/RtAccelerator.hpp)
 
 # Link to libraries and add include directories

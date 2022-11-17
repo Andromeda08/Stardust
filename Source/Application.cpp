@@ -16,8 +16,6 @@
 #include "Vulkan/GraphicsPipeline/ShaderModule.hpp"
 #include "Vulkan/Descriptor/DescriptorSetLayout.hpp"
 
-constexpr uint32_t g_instance_count = 8128;
-
 Application::Application(const ApplicationSettings& app_settings)
 : mSettings(app_settings)
 , mCurrentFrame(0)
@@ -85,69 +83,7 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mGraphicsPipeline = createGraphicsPipeline("phong.vert.spv", "phong.frag.spv");
 
-    mReScene = std::make_unique<re::Scene>(*mCommandBuffers);
-
-#pragma region raytracing_setup
-#if !defined(__APPLE__)
-    if (mSettings.raytracing)
-    {
-        auto rt_start = std::chrono::high_resolution_clock::now();
-
-        auto sphere = std::make_unique<SphereGeometry>(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
-        auto test_blas = BlasInfo::create_blas(rt_mesh, *mCommandBuffers, mDevice->dispatch());
-
-        std::vector<vk::TransformMatrixKHR> transforms;
-        std::vector<vk::AccelerationStructureInstanceKHR> instances(g_instance_count / 2);
-
-        for (size_t i = 0; i < instances.size(); i++)
-        {
-            glm::mat4 m = glm::mat4(1.0f);
-            m = glm::scale(m, v[i].scale);
-            m = glm::translate(m, v[i].translate);
-
-            auto model = Math::model(v[i].translate, v[i].scale);
-
-            transforms.push_back(Math::glmToKhr(model));
-
-            instances[i].setInstanceCustomIndex(i);
-            instances[i].setTransform(transforms[i]);
-            instances[i].setMask(0xff);
-            instances[i].setInstanceShaderBindingTableRecordOffset(0);
-            instances[i].setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
-            instances[i].setAccelerationStructureReference(test_blas.buffer->address());
-        }
-
-        vk::DeviceSize ibsize = instances.size() * sizeof(vk::AccelerationStructureInstanceKHR);
-        auto staging = Buffer::make_staging_buffer(ibsize, *mDevice);
-
-        void *data;
-        vkMapMemory(mDevice->handle(), staging.memory(), 0, ibsize, 0, &data);
-        memcpy(data, instances.data(), (size_t) ibsize);
-        vkUnmapMemory(mDevice->handle(), staging.memory());
-
-        auto instance_buffer = std::make_unique<Buffer>(ibsize,
-                                                        vk::BufferUsageFlagBits::eTransferDst
-                                                        | vk::BufferUsageFlagBits::eShaderDeviceAddress
-                                                        | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
-                                                        vk::MemoryPropertyFlagBits::eDeviceLocal
-                                                        | vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                        *mDevice);
-
-        Buffer::copy_buffer(*mCommandBuffers, staging.handle(), instance_buffer->handle(), ibsize);
-
-
-        auto test_tlas = TlasInfo::create_tlas(instances.size(),
-                                               instance_buffer->address(),
-                                               *mCommandBuffers);
-
-        auto rt_end = std::chrono::high_resolution_clock::now();
-        auto duration = duration_cast<std::chrono::milliseconds>(rt_end - rt_start);
-        std::cout << "Acceleration Structure build time: " << duration.count() << "ms\n"
-            << "\tBottom Level : " << test_mesh.vertex_buffer->vertex_count() << " Vertices\n"
-            << "\tTop Level    : " << instances.size() << " Instances" << std::endl;
-    }
-#endif
-#pragma endregion
+    mReScene = std::make_unique<re::RayTracingScene>(*mCommandBuffers);
 }
 
 void Application::run()
@@ -211,7 +147,7 @@ void Application::draw()
                                   &mDescriptorSets->get_set(mCurrentFrame), 0, nullptr);
 
     updateUniformBuffer(mCurrentFrame);
-    mReScene->draw(mCurrentFrame, cmd_buffer);
+    mReScene->draw(cmd_buffer);
 
 #pragma endregion
 
@@ -402,7 +338,7 @@ inline T round_up(T k, T alignment) {
     return (k + alignment - 1) & ~(alignment - 1);
 }
 
-#if !defined(__APPLE__)
+#if defined(__APPLE__)
 void Application::createRayTracingScene()
 {
     vk::Result result;

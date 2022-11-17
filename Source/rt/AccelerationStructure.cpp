@@ -1,4 +1,5 @@
 #include "AccelerationStructure.hpp"
+#include <iostream>
 
 BlasInfo BlasInfo::create_blas(const re::Mesh& mesh, const CommandBuffer& command_buffers)
 {
@@ -87,8 +88,10 @@ TlasInfo TlasInfo::create_tlas(uint32_t instance_count,
                                vk::DeviceAddress instance_address,
                                const CommandBuffer& command_buffers)
 {
+    std::cout << "Instance address:" << instance_address << std::endl;
+
     auto& device = command_buffers.device();
-    auto& dispatch = command_buffers.device().dispatch();
+    auto dispatch = command_buffers.device().dispatch();
 
     vk::Device dh = device.handle();
 

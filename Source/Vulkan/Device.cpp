@@ -37,10 +37,10 @@ Device::Device(const Instance& instance,
     }
 
     // => set of unique queues
-    const std::set<uint32_t> uniqueQueueFamilies = { mGraphicsFamilyIdx, mPresentFamilyIdx };
+    std::set<uint32_t> uniqueQueueFamilies = { mGraphicsFamilyIdx, mPresentFamilyIdx };
 
 #if !defined(__APPLE__)
-    uniqueQueueFamilies.push_back(mComputeFamilyIdx);
+    uniqueQueueFamilies.insert(mComputeFamilyIdx);
 #endif
 
     // Create queues
