@@ -68,4 +68,27 @@ struct RtAccelerator
 
         return accelerator;
     }
+
+    void rebuild_top_level(vk::CommandBuffer cmd)
+    {
+        vk::AccelerationStructureGeometryInstancesDataKHR geometry_data;
+        geometry_data.setData(instance_buffer->address());
+        geometry_data.setArrayOfPointers(false);
+
+        vk::AccelerationStructureGeometryKHR geometry;
+        geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+        geometry.setGeometry(geometry_data);
+
+        vk::AccelerationStructureBuildGeometryInfoKHR build_info;
+        build_info.setType(vk::AccelerationStructureTypeKHR::eTopLevel);
+        build_info.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+        build_info.setMode(vk::BuildAccelerationStructureModeKHR::eBuild);
+        build_info.setDstAccelerationStructure(tlas.tlas);
+        build_info.setGeometryCount(1);
+        build_info.setPGeometries(&geometry);
+        build_info.setScratchData(tlas.scratch_buffer->address());
+
+        vk::AccelerationStructureBuildRangeInfoKHR bri;
+        bri.setPrimitiveCount(1);
+    }
 };

@@ -5,10 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 
 if (WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "-static")
+    set(PYTHON "py")
 endif()
 
 IF(APPLE)
     set(CMAKE_CXX_STANDARD 17)
+    set(PYTHON "python3")
 
     set(CMAKE_THREAD_LIBS_INIT "-lpthread")
     set(CMAKE_HAVE_THREADS_LIBRARY 1)
@@ -89,3 +91,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Source
         ThirdParty/spv-reflect
         ThirdParty/stb)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${PYTHON} cshaders.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})

@@ -25,9 +25,9 @@ void main() {
     float spec = pow(max(dot(normal, d_halfway), 0.0), 32.0);
     vec3 specular = vec3(0.3) * spec;
 
-    //outColor = vec4(ambient + diffuse + specular, 1);
+    outColor = vec4(ambient + diffuse + specular, 1);
 
-    vec3 lighting = vec3(ambient + diffuse + specular);
+    //vec3 lighting = vec3(ambient + diffuse + specular);
 
-    outColor = vec4(lighting * texture(texSampler, fragUV).rgb, 1.0);
+    //outColor = vec4(lighting * texture(texSampler, fragUV).rgb, 1.0);
 }

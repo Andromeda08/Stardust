@@ -1,5 +1,8 @@
 # CMake build directory
 /cmake-build-debug/
 
+# Shader binary directory
+Resources/Shaders/out
+
 # macOS
 .DS_Store

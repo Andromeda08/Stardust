@@ -83,7 +83,11 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mGraphicsPipeline = createGraphicsPipeline("phong.vert.spv", "phong.frag.spv");
 
-    mReScene = std::make_unique<re::RayTracingScene>(*mCommandBuffers);
+#if !defined(__APPLE__)
+    mReScene = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
+#else
+    mReScene = std::make_unique<re::Scene>(*mCommandBuffers);
+#endif
 }
 
 void Application::run()
@@ -117,6 +121,7 @@ void Application::draw()
 
     vk::CommandBufferBeginInfo begin_info;
     res = cmd_buffer.begin(&begin_info);
+
     vk::Rect2D render_area;
     render_area.setExtent(mSwapChain->extent());
     render_area.setOffset({0,0});
@@ -141,17 +146,21 @@ void Application::draw()
     cmd_buffer.setScissor(0, 1, &scissor);
 
 #pragma region render_items
-
     cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline);
     cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0, 1,
                                   &mDescriptorSets->get_set(mCurrentFrame), 0, nullptr);
 
     updateUniformBuffer(mCurrentFrame);
-    mReScene->draw(cmd_buffer);
+    mReScene->rasterize(cmd_buffer);
 
 #pragma endregion
 
     cmd_buffer.endRenderPass();
+
+#if !defined(__APPLE__)
+    mReScene->trace_rays(mCurrentFrame, cmd_buffer);
+#endif
+
     cmd_buffer.end();
 
     vk::Semaphore wait_semaphores[] = { mImageAvailableSemaphores[mCurrentFrame].handle() };
@@ -332,156 +341,6 @@ void Application::updateUniformBuffer(size_t index)
 
     mUniformBuffers[index]->update(ubo);
 }
-
-template <typename T>
-inline T round_up(T k, T alignment) {
-    return (k + alignment - 1) & ~(alignment - 1);
-}
-
-#if defined(__APPLE__)
-void Application::createRayTracingScene()
-{
-    vk::Result result;
-    vk::PhysicalDeviceProperties2 pdp;
-    pdp.pNext = &mRtProps;
-    mDevice->physicalDevice().getProperties2(&pdp, mDevice->dispatch());
-
-#pragma region create_mesh_and_instances
-    size_t instance_count = 16;
-    glm::vec2 pos { -50, 50 };
-    glm::vec2 scale { 1.0f, 5.0f };
-
-    Geometry* sphere = new SphereGeometry(1.0f, glm::vec3{0.5f, 0.5f, 0.5f}, 60);
-
-    std::default_random_engine rand(static_cast<unsigned>(time(nullptr)));
-    std::uniform_int_distribution<int>   pos_mod(pos.x, pos.y);
-    std::uniform_real_distribution<float> color_mod(0.0f, 1.0f);
-    std::uniform_real_distribution<float> scale_mod(scale.x, scale.y);
-
-    std::vector<IData> instance_data(instance_count);
-    for (size_t i = 0; i < instance_count; i++)
-    {
-        /*instance_data.push_back({
-            glm::vec3{ pos_mod(rand), pos_mod(rand), pos_mod(rand) },
-            glm::vec3{ scale_mod(rand) },
-            glm::vec3{ 1 },
-            0.0f,
-            glm::vec3{ color_mod(rand), color_mod(rand), color_mod(rand) }
-        });*/
-    }
-
-    mRtMesh = std::make_unique<Mesh>(sphere, instance_data, *mCommandBuffers);
-#pragma endregion
-
-    //mRtAccelerator = RtAccelerator::create_accelerator(*mRtMesh, *mCommandBuffers);
-
-    mRtDescriptorSetLayout = DescriptorSetLayout()
-        .storage_image(0, vk::ShaderStageFlagBits::eRaygenKHR)
-        .accelerator(1, vk::ShaderStageFlagBits::eRaygenKHR)
-        .uniform_buffer(2, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
-        .storage_buffer(3, vk::ShaderStageFlagBits::eClosestHitKHR)
-        .storage_buffer(4, vk::ShaderStageFlagBits::eClosestHitKHR)
-        .sampled_image(5, vk::ShaderStageFlagBits::eClosestHitKHR)
-        .sampler(6, vk::ShaderStageFlagBits::eClosestHitKHR)
-        .create(*mDevice);
-
-#pragma region create_rt_pipeline
-    std::vector<vk::PushConstantRange> push_constants = {
-        { vk::ShaderStageFlagBits::eRaygenKHR, 0, 4 },
-        { vk::ShaderStageFlagBits::eClosestHitKHR, 4, 4 }
-    };
-
-    vk::PipelineLayoutCreateInfo plci;
-    plci.setSetLayoutCount(1);
-    plci.setPSetLayouts(&mRtDescriptorSetLayout);
-    plci.setPushConstantRangeCount(push_constants.size());
-    plci.setPPushConstantRanges(push_constants.data());
-
-    result = mDevice->handle().createPipelineLayout(&plci, nullptr, &mRtPipelineLayout);
-
-    auto rgen_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eRaygenKHR,
-                                                      "rt.rgen.spv", *mDevice);
-    auto miss_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eMissKHR,
-                                                      "rt.rmiss.spv", *mDevice);
-    auto chit_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eClosestHitKHR,
-                                                      "rt.rchit.spv", *mDevice);
-
-    std::vector<vk::PipelineShaderStageCreateInfo> stage_infos(3);
-#pragma region shader_stage_infos
-    stage_infos[0].setStage(vk::ShaderStageFlagBits::eRaygenKHR);
-    stage_infos[0].setModule(rgen_shader->handle());
-    stage_infos[0].setPName("main");
-
-    stage_infos[1].setStage(vk::ShaderStageFlagBits::eMissKHR);
-    stage_infos[1].setModule(miss_shader->handle());
-    stage_infos[1].setPName("main");
-
-    stage_infos[2].setStage(vk::ShaderStageFlagBits::eClosestHitKHR);
-    stage_infos[2].setModule(chit_shader->handle());
-    stage_infos[2].setPName("main");
-#pragma endregion
-
-    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shader_groups(3);
-#pragma region shader_groups
-    shader_groups[0].setType(vk::RayTracingShaderGroupTypeKHR::eGeneral);
-    shader_groups[0].setGeneralShader(0);
-    shader_groups[0].setClosestHitShader(VK_SHADER_UNUSED_KHR);
-    shader_groups[0].setAnyHitShader(VK_SHADER_UNUSED_KHR);
-    shader_groups[0].setIntersectionShader(VK_SHADER_UNUSED_KHR);
-
-    shader_groups[1].setType(vk::RayTracingShaderGroupTypeKHR::eGeneral);
-    shader_groups[1].setGeneralShader(1);
-    shader_groups[1].setClosestHitShader(VK_SHADER_UNUSED_KHR);
-    shader_groups[1].setAnyHitShader(VK_SHADER_UNUSED_KHR);
-    shader_groups[1].setIntersectionShader(VK_SHADER_UNUSED_KHR);
-
-    shader_groups[2].setType(vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup);
-    shader_groups[2].setGeneralShader(VK_SHADER_UNUSED_KHR);
-    shader_groups[2].setClosestHitShader(VK_SHADER_UNUSED_KHR);
-    shader_groups[2].setAnyHitShader(2);
-    shader_groups[2].setIntersectionShader(VK_SHADER_UNUSED_KHR);
-#pragma endregion
-
-    vk::RayTracingPipelineCreateInfoKHR create_info;
-    create_info.setFlags(vk::PipelineCreateFlagBits::eRayTracingNoNullClosestHitShadersKHR |
-                         vk::PipelineCreateFlagBits::eRayTracingNoNullMissShadersKHR);
-    create_info.setStageCount(stage_infos.size());
-    create_info.setPStages(stage_infos.data());
-    create_info.setGroupCount(shader_groups.size());
-    create_info.setPGroups(shader_groups.data());
-    create_info.setLayout(mRtPipelineLayout);
-
-    result = mDevice->handle().createRayTracingPipelinesKHR(nullptr, nullptr, 1, &create_info, nullptr, &mRtPipeline, mDevice->dispatch());
-#pragma endregion
-
-    // TODO: Descriptor Writes
-
-#pragma region create_sbt
-    uint32_t miss_offset = round_up(mRtProps.shaderGroupHandleSize, mRtProps.shaderGroupBaseAlignment);
-    uint32_t chit_offset = round_up(miss_offset + mRtProps.shaderGroupHandleSize, mRtProps.shaderGroupBaseAlignment);
-    uint32_t sbt_size = chit_offset + mRtProps.shaderGroupHandleSize;
-
-    std::vector<uint8_t> sbt_data(sbt_size);
-    result = mDevice->handle().getRayTracingShaderGroupHandlesKHR(mRtPipeline, 0, 1, mRtProps.shaderGroupHandleSize, sbt_data.data() + 0, mDevice->dispatch());
-    result = mDevice->handle().getRayTracingShaderGroupHandlesKHR(mRtPipeline, 1, 1, mRtProps.shaderGroupHandleSize, sbt_data.data() + miss_offset, mDevice->dispatch());
-    result = mDevice->handle().getRayTracingShaderGroupHandlesKHR(mRtPipeline, 2, 1, mRtProps.shaderGroupHandleSize, sbt_data.data() + chit_offset, mDevice->dispatch());
-
-    auto staging = Buffer::make_staging_buffer(sbt_size, *mDevice);
-
-    void *data;
-    vkMapMemory(mDevice->handle(), staging.memory(), 0, sbt_size, 0, &data);
-    memcpy(data, sbt_data.data(), (size_t) sbt_size);
-    vkUnmapMemory(mDevice->handle(), staging.memory());
-
-    mRtShaderBindingTable = std::make_unique<Buffer>(sbt_size,
-                                                     vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eShaderBindingTableKHR,
-                                                     vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                     *mDevice, mDevice->dispatch());
-
-    Buffer::copy_buffer(*mCommandBuffers, staging.handle(), mRtShaderBindingTable->handle(), sbt_size);
-#pragma endregion
-}
-#endif
 
 void Application::cleanup()
 {

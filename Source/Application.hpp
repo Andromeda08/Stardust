@@ -2,22 +2,24 @@
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
-#include "Resources/Geometry.hpp"
-#include "Struct/ApplicationSettings.hpp"
-#include "Utility/Macro.hpp"
-#include "Vulkan/DebugMessenger.hpp"
-#include "Vulkan/DepthBuffer.hpp"
-#include "Vulkan/Swapchain.hpp"
-#include "Vulkan/Command/CommandBuffer.hpp"
-#include "Vulkan/Descriptor/DescriptorSets.hpp"
-#include "Vulkan/Synchronization/Fence.hpp"
-#include "Vulkan/Synchronization/Semaphore.hpp"
-
+#include <Resources/Geometry.hpp>
+#include <Struct/ApplicationSettings.hpp>
+#include <Utility/Macro.hpp>
+#include <Vulkan/DebugMessenger.hpp>
+#include <Vulkan/DepthBuffer.hpp>
+#include <Vulkan/Swapchain.hpp>
+#include <Vulkan/Command/CommandBuffer.hpp>
+#include <Vulkan/Descriptor/DescriptorSets.hpp>
+#include <Vulkan/Synchronization/Fence.hpp>
+#include <Vulkan/Synchronization/Semaphore.hpp>
 #include <vk/Buffer.hpp>
-#include <vk/RayTracingScene.hpp>
 #include <vk/Sampler.hpp>
 #include <vk/Scene.hpp>
 #include <vk/Texture.hpp>
+
+#if !defined(__APPLE__)
+    #include <vk/RayTracingScene.hpp>
+#endif
 
 class Application {
 public:
@@ -99,23 +101,25 @@ private:
     std::unique_ptr<DepthBuffer>     mDepthBuffer;
     std::unique_ptr<CommandBuffer>   mCommandBuffers;
 
-#pragma region render_test
+#pragma region rendering
+
+#if defined(__APPLE__)
+    std::unique_ptr<re::Scene> mReScene;
+#else
     std::unique_ptr<re::RayTracingScene> mReScene;
+#endif
 
-    std::unique_ptr<class RenderPass> mRenderPass;
-
+    std::unique_ptr<RenderPass>     mRenderPass;
     vk::DescriptorSetLayout         mDescriptorSetLayout;
     std::unique_ptr<DescriptorSets> mDescriptorSets;
-
-    std::unique_ptr<re::Sampler> mSampler2D;
-    std::unique_ptr<re::Texture> mTexture2D;
+    std::unique_ptr<re::Sampler>    mSampler2D;
+    std::unique_ptr<re::Texture>    mTexture2D;
+    vk::PipelineLayout              mPipelineLayout;
+    vk::Pipeline                    mGraphicsPipeline;
+    uint32_t                        mCurrentFrame {};
 
     std::vector<std::unique_ptr<re::UniformBuffer<re::UniformData>>> mUniformBuffers;
 
-    vk::PipelineLayout mPipelineLayout;
-    vk::Pipeline       mGraphicsPipeline;
-
-    uint32_t mCurrentFrame {};
 #pragma endregion
 
     std::vector<Fence>     mInFlightFences = {};

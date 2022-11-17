@@ -15,7 +15,7 @@ namespace re
               vk::Format format,
               vk::ImageTiling tiling,
               vk::ImageUsageFlags usage_flags,
-              vk::MemoryPropertyFlagBits property_flags,
+              vk::MemoryPropertyFlags property_flags,
               const CommandBuffer& command_buffers)
         : m_command_buffers(command_buffers)
         , m_extent(extent)
@@ -99,6 +99,12 @@ namespace re
                     barrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
                     src_stage = vk::PipelineStageFlagBits::eTransfer;
                     dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+                }
+                else if (from == vk::ImageLayout::eUndefined && to == vk::ImageLayout::eGeneral)
+                {
+                    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+                    dst_stage = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+                    barrier.setDstAccessMask(vk::AccessFlagBits::eShaderWrite);
                 }
                 else
                 {

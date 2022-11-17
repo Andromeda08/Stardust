@@ -21,6 +21,15 @@ public:
 
     vk::ShaderStageFlagBits stage() const { return m_shader_stage; }
 
+    vk::PipelineShaderStageCreateInfo stage_info() const
+    {
+        vk::PipelineShaderStageCreateInfo stage_info;
+        stage_info.setStage(m_shader_stage);
+        stage_info.setModule(m_shader_module);
+        stage_info.setPName("main");
+        return stage_info;
+    }
+
     void destroy();
 
 private:
