@@ -8,8 +8,8 @@ sh_extensions = ["vert", "frag", "glsl", "geom", "comp"]
 
 # configuration
 debug_print = False
-bin_dir = "cmake-build-debug"
 src_dir = "Resources/Shaders"
+bin_dir = f"{src_dir}/out"
 target_vk = "vulkan1.3"
 
 # found & sorted shaders
@@ -52,7 +52,6 @@ def compile_sh():
 def main():
     sort_shaders()
     compile_sh()
-    if platform.system() != "Darwin":
-        compile_rt()
+    compile_rt()
 
 main()

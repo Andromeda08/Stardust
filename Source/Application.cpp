@@ -81,7 +81,7 @@ Application::Application(const ApplicationSettings& app_settings)
         mDescriptorSets->update_descriptor_set(i, 1, sampler_info);
     }
 
-    mGraphicsPipeline = createGraphicsPipeline("phong.vert.spv", "phong.frag.spv");
+    mGraphicsPipeline = createGraphicsPipeline("phong.vert.spv", "tex.frag.spv");
 
 #if !defined(__APPLE__)
     mReScene = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
@@ -99,6 +99,8 @@ void Application::run()
         draw();
 
         mDevice->waitIdle();
+
+        //glfwSetWindowShouldClose(mWindow->handle(), true);
     }
 
     Application::cleanup();
@@ -151,6 +153,7 @@ void Application::draw()
                                   &mDescriptorSets->get_set(mCurrentFrame), 0, nullptr);
 
     updateUniformBuffer(mCurrentFrame);
+
     mReScene->rasterize(cmd_buffer);
 
 #pragma endregion
@@ -329,8 +332,8 @@ void Application::updateUniformBuffer(size_t index)
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-    auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
-    auto view = glm::lookAt(glm::vec3(128, 0, 128), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+    auto model = glm::mat4(1.0f); // glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
+    auto view = glm::lookAt(glm::vec3(10, 10, 10), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
     auto proj = glm::perspective(glm::radians(45.0f), mSwapChain->aspectRatio(), 0.1f, 2000.0f);
 
     re::UniformData ubo {

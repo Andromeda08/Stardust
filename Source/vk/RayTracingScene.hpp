@@ -20,7 +20,8 @@ namespace re
     public:
         struct RtUniformData
         {
-            glm::mat4 camera;
+            glm::mat4 viewInverse;
+            glm::mat4 projInverse;
         };
 
         explicit RayTracingScene(const Swapchain& swap_chain,
@@ -34,9 +35,10 @@ namespace re
             m_command_buffers.device().physicalDevice()
                 .getProperties2(&pdp, m_command_buffers.device().dispatch());
 
-            build_descriptors();
+            //premade_objects();
             build_objects();
             build_acceleration_structures();
+            build_descriptors();
             build_pipeline();
             build_sbt();
         }
@@ -84,6 +86,7 @@ namespace re
             m_dsl = DescriptorSetLayout()
                 .accelerator(0, vk::ShaderStageFlagBits::eRaygenKHR)
                 .storage_image(1, vk::ShaderStageFlagBits::eRaygenKHR)
+                .uniform_buffer(2, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eVertex)
                 .get_bindings(m_dslb)
                 .create(m_command_buffers.device());
 
@@ -98,12 +101,37 @@ namespace re
 
             m_output->transition_layout(vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
+            m_ubs.resize(2);
+            for (auto i = 0; i < 2; i++)
+            {
+                m_ubs[i] = std::make_unique<re::UniformBuffer<RtUniformData>>(m_command_buffers);
+                auto view = glm::lookAt(glm::vec3(10, 10, 10), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+                auto proj = glm::perspective(glm::radians(45.0f), m_swap_chain.aspectRatio(), 0.1f, 2000.0f);
+                RtUniformData data = {
+                    .viewInverse = glm::inverse(view),
+                    .projInverse = glm::inverse(proj)
+                };
+                m_ubs[i]->update(data);
+            }
+
             vk::DescriptorImageInfo image_info;
             image_info.setImageView(m_output->view());
             image_info.setImageLayout(vk::ImageLayout::eGeneral);
 
             for (auto i = 0 ; i < 2; i++)
             {
+                vk::WriteDescriptorSetAccelerationStructureKHR accel;
+                accel.setAccelerationStructureCount(1);
+                accel.setPAccelerationStructures(&m_accelerator.tlas.tlas);
+                vk::WriteDescriptorSet accelw;
+                accelw.setDstBinding(0);
+                accelw.setDstSet(m_descriptors->get_set(i));
+                accelw.setDescriptorCount(1);
+                accelw.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
+                accelw.setDstArrayElement(0);
+                accelw.setPNext(&accel);
+                m_device.handle().updateDescriptorSets(1, &accelw, 0, nullptr, m_device.dispatch());
+
                 vk::WriteDescriptorSet write;
                 write.setDstBinding(1);
                 write.setDstSet(m_descriptors->get_set(i));
@@ -112,7 +140,19 @@ namespace re
                 write.setPImageInfo(&image_info);
                 write.setDstArrayElement(0);
                 m_device.handle().updateDescriptorSets(1, &write, 0, nullptr, m_device.dispatch());
+
+                vk::DescriptorBufferInfo ubo_info;
+                ubo_info.setBuffer(m_ubs[i]->buffer());
+                ubo_info.setOffset(0);
+                ubo_info.setRange(sizeof(RtUniformData));
+                m_descriptors->update_descriptor_set(i, 2, ubo_info);
             }
+        }
+
+        void premade_objects()
+        {
+            m_instance_data.push_back({});
+            m_objects = std::make_unique<InstancedGeometry>(new CubeGeometry(1.0f), m_instance_data, m_command_buffers);
         }
 
         void build_objects()
@@ -137,7 +177,7 @@ namespace re
                 });
             }
 
-            m_objects = std::make_unique<InstancedGeometry>(new CubeGeometry(2.0f), m_instance_data, m_command_buffers);
+            m_objects = std::make_unique<InstancedGeometry>(new CubeGeometry(1.0f), m_instance_data, m_command_buffers);
         }
 
         void build_acceleration_structures()
@@ -238,7 +278,7 @@ namespace re
 
         RtAccelerator m_accelerator;
         std::unique_ptr<re::vkImage> m_output;
-        std::vector<std::unique_ptr<re::UniformBuffer<RtUniformData>>> m_ub;
+        std::vector<std::unique_ptr<re::UniformBuffer<RtUniformData>>> m_ubs;
         std::unique_ptr<re::Buffer> m_sbt;
 
         std::vector<vk::DescriptorSetLayoutBinding> m_dslb;

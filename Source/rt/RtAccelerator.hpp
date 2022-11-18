@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <glm/gtx/string_cast.hpp>
 #include <vulkan/vulkan.hpp>
 #include <rt/AccelerationStructure.hpp>
 #include <Utility/Math.hpp>
@@ -34,12 +35,13 @@ struct RtAccelerator
         auto instance_count = objects.instance_count();
 
         std::vector<vk::AccelerationStructureInstanceKHR> instances(instance_count);
-        std::vector<vk::TransformMatrixKHR> transforms(instance_count);
         for (auto i = 0; i < instance_count; i++)
         {
-            transforms[i] = Math::glmToKhr(Math::model(instance_data[i].translate, instance_data[i].scale));
+            auto translate = objects.instance_data()[i].translate;
+            auto transform = Math::glmToKhr(glm::translate(glm::mat4(1.0f), translate));
 
-            instances[i].setTransform(transforms[i]);
+            instances[i].setTransform(transform);
+
             instances[i].setInstanceCustomIndex(i);
             instances[i].setMask(0xff);
             instances[i].setInstanceShaderBindingTableRecordOffset(0);

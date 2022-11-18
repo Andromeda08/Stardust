@@ -31,7 +31,7 @@ add_executable(${PROJECT_NAME}
         Source/main.cpp
         # Utilities
         Source/Utility/Macro.hpp
-        Source/Utility/Math.hpp
+        Source/Utility/Math.hpp Source/Utility/Math.cpp
         Source/Vulkan/DebugMessenger.hpp
         # Application
         Source/Struct/ApplicationSettings.hpp
