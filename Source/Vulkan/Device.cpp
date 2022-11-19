@@ -69,8 +69,16 @@ Device::Device(const Instance& instance,
     vk::PhysicalDeviceFeatures deviceFeatures {};
     deviceFeatures.setSamplerAnisotropy(true);
 
+    vk::PhysicalDeviceSynchronization2FeaturesKHR s2_features;
+    s2_features.setSynchronization2(true);
+
+    vk::PhysicalDeviceMaintenance4FeaturesKHR m4_features;
+    m4_features.setMaintenance4(true);
+    m4_features.setPNext(&s2_features);
+
     vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeaturesExt;
     descriptorIndexingFeaturesExt.setRuntimeDescriptorArray(true);
+    descriptorIndexingFeaturesExt.setPNext(&m4_features);
 
     vk::PhysicalDeviceBufferDeviceAddressFeaturesEXT bufferDeviceAddressFeaturesExt;
     bufferDeviceAddressFeaturesExt.setBufferDeviceAddress(true);
