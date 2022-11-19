@@ -71,6 +71,8 @@ public:
 
     const vk::SwapchainKHR& handle() const { return mSwapchain; }
 
+    const vk::Image& image(size_t i) const { return mImages[i]; }
+
     const vk::ImageView& view(size_t i ) const { return mImageViews[i]; }
 
     void destroy();

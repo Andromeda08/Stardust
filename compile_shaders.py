@@ -43,7 +43,7 @@ def compile_rt():
 def compile_sh():
     print(f"Compiling ({len(_shaders)}) shader(s)...")
     for s in _shaders:
-        command = f"glslc -o {bin_dir}/{s}.spv {src_dir}/{s}"
+        command = f"glslangValidator -g -o {bin_dir}/{s}.spv -V {src_dir}/{s} --target-env {target_vk}"
         if debug_print:
             print(f"\t{command}")
         os.popen(command)

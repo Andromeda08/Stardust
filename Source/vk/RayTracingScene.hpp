@@ -6,9 +6,11 @@
 #include <vulkan/vulkan.hpp>
 #include <rt/AccelerationStructure.hpp>
 #include <rt/RtAccelerator.hpp>
+#include <vk/ComputePipeline.hpp>
 #include <vk/Image.hpp>
 #include <vk/InstanceData.hpp>
 #include <vk/InstancedGeometry.hpp>
+#include <vk/Sampler.hpp>
 #include <Vulkan/Swapchain.hpp>
 #include <Vulkan/Descriptor/DescriptorSetLayout.hpp>
 #include <Vulkan/GraphicsPipeline/ShaderModule.hpp>
@@ -35,12 +37,15 @@ namespace re
             m_command_buffers.device().physicalDevice()
                 .getProperties2(&pdp, m_command_buffers.device().dispatch());
 
-            //premade_objects();
+            // Build ray tracing scene and pipeline
             build_objects();
             build_acceleration_structures();
             build_descriptors();
             build_pipeline();
             build_sbt();
+
+            // Build compute pipeline for copying output to swapchain
+            build_compute_pipeline();
         }
 
         void rasterize(vk::CommandBuffer cmd)
@@ -80,7 +85,81 @@ namespace re
                              e.width, e.height, 1, m_device.dispatch());
         }
 
+        void copy_to_swapchain(uint32_t current_frame, vk::CommandBuffer cmd)
+        {
+            auto vps = m_swap_chain.extent();
+            const uint32_t group_size_x = 32, group_size_y = 32;
+            uint32_t group_count_x = (vps.width + group_size_x - 1) / group_size_x;
+            uint32_t group_count_y = (vps.height + group_size_y - 1) / group_size_y;
+            uint32_t push_constants[] = { vps.width, vps.height };
+
+            cmd.pushConstants(m_compute_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(push_constants), push_constants, m_device.dispatch());
+            cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_compute_layout, 0, 1, &m_compute_descriptors->get_set(current_frame), 0, nullptr, m_device.dispatch());
+            cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_compute_pipeline, m_device.dispatch());
+            cmd.dispatch(group_count_x, group_count_y, 1, m_device.dispatch());
+        }
+
+        const vk::Image& output() const { return m_output->image(); }
+
     private:
+        void build_compute_pipeline()
+        {
+            m_compute_dsl = DescriptorSetLayout()
+                .sampler(0, vk::ShaderStageFlagBits::eCompute)
+                .sampled_image(1, vk::ShaderStageFlagBits::eCompute)
+                .storage_image(2, vk::ShaderStageFlagBits::eCompute)
+                .get_bindings(m_compute_dslb)
+                .create(m_device);
+
+            m_compute_descriptors = std::make_unique<DescriptorSets>(m_compute_dslb, m_compute_dsl, m_device);
+
+            m_sampler = std::make_unique<re::Sampler>(m_device);
+
+            for (size_t i = 0; i < 2; i++)
+            {
+                vk::DescriptorImageInfo sampler;
+                sampler.setSampler(m_sampler->sampler());
+                vk::WriteDescriptorSet write1;
+                write1.setDstSet(m_compute_descriptors->get_set(i));
+                write1.setDstBinding(0);
+                write1.setDescriptorCount(1);
+                write1.setDescriptorType(vk::DescriptorType::eSampler);
+                write1.setPImageInfo(&sampler);
+                m_device.handle().updateDescriptorSets(1, &write1, 0, nullptr);
+
+                vk::DescriptorImageInfo sampled_info;
+                sampled_info.setImageLayout(vk::ImageLayout::eGeneral);
+                sampled_info.setImageView(m_output->view());
+                m_compute_descriptors->update_descriptor_set(i, 1, sampled_info);
+
+                vk::DescriptorImageInfo image_info;
+                image_info.setImageView(m_swap_chain.view(i));
+                image_info.setImageLayout(vk::ImageLayout::eGeneral);
+                vk::WriteDescriptorSet write;
+                write.setDstSet(m_compute_descriptors->get_set(i));
+                write.setDstBinding(2);
+                write.setDescriptorCount(1);
+                write.setDescriptorType(vk::DescriptorType::eStorageImage);
+                write.setPImageInfo(&image_info);
+                m_device.handle().updateDescriptorSets(1, &write, 0, nullptr);
+            }
+
+            vk::PushConstantRange push_constant_range;
+            push_constant_range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+            push_constant_range.setOffset(0);
+            push_constant_range.setSize(8);
+
+            vk::PipelineLayoutCreateInfo create_info;
+            create_info.setSetLayoutCount(1);
+            create_info.setPSetLayouts(&m_compute_dsl);
+            create_info.setPushConstantRangeCount(1);
+            create_info.setPPushConstantRanges(&push_constant_range);
+
+            auto result = m_device.handle().createPipelineLayout(&create_info, nullptr, &m_compute_layout, m_device.dispatch());
+
+            m_compute_pipeline = ComputePipeline::make_compute_pipeline("swapchain.comp.spv", m_compute_layout, m_device);
+        }
+
         void build_descriptors()
         {
             m_dsl = DescriptorSetLayout()
@@ -290,5 +369,12 @@ namespace re
 
         std::vector<InstanceData> m_instance_data;
         std::unique_ptr<InstancedGeometry> m_objects;
+
+        vk::Pipeline m_compute_pipeline;
+        vk::PipelineLayout m_compute_layout;
+        std::unique_ptr<re::Sampler> m_sampler;
+        std::vector<vk::DescriptorSetLayoutBinding> m_compute_dslb;
+        vk::DescriptorSetLayout m_compute_dsl;
+        std::unique_ptr<DescriptorSets> m_compute_descriptors;
     };
 }

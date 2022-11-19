@@ -82,7 +82,7 @@ add_executable(${PROJECT_NAME}
 
         Source/rt/AccelerationStructure.cpp
         Source/rt/AccelerationStructure.hpp
-        Source/rt/RtAccelerator.hpp)
+        Source/rt/RtAccelerator.hpp Source/vk/ComputePipeline.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)

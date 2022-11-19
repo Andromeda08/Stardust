@@ -29,7 +29,7 @@ Swapchain::Swapchain(const Device &device,
     createInfo.setImageColorSpace(format.colorSpace);
     createInfo.setImageExtent(mExtent);
     createInfo.setImageArrayLayers(1);
-    createInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
+    createInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
     createInfo.setPreTransform(supportDetails.capabilities.currentTransform);
     createInfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
     createInfo.setPresentMode(mPresentMode);

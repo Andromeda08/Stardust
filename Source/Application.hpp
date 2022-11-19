@@ -42,6 +42,7 @@ private:
      * @brief Draw frame :D
      */
     void draw();
+    void draw2();
 
     /**
      * @brief Sets up the vulkan debug messenger

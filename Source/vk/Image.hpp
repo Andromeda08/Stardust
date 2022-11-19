@@ -120,6 +120,47 @@ namespace re
             m_command_buffers.end_single_time(cmd);
         }
 
+        static void image_barrier(const vk::Image& image,
+                                  vk::AccessFlags src_access_mask,
+                                  vk::AccessFlags dst_access_mask,
+                                  vk::ImageLayout old_layout,
+                                  vk::ImageLayout new_layout,
+                                  vk::PipelineStageFlags src_stage_mask,
+                                  vk::PipelineStageFlags dst_stage_mask,
+                                  const CommandBuffer& command_buffers)
+        {
+#pragma region image_subresource_range
+            vk::ImageSubresourceRange srr;
+            srr.setAspectMask(vk::ImageAspectFlagBits::eColor);
+            srr.setBaseMipLevel(0);
+            srr.setLevelCount(1);
+            srr.setBaseArrayLayer(0);
+            srr.setLayerCount(1);
+#pragma endregion
+#pragma region image_barrier
+            vk::ImageMemoryBarrier barrier;
+            barrier.setOldLayout(old_layout);
+            barrier.setNewLayout(new_layout);
+            barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.setImage(image);
+            barrier.setSrcAccessMask(src_access_mask);
+            barrier.setDstAccessMask(dst_access_mask);
+            barrier.setSubresourceRange(srr);
+#pragma endregion
+#pragma region command
+            auto cmd = command_buffers.begin_single_time();
+
+            cmd.pipelineBarrier(src_stage_mask, dst_stage_mask, {},
+                                0, nullptr,
+                                0, nullptr,
+                                1, &barrier,
+                                command_buffers.device().dispatch());
+
+            command_buffers.end_single_time(cmd);
+#pragma endregion
+        }
+
         vk::Extent2D extent() const { return m_extent; }
 
         vk::Format format() const { return m_format; }
