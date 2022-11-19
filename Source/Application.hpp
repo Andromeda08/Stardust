@@ -41,8 +41,8 @@ private:
     /**
      * @brief Draw frame :D
      */
-    void draw();
-    void draw2();
+    void rasterize();
+    void raytrace();
 
     /**
      * @brief Sets up the vulkan debug messenger

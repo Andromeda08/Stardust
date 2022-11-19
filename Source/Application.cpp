@@ -16,6 +16,12 @@
 #include "Vulkan/GraphicsPipeline/ShaderModule.hpp"
 #include "Vulkan/Descriptor/DescriptorSetLayout.hpp"
 
+void keyboard_input_handler(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+}
+
 Application::Application(const ApplicationSettings& app_settings)
 : mSettings(app_settings)
 , mCurrentFrame(0)
@@ -24,8 +30,9 @@ Application::Application(const ApplicationSettings& app_settings)
     // Yeah, we're not going to do this any time soon.
     mSettings.raytracing = false;
 #endif
-
     mWindow   = std::make_unique<Window>(app_settings.windowSettings);
+
+    glfwSetKeyCallback(mWindow->handle(), keyboard_input_handler);
 
     mInstance = std::make_unique<Instance>(*mWindow);
 
@@ -96,7 +103,7 @@ void Application::run()
     {
         glfwPollEvents();
 
-        draw();
+        raytrace();
 
         mDevice->waitIdle();
 
@@ -106,7 +113,7 @@ void Application::run()
     Application::cleanup();
 }
 
-void Application::draw()
+void Application::raytrace()
 {
     auto hDevice = mDevice->handle();
 
@@ -124,7 +131,84 @@ void Application::draw()
     vk::CommandBufferBeginInfo begin_info;
     res = cmd_buffer.begin(&begin_info);
 
-    /*
+    re::vkImage::image_barrier(mReScene->output(),
+                               {}, vk::AccessFlagBits::eShaderWrite,
+                               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                               vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+                               cmd_buffer, *mDevice);
+
+    mReScene->trace_rays(mCurrentFrame, cmd_buffer);
+
+    cmd_buffer.end();
+
+    vk::Semaphore wait_semaphores[] = { mImageAvailableSemaphores[mCurrentFrame].handle() };
+    vk::Semaphore signal_semaphores[] = { mRenderFinishedSemaphores[mCurrentFrame].handle() };
+    vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+    vk::SubmitInfo submit_info;
+    submit_info.setWaitSemaphoreCount(1);
+    submit_info.setPWaitSemaphores(wait_semaphores);
+    submit_info.setPWaitDstStageMask(wait_stages);
+    submit_info.setCommandBufferCount(1);
+    submit_info.setCommandBuffers(cmd_buffer);
+    submit_info.setSignalSemaphoreCount(1);
+    submit_info.setPSignalSemaphores(signal_semaphores);
+    res = mDevice->graphics_queue().submit(1, &submit_info, wait);
+
+    auto command = mCommandBuffers->begin_single_time();
+
+    re::vkImage::image_barrier(mReScene->output(),
+                               vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                               vk::ImageLayout::eGeneral, vk::ImageLayout::eShaderReadOnlyOptimal,
+                               vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader,
+                               command, *mDevice);
+
+    re::vkImage::image_barrier(mSwapChain->image(mCurrentFrame),
+                               {}, vk::AccessFlagBits::eShaderWrite,
+                               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                               vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader,
+                               command, *mDevice);
+
+    mReScene->copy_to_swapchain(mCurrentFrame, command);
+
+    re::vkImage::image_barrier(mSwapChain->image(mCurrentFrame),
+                               vk::AccessFlagBits::eShaderWrite, {},
+                               vk::ImageLayout::eGeneral, vk::ImageLayout::ePresentSrcKHR,
+                               vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eNone,
+                               command, *mDevice);
+
+    mCommandBuffers->end_single_time(command);
+
+    vk::PresentInfoKHR present_info;
+    present_info.setWaitSemaphoreCount(1);
+    present_info.setPWaitSemaphores(signal_semaphores);
+    present_info.setSwapchainCount(1);
+    present_info.setPSwapchains(&mSwapChain->handle());
+    present_info.setImageIndices(result.value);
+    present_info.setPResults(nullptr);
+    res = mDevice->present_queue().presentKHR(&present_info);
+
+    mCurrentFrame = (mCurrentFrame + 1) % 2;
+}
+
+void Application::rasterize()
+{
+    auto hDevice = mDevice->handle();
+
+    auto wait = mInFlightFences[mCurrentFrame].handle();
+    auto res = hDevice.waitForFences(1, &wait, true, UINT64_MAX);
+    res = hDevice.resetFences(1, &wait);
+
+    vk::Semaphore semaphore = mImageAvailableSemaphores[mCurrentFrame].handle();
+    auto result = hDevice.acquireNextImageKHR(mSwapChain->handle(), UINT64_MAX, semaphore, nullptr);
+
+    res = hDevice.resetFences(1, &wait);
+    auto cmd_buffer = mCommandBuffers->get_buffer(mCurrentFrame);
+    cmd_buffer.reset();
+
+    vk::CommandBufferBeginInfo begin_info;
+    res = cmd_buffer.begin(&begin_info);
+
     vk::Rect2D render_area;
     render_area.setExtent(mSwapChain->extent());
     render_area.setOffset({0,0});
@@ -153,19 +237,10 @@ void Application::draw()
                                   &mDescriptorSets->get_set(mCurrentFrame), 0, nullptr);
 
     updateUniformBuffer(mCurrentFrame);
+
     mReScene->rasterize(cmd_buffer);
+
     cmd_buffer.endRenderPass();
-     */
-
-#if !defined(__APPLE__)
-    re::vkImage::image_barrier(mReScene->output(),
-                               {}, vk::AccessFlagBits::eShaderWrite,
-                               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-                               vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-                               *mCommandBuffers);
-
-    mReScene->trace_rays(mCurrentFrame, cmd_buffer);
-#endif
 
     cmd_buffer.end();
 
@@ -182,28 +257,6 @@ void Application::draw()
     submit_info.setSignalSemaphoreCount(1);
     submit_info.setPSignalSemaphores(signal_semaphores);
     res = mDevice->graphics_queue().submit(1, &submit_info, wait);
-
-    re::vkImage::image_barrier(mReScene->output(),
-                               vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                               vk::ImageLayout::eGeneral, vk::ImageLayout::eShaderReadOnlyOptimal,
-                               vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader,
-                               *mCommandBuffers);
-
-    re::vkImage::image_barrier(mSwapChain->image(mCurrentFrame),
-                               {}, vk::AccessFlagBits::eShaderWrite,
-                               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-                               vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader,
-                               *mCommandBuffers);
-
-    auto cmd1 = mCommandBuffers->begin_single_time();
-    mReScene->copy_to_swapchain(mCurrentFrame, cmd1);
-    mCommandBuffers->end_single_time(cmd1);
-
-    re::vkImage::image_barrier(mSwapChain->image(mCurrentFrame),
-                               vk::AccessFlagBits::eShaderWrite, {},
-                               vk::ImageLayout::eGeneral, vk::ImageLayout::ePresentSrcKHR,
-                               vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eNone,
-                               *mCommandBuffers);
 
     vk::PresentInfoKHR present_info;
     present_info.setWaitSemaphoreCount(1);
