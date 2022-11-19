@@ -12,7 +12,7 @@ public:
 
     Semaphore(Semaphore const&&) noexcept;
 
-    vk::Semaphore handle() const { return mSemaphore; }
+    const vk::Semaphore& handle() const { return mSemaphore; }
 
     const Device& device() const { return mDevice; }
 

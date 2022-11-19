@@ -12,7 +12,7 @@ public:
 
     Fence(Fence const&&) noexcept;
 
-    vk::Fence handle() const { return mFence; }
+    const vk::Fence& handle() const { return mFence; }
 
     const Device& device() const { return mDevice; }
 
