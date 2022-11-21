@@ -3,6 +3,7 @@
 
 # Shader binary directory
 Resources/Shaders/out
+Resources/Shaders/Reflection/out
 
 # macOS
 .DS_Store
