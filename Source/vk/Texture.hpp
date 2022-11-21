@@ -3,12 +3,13 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <stb_image.h>
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Device.hpp>
 #include <Vulkan/Command/CommandBuffer.hpp>
-#include "Image.hpp"
-#include "Buffer.hpp"
-#include "Sampler.hpp"
+#include <Vulkan/Device.hpp>
+#include <vk/Buffer.hpp>
+#include <vk/Image.hpp>
+#include <vk/Sampler.hpp>
 
 namespace re
 {
@@ -23,7 +24,10 @@ namespace re
             stbi_uc* pixels = stbi_load(image.c_str(), &img_w, &img_h, &img_ch, STBI_rgb_alpha);
             vk::DeviceSize image_size = img_w * img_h * 4;
 
-            if (!pixels) throw std::runtime_error("Failed to load texture image \"" + image + "\"!");
+            if (!pixels)
+            {
+                throw std::runtime_error("Failed to load texture image \"" + image + "\"!");
+            }
 
             m_extent = vk::Extent2D{ static_cast<uint32_t>(img_w), static_cast<uint32_t>(img_h) };
 

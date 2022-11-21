@@ -80,7 +80,9 @@ private:
      */
     void cleanup();
 
-#pragma region print_utilities
+#pragma region debug_and_print_utilities
+
+    void name_vk_objects();
 
     /**
      * @brief Prints the list of detected physical devices.
@@ -105,9 +107,9 @@ private:
 #pragma region rendering
 
 #if defined(__APPLE__)
-    std::unique_ptr<re::Scene> mReScene;
+    std::unique_ptr<re::Scene> mScene;
 #else
-    std::unique_ptr<re::RayTracingScene> mReScene;
+    std::unique_ptr<re::RayTracingScene> mScene;
 #endif
 
     std::unique_ptr<RenderPass>     mRenderPass;

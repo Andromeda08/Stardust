@@ -68,6 +68,7 @@ Device::Device(const Instance& instance,
     // Device features
     vk::PhysicalDeviceFeatures deviceFeatures {};
     deviceFeatures.setSamplerAnisotropy(true);
+    deviceFeatures.setShaderInt64(true);
 
     vk::PhysicalDeviceSynchronization2FeaturesKHR s2_features;
     s2_features.setSynchronization2(true);

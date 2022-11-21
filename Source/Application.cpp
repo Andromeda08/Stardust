@@ -2,6 +2,7 @@
 #include <array>
 #include <chrono>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <glm/glm.hpp>
@@ -30,7 +31,8 @@ Application::Application(const ApplicationSettings& app_settings)
     // Yeah, we're not going to do this any time soon.
     mSettings.raytracing = false;
 #endif
-    mWindow   = std::make_unique<Window>(app_settings.windowSettings);
+
+    mWindow = std::make_unique<Window>(app_settings.windowSettings);
 
     glfwSetKeyCallback(mWindow->handle(), keyboard_input_handler);
 
@@ -38,7 +40,7 @@ Application::Application(const ApplicationSettings& app_settings)
 
     setupDebugMessenger();
 
-    mSurface  = std::make_unique<Surface>(*mInstance);
+    mSurface = std::make_unique<Surface>(*mInstance);
 
     (mSettings.raytracing) ? selectRayTracingDevice() : selectDevice();
 
@@ -46,6 +48,7 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mCommandBuffers = std::make_unique<CommandBuffer>(*mDevice);
 
+#pragma region raster_pipeline_setup
     mDepthBuffer = std::make_unique<DepthBuffer>(mSwapChain->extent(), *mDevice, *mCommandBuffers);
 
     mRenderPass = std::make_unique<RenderPass>(*mDevice, mSwapChain->format(), mDepthBuffer->format());
@@ -89,12 +92,11 @@ Application::Application(const ApplicationSettings& app_settings)
     }
 
     mGraphicsPipeline = createGraphicsPipeline("phong.vert.spv", "tex.frag.spv");
+#pragma endregion
 
-#if !defined(__APPLE__)
-    mReScene = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
-#else
-    mReScene = std::make_unique<re::Scene>(*mCommandBuffers);
-#endif
+    mScene = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
+
+    name_vk_objects();
 }
 
 void Application::run()
@@ -118,11 +120,11 @@ void Application::raytrace()
     auto hDevice = mDevice->handle();
 
     auto wait = mInFlightFences[mCurrentFrame].handle();
-    auto res = hDevice.waitForFences(1, &wait, true, UINT64_MAX);
+    auto res = hDevice.waitForFences(1, &wait, true, std::numeric_limits<uint64_t>::max());
     res = hDevice.resetFences(1, &wait);
 
     vk::Semaphore semaphore = mImageAvailableSemaphores[mCurrentFrame].handle();
-    auto result = hDevice.acquireNextImageKHR(mSwapChain->handle(), UINT64_MAX, semaphore, nullptr);
+    auto result = hDevice.acquireNextImageKHR(mSwapChain->handle(), std::numeric_limits<uint64_t>::max(), semaphore, nullptr);
 
     res = hDevice.resetFences(1, &wait);
     auto cmd_buffer = mCommandBuffers->get_buffer(mCurrentFrame);
@@ -131,13 +133,8 @@ void Application::raytrace()
     vk::CommandBufferBeginInfo begin_info;
     res = cmd_buffer.begin(&begin_info);
 
-    re::vkImage::image_barrier(mReScene->output(),
-                               {}, vk::AccessFlagBits::eShaderWrite,
-                               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-                               vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-                               cmd_buffer, *mDevice);
-
-    mReScene->trace_rays(mCurrentFrame, cmd_buffer);
+    mScene->trace_rays(mCurrentFrame, cmd_buffer);
+    mScene->blit(mCurrentFrame, cmd_buffer);
 
     cmd_buffer.end();
 
@@ -154,30 +151,6 @@ void Application::raytrace()
     submit_info.setSignalSemaphoreCount(1);
     submit_info.setPSignalSemaphores(signal_semaphores);
     res = mDevice->graphics_queue().submit(1, &submit_info, wait);
-
-    auto command = mCommandBuffers->begin_single_time();
-
-    re::vkImage::image_barrier(mReScene->output(),
-                               vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                               vk::ImageLayout::eGeneral, vk::ImageLayout::eShaderReadOnlyOptimal,
-                               vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader,
-                               command, *mDevice);
-
-    re::vkImage::image_barrier(mSwapChain->image(mCurrentFrame),
-                               {}, vk::AccessFlagBits::eShaderWrite,
-                               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-                               vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader,
-                               command, *mDevice);
-
-    mReScene->copy_to_swapchain(mCurrentFrame, command);
-
-    re::vkImage::image_barrier(mSwapChain->image(mCurrentFrame),
-                               vk::AccessFlagBits::eShaderWrite, {},
-                               vk::ImageLayout::eGeneral, vk::ImageLayout::ePresentSrcKHR,
-                               vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eNone,
-                               command, *mDevice);
-
-    mCommandBuffers->end_single_time(command);
 
     vk::PresentInfoKHR present_info;
     present_info.setWaitSemaphoreCount(1);
@@ -238,7 +211,7 @@ void Application::rasterize()
 
     updateUniformBuffer(mCurrentFrame);
 
-    mReScene->rasterize(cmd_buffer);
+    mScene->rasterize(mCurrentFrame, cmd_buffer);
 
     cmd_buffer.endRenderPass();
 
@@ -432,7 +405,23 @@ void Application::cleanup()
                                      nullptr);
 }
 
-#pragma region printer_utilities
+#pragma region debug_and_print_utilities
+
+void Application::name_vk_objects()
+{
+    // Name swapchain images.
+    for (size_t i = 0; i < 2; i++)
+    {
+        std::stringstream ss {};
+        ss << "Swapchain image [" << std::to_string(i) << "]";
+
+        vk::DebugUtilsObjectNameInfoEXT swapchain_image;
+        swapchain_image.setObjectHandle((uint64_t) static_cast<VkImage>(mSwapChain->image(i)));
+        swapchain_image.setObjectType(vk::ObjectType::eImage);
+        swapchain_image.setPObjectName(ss.str().c_str());
+        auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&swapchain_image, mDevice->dispatch());
+    }
+}
 
 void Application::printDevices()
 {
