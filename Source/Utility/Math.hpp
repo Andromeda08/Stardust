@@ -32,7 +32,21 @@ namespace Math
     static glm::mat4 model(std::optional<glm::vec3> translate = std::nullopt,
                            std::optional<glm::vec3> scale     = std::nullopt,
                            std::optional<glm::vec3> r_axis    = std::nullopt,
-                           std::optional<float>     r_angle   = std::nullopt);
+                           std::optional<float>     r_angle   = std::nullopt)
+    {
+        auto result = glm::mat4(1.0f);
+
+        if (r_axis.has_value() && r_angle.has_value())
+            result = glm::rotate(result, glm::radians(r_angle.value()), r_axis.value());
+
+        if (scale.has_value())
+            result = glm::scale(result, scale.value());
+
+        if (translate.has_value())
+            result = glm::translate(result, translate.value());
+
+        return result;
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, const vk::TransformMatrixKHR& rhs);

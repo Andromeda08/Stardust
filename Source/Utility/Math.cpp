@@ -1,27 +1,5 @@
 #include "Math.hpp"
 
-namespace Math
-{
-    glm::mat4 model(std::optional<glm::vec3> translate,
-                    std::optional<glm::vec3> scale,
-                    std::optional<glm::vec3> r_axis,
-                    std::optional<float> r_angle)
-    {
-        auto result = glm::mat4(1.0f);
-
-        if (scale.has_value())
-            result = glm::scale(result, translate.value());
-
-        if (r_axis.has_value() && r_angle.has_value())
-            result = glm::rotate(result, r_angle.value(), r_axis.value());
-
-        if (translate.has_value())
-            result = glm::translate(result, translate.value());
-
-        return result;
-    }
-}
-
 std::ostream& operator<<(std::ostream& os, const vk::TransformMatrixKHR& rhs)
 {
     auto& m = rhs.matrix;

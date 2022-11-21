@@ -37,8 +37,14 @@ struct RtAccelerator
         std::vector<vk::AccelerationStructureInstanceKHR> instances(instance_count);
         for (auto i = 0; i < instance_count; i++)
         {
-            auto translate = objects.instance_data()[i].translate;
-            auto transform = Math::glmToKhr(glm::translate(glm::mat4(1.0f), translate));
+            auto t = instance_data[i];
+            //auto model = Math::model(t.translate, t.scale, t.r_axis, t.r_angle);
+            auto model = glm::mat4(1.0f);
+            model = glm::translate(model, t.translate);
+
+            auto transform = Math::glmToKhr(model);
+
+            //if (i == 0) std::cout << model << transform << std::endl;
 
             instances[i].setTransform(transform);
 

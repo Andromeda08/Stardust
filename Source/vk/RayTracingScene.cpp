@@ -12,6 +12,7 @@ namespace re
 
         // Build ray tracing scene and pipeline
         build_objects();
+        //build_reflection_scene();
         build_acceleration_structures();
         build_descriptors();
         build_rt_pipeline();
@@ -102,27 +103,51 @@ namespace re
 
     void RayTracingScene::build_objects()
     {
-        std::default_random_engine rand(static_cast<unsigned>(time(nullptr)));
-        std::uniform_int_distribution<int> uniform_dist(-1 * 128, 128);
-        std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
-        std::uniform_real_distribution<float> scale_mod(1.0f, 4.0f);
+        auto seed = static_cast<unsigned>(time(nullptr));
+        std::cout << "Seed: " << seed << std::endl;
 
-        for (int i = 0; i < 128; i++)
+        std::default_random_engine rand(1669071706);
+        std::uniform_int_distribution<int> uniform_dist(-32,32);
+        std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
+        std::uniform_real_distribution<float> scale_mod(1.0f, 5.0f);
+
+        for (int i = 0; i < 192; i++)
         {
             auto x = (float) uniform_dist(rand);
             auto y = (float) uniform_dist(rand);
             auto z = (float) uniform_dist(rand);
 
             m_instance_data.push_back({
-                                          .translate = glm::vec3{ x, y, z },
-                                          .scale = glm::vec3{ scale_mod(rand) },
-                                          .r_axis = glm::vec3{ 1 },
-                                          .r_angle = 0.0f,
-                                          .color = glm::vec4{ uniform_float(rand), uniform_float(rand), uniform_float(rand), 1.0f }
-                                      });
+                .translate = glm::vec3{ x, y, z },
+                .scale = glm::vec3{ scale_mod(rand) },
+                .r_axis = glm::vec3{ 1 },
+                .r_angle = uniform_float(rand) * 360.0f,
+                .color = glm::vec4{ uniform_float(rand), uniform_float(rand), uniform_float(rand), 1.0f }
+            });
         }
 
-        m_objects = std::make_unique<InstancedGeometry>(new CubeGeometry(1.0f), m_instance_data, m_command_buffers);
+        m_objects = std::make_unique<InstancedGeometry>(new SphereGeometry(1.0f), m_instance_data, m_command_buffers);
+    }
+
+    void RayTracingScene::build_reflection_scene()
+    {
+        m_instance_data.push_back(re::InstanceData {
+            .translate = glm::vec3(2, 0, 0),
+            .scale = glm::vec3(5.0f),
+            .r_axis = glm::vec3{ 1 },
+            .r_angle = 60.0f,
+            .color = glm::vec4(0.5f)
+        });
+
+        m_instance_data.push_back(re::InstanceData {
+            .translate = glm::vec3(0, -5, 0),
+            .scale = glm::vec3(2.5f),
+            .r_axis = glm::vec3{ 1 },
+            .r_angle = 0.0f,
+            .color = glm::vec4(0.5f)
+        });
+
+        m_objects = std::make_unique<InstancedGeometry>(new SphereGeometry(1.0f), m_instance_data, m_command_buffers);
     }
 
     void RayTracingScene::build_acceleration_structures()
@@ -135,8 +160,9 @@ namespace re
         m_dsl = DescriptorSetLayout()
             .accelerator(0, vk::ShaderStageFlagBits::eRaygenKHR)
             .storage_image(1, vk::ShaderStageFlagBits::eRaygenKHR)
-            .uniform_buffer(2, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eVertex)
+            .uniform_buffer(2, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
             .storage_buffer(3, vk::ShaderStageFlagBits::eClosestHitKHR)
+            .uniform_buffer(4, vk::ShaderStageFlagBits::eClosestHitKHR)
             .get_bindings(m_dslb)
             .create(m_command_buffers.device());
 
@@ -151,18 +177,41 @@ namespace re
 
         m_output->transition_layout(vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
+
+        auto view = glm::lookAt(glm::vec3(15, 4, 15), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+        auto proj = glm::perspective(glm::radians(45.0f), m_swap_chain.aspectRatio(), 0.1f, 1000.0f);
+
+        /*
+        RtMaterialData material_data = {
+            .ambient = glm::vec4(0.0215f, 0.1745f, 0.0215f, 0.95f),
+            .diffuse = glm::vec4(0.54f, 0.89f, 0.63f, 0.95f),
+            .specular = glm::vec4(0.3162f, 0.3162f, 0.3162f, 0.95f),
+            .shininess = glm::vec4(12.8f)
+        };
+        */
+
+        RtMaterialData material_data = {
+            .ambient = glm::vec4(0.105882f, 0.058824f, 0.113725f, 1.0f),
+            .diffuse = glm::vec4(0.427451f, 0.470588f, 0.541176f, 1.0f),
+            .specular = glm::vec4(0.333333f, 0.333333f, 0.521569f, 1.0f),
+            .shininess = glm::vec4(9.84615f)
+        };
+
+        RtUniformData data = {
+            .viewProjection = view * proj,
+            .viewInverse = glm::inverse(view),
+            .projInverse = glm::inverse(proj),
+        };
+
         m_ubs.resize(2);
+        m_material_data.resize(2);
         for (auto i = 0; i < 2; i++)
         {
             m_ubs[i] = std::make_unique<re::UniformBuffer<RtUniformData>>(m_command_buffers);
-            auto view = glm::lookAt(glm::vec3(10, 10, 10), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
-            auto proj = glm::perspective(glm::radians(45.0f), m_swap_chain.aspectRatio(), 0.1f, 2000.0f);
-            RtUniformData data = {
-                .viewProjection = view * proj,
-                .viewInverse = glm::inverse(view),
-                .projInverse = glm::inverse(proj)
-            };
             m_ubs[i]->update(data);
+
+            m_material_data[i] = std::make_unique<re::UniformBuffer<RtMaterialData>>(m_command_buffers);
+            m_material_data[i]->update(material_data);
         }
 
         RtObjDesc obj_desc {
@@ -222,6 +271,12 @@ namespace re
             write2.setPBufferInfo(&obj_info);
             write2.setDstArrayElement(0);
             m_device.handle().updateDescriptorSets(1, &write2, 0, nullptr, m_device.dispatch());
+
+            vk::DescriptorBufferInfo material_info;
+            material_info.setBuffer(m_material_data[i]->buffer());
+            material_info.setOffset(0);
+            material_info.setRange(sizeof(RtMaterialData));
+            m_descriptors->update_descriptor_set(i, 4, material_info);
         }
     }
 
@@ -235,9 +290,9 @@ namespace re
 
         result = m_device.handle().createPipelineLayout(&pl_create_info, nullptr, &m_pipeline_layout, m_device.dispatch());
 
-        ShaderModule sh_rgen(vk::ShaderStageFlagBits::eRaygenKHR, "raytrace.rgen.spv", m_device);
-        ShaderModule sh_miss(vk::ShaderStageFlagBits::eMissKHR, "raytrace.rmiss.spv", m_device);
-        ShaderModule sh_chit(vk::ShaderStageFlagBits::eClosestHitKHR, "raytrace.rchit.spv", m_device);
+        ShaderModule sh_rgen(vk::ShaderStageFlagBits::eRaygenKHR, "reflection.rgen.spv", m_device);
+        ShaderModule sh_miss(vk::ShaderStageFlagBits::eMissKHR, "reflection.rmiss.spv", m_device);
+        ShaderModule sh_chit(vk::ShaderStageFlagBits::eClosestHitKHR, "reflection.rchit.spv", m_device);
 
         std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = {
             sh_rgen.stage_info(), sh_miss.stage_info(), sh_chit.stage_info()
@@ -268,7 +323,7 @@ namespace re
         create_info.setPStages(stage_infos.data());
         create_info.setGroupCount(shader_groups.size());
         create_info.setPGroups(shader_groups.data());
-        create_info.setMaxPipelineRayRecursionDepth(1);
+        create_info.setMaxPipelineRayRecursionDepth(2);
         create_info.setLayout(m_pipeline_layout);
 
         result = m_device.handle().createRayTracingPipelinesKHR(nullptr, nullptr,

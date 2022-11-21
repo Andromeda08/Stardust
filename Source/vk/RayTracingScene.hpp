@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 #include <rt/AccelerationStructure.hpp>
+#include <rt/Material.hpp>
 #include <rt/RtAccelerator.hpp>
 #include <vk/ComputePipeline.hpp>
 #include <vk/Image.hpp>
@@ -32,6 +33,13 @@ namespace re
             uint64_t vertex_addr;
             uint64_t index_addr;
         };
+        struct RtMaterialData
+        {
+            glm::vec4 ambient;
+            glm::vec4 diffuse;
+            glm::vec4 specular;
+            glm::vec4 shininess;
+        };
 
         RayTracingScene(const Swapchain& swap_chain, const CommandBuffer& command_buffers);
 
@@ -56,6 +64,7 @@ namespace re
          * @brief Generate random scene.
          */
         void build_objects();
+        void build_reflection_scene();
 
         /**
          * @brief Build acceleration structures from scene objects.
@@ -98,6 +107,7 @@ namespace re
         RtAccelerator m_accelerator;
         std::unique_ptr<re::vkImage> m_output;
         std::vector<std::unique_ptr<re::UniformBuffer<RtUniformData>>> m_ubs;
+        std::vector<std::unique_ptr<re::UniformBuffer<RtMaterialData>>> m_material_data;
         std::unique_ptr<re::Buffer> m_sbt;
         std::unique_ptr<re::Buffer> m_obj_desc;
 
