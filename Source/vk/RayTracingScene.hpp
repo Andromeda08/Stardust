@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 #include <rt/AccelerationStructure.hpp>
-#include <rt/Material.hpp>
 #include <rt/RtAccelerator.hpp>
 #include <vk/ComputePipeline.hpp>
 #include <vk/Image.hpp>
