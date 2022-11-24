@@ -34,25 +34,18 @@ layout (set = 0, binding = 2) uniform UBO {
     mat4 viewInverse;
     mat4 projInverse;
 } uni;
-layout (set = 0, binding = 3) buffer ObjDesc { ObjectDesc i; } obj_desc;
-layout (set = 0, binding = 4) uniform MaterialUniform {
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
-    vec4 shininess;
-} mat;
+layout (set = 0, binding = 3) buffer ObjDesc { ObjectDesc object_description; };
+layout (set = 0, binding = 4) uniform MaterialUniform { Material materials[3]; };
+
+layout (push_constant) uniform RtPushConstants
+{
+    int material_index;
+};
 
 void main()
 {
-    ObjectDesc obj      = obj_desc.i;
-    Vertices   vertices = Vertices(obj.vertex_addr);
-    Indices    indices  = Indices(obj.index_addr);
-
-    Material material;
-    material.ambient = mat.ambient.xyz;
-    material.diffuse = mat.diffuse.xyz;
-    material.specular = mat.specular.xyz;
-    material.shininess = mat.shininess.x;
+    Vertices   vertices = Vertices(object_description.vertex_addr);
+    Indices    indices  = Indices(object_description.index_addr);
 
     ivec3 idx = indices.i[gl_PrimitiveID];
 
@@ -67,7 +60,7 @@ void main()
     const vec3 world_normal = normalize(vec3(normal * gl_WorldToObjectEXT));
 
     LightInformation li;
-    li.light_intensity = 50000.0;
+    li.light_intensity = 35000.0;
     li.light_position  = vec3(-16, 64, -76);
 
     vec3  light           = vec3(0);
@@ -80,12 +73,13 @@ void main()
     light_intensity = li.light_intensity / (light_distance * light_distance);
     light           = normalize(light_dir);
 
-    vec3 diffuse      = compute_diffuse(material, light, world_normal);
-    vec3 specular     = compute_specular(material, gl_WorldRayDirectionEXT, light, world_normal);
+    int  matidx   = material_index;
+    vec3 diffuse  = compute_diffuse(materials[matidx], light, world_normal);
+    vec3 specular = compute_specular(materials[matidx], gl_WorldRayDirectionEXT, light, world_normal);
 
     prd.ray_origin   = world_pos;
     prd.ray_dir      = reflect(gl_WorldRayDirectionEXT, world_normal);
-    prd.attenuation *= material.specular;
+    prd.attenuation *= materials[matidx].specular.xyz;
     prd.done         = 0;
 
     prd.hit_value    = vec3((diffuse + specular) * light_intensity);
