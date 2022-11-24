@@ -11,5 +11,7 @@ namespace re
         glm::vec3 r_axis { 0, 1, 0 };
         float r_angle { 0.0f };
         glm::vec3 color { 0.5f };
+        int material_idx { 0 };
+        int hit_group { 0 };
     };
 }
