@@ -299,6 +299,11 @@ namespace re
                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                  command_buffer) {}
 
+        explicit UniformBuffer(uint32_t obj_count, const CommandBuffer& command_buffer)
+        : Buffer(sizeof(T) * obj_count, vk::BufferUsageFlagBits::eUniformBuffer,
+                 vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                 command_buffer) {}
+
         UniformBuffer(const T& ubo, const CommandBuffer& command_buffer)
         : Buffer(sizeof(T), vk::BufferUsageFlagBits::eUniformBuffer,
                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -315,6 +320,11 @@ namespace re
         void update(const T& ubo) const
         {
             Buffer::set_data(&ubo, *this, m_command_buffer);
+        }
+
+        void update(const T* p_data) const
+        {
+            Buffer::set_data(p_data, *this, m_command_buffer);
         }
 
         /**

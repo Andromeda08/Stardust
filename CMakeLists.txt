@@ -81,7 +81,7 @@ add_executable(${PROJECT_NAME}
         Source/vk/Sampler.hpp
         Source/vk/RayTracingScene.hpp Source/vk/RayTracingScene.cpp
         Source/rt/AccelerationStructure.hpp Source/rt/AccelerationStructure.cpp
-        Source/rt/RtAccelerator.hpp)
+        Source/rt/RtAccelerator.hpp Source/Vulkan/Descriptor/DescriptorWrites.hpp)
 
 # Link to libraries and add include directories
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)

@@ -39,6 +39,10 @@ namespace re
             glm::vec4 specular;
             glm::vec4 shininess;
         };
+        struct RtPushConstants
+        {
+            int material_index;
+        };
 
         RayTracingScene(const Swapchain& swap_chain, const CommandBuffer& command_buffers);
 
@@ -120,6 +124,7 @@ namespace re
         vk::PipelineLayout m_pipeline_layout;
 
         // Scene objects
+        std::vector<RtMaterialData> m_materials;
         std::vector<InstanceData> m_instance_data;
         std::unique_ptr<InstancedGeometry> m_objects;
 

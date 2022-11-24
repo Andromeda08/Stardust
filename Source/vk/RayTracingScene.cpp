@@ -1,5 +1,7 @@
 #include "RayTracingScene.hpp"
 
+#include <Vulkan/Descriptor/DescriptorWrites.hpp>
+
 namespace re
 {
     RayTracingScene::RayTracingScene(const Swapchain &swap_chain, const CommandBuffer &command_buffers)
@@ -30,9 +32,22 @@ namespace re
 
     void RayTracingScene::trace_rays(uint32_t current_frame, vk::CommandBuffer cmd)
     {
+        RtAccelerator::rebuild_top_level(*m_objects, m_accelerator, m_command_buffers);
+
+        vk::WriteDescriptorSetAccelerationStructureKHR as_info;
+        as_info.setAccelerationStructureCount(1);
+        as_info.setPAccelerationStructures(&m_accelerator.tlas.tlas);
+
+        DescriptorWrites(m_device, *m_descriptors)
+            .acceleration_structure(current_frame, 0, as_info)
+            .commit();
+
+        std::vector<RtPushConstants> pc = {{ 0 }};
+
         cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_pipeline);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_pipeline_layout, 0, 1,
                                &m_descriptors->get_set(current_frame), 0, nullptr);
+        cmd.pushConstants(m_pipeline_layout, vk::ShaderStageFlagBits::eClosestHitKHR, 0, sizeof(RtPushConstants), pc.data());
 
         auto sbt_slot_size = m_rt_props.shaderGroupHandleSize;
         auto miss_offset = round_up(sbt_slot_size, m_rt_props.shaderGroupBaseAlignment);
@@ -57,7 +72,7 @@ namespace re
 
         auto e = m_swap_chain.extent();
         cmd.traceRaysKHR(&raygen_sbt, &miss_sbt, &chit_sbt, &callable_sbt,
-                         e.width, e.height, 1, m_device.dispatch());
+                         e.width, e.height, 2, m_device.dispatch());
     }
 
     void RayTracingScene::blit(uint32_t current_frame, vk::CommandBuffer cmd)
@@ -103,16 +118,42 @@ namespace re
 
     void RayTracingScene::build_objects()
     {
+#pragma region material_library
+        m_materials.push_back({
+            .ambient = glm::vec4(0.25f, 0.20725f, 0.20725f, 0.922f),
+            .diffuse = glm::vec4(1.0f, 0.829f, 0.829f, 0.922f),
+            .specular = glm::vec4(0.296648f, 0.296648f, 0.296648f, 0.922f),
+            .shininess = glm::vec4(11.264f)
+        });
+
+        m_materials.push_back({
+            .ambient = glm::vec4(0.105882f, 0.058824f, 0.113725f, 1.0f),
+            .diffuse = glm::vec4(0.427451f, 0.470588f, 0.541176f, 1.0f),
+            .specular = glm::vec4(0.333333f, 0.333333f, 0.521569f, 1.0f),
+            .shininess = glm::vec4(9.84615f)
+        });
+
+        m_materials.push_back({
+            .ambient = glm::vec4(0.05375f, 0.05f, 0.06625f, 0.82f),
+            .diffuse = glm::vec4(0.18275f, 0.17f, 0.22525f, 0.82f),
+            .specular = glm::vec4(0.332741f, 0.328634f, 0.346435f, 0.82f),
+            .shininess = glm::vec4(38.4f)
+        });
+#pragma endregion
+
         auto seed = static_cast<unsigned>(time(nullptr));
         std::cout << "Seed: " << seed << std::endl;
 
-        std::default_random_engine rand(1669071706);
-        std::uniform_int_distribution<int> uniform_dist(-32,32);
+        // 1669071706
+        std::default_random_engine rand(seed);
+        std::uniform_int_distribution<int> uniform_dist(-48,48);
         std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
         std::uniform_real_distribution<float> scale_mod(1.0f, 5.0f);
 
-        for (int i = 0; i < 192; i++)
+        for (int i = 0; i < 1024; i++)
         {
+            int mat = rand() % m_materials.size();
+
             auto x = (float) uniform_dist(rand);
             auto y = (float) uniform_dist(rand);
             auto z = (float) uniform_dist(rand);
@@ -120,34 +161,15 @@ namespace re
             m_instance_data.push_back({
                 .translate = glm::vec3{ x, y, z },
                 .scale = glm::vec3{ scale_mod(rand) },
-                .r_axis = glm::vec3{ 1 },
+                .r_axis = glm::vec3{ uniform_dist(rand), uniform_dist(rand), uniform_dist(rand) },
                 .r_angle = uniform_float(rand) * 360.0f,
-                .color = glm::vec4{ uniform_float(rand), uniform_float(rand), uniform_float(rand), 1.0f }
+                .color = glm::vec4{ uniform_float(rand), uniform_float(rand), uniform_float(rand), 1.0f },
+                .material_idx = mat,
+                .hit_group = 0
             });
         }
 
-        m_objects = std::make_unique<InstancedGeometry>(new SphereGeometry(1.0f), m_instance_data, m_command_buffers);
-    }
-
-    void RayTracingScene::build_reflection_scene()
-    {
-        m_instance_data.push_back(re::InstanceData {
-            .translate = glm::vec3(2, 0, 0),
-            .scale = glm::vec3(5.0f),
-            .r_axis = glm::vec3{ 1 },
-            .r_angle = 60.0f,
-            .color = glm::vec4(0.5f)
-        });
-
-        m_instance_data.push_back(re::InstanceData {
-            .translate = glm::vec3(0, -5, 0),
-            .scale = glm::vec3(2.5f),
-            .r_axis = glm::vec3{ 1 },
-            .r_angle = 0.0f,
-            .color = glm::vec4(0.5f)
-        });
-
-        m_objects = std::make_unique<InstancedGeometry>(new SphereGeometry(1.0f), m_instance_data, m_command_buffers);
+        m_objects = std::make_unique<InstancedGeometry>(new CubeGeometry(1.0f), m_instance_data, m_command_buffers);
     }
 
     void RayTracingScene::build_acceleration_structures()
@@ -178,24 +200,8 @@ namespace re
         m_output->transition_layout(vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
 
-        auto view = glm::lookAt(glm::vec3(15, 4, 15), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+        auto view = glm::lookAt(glm::vec3(10, 4, 10), glm::vec3(0, 0, 0), glm::vec3(0, -1, 0));
         auto proj = glm::perspective(glm::radians(45.0f), m_swap_chain.aspectRatio(), 0.1f, 1000.0f);
-
-        /*
-        RtMaterialData material_data = {
-            .ambient = glm::vec4(0.0215f, 0.1745f, 0.0215f, 0.95f),
-            .diffuse = glm::vec4(0.54f, 0.89f, 0.63f, 0.95f),
-            .specular = glm::vec4(0.3162f, 0.3162f, 0.3162f, 0.95f),
-            .shininess = glm::vec4(12.8f)
-        };
-        */
-
-        RtMaterialData material_data = {
-            .ambient = glm::vec4(0.105882f, 0.058824f, 0.113725f, 1.0f),
-            .diffuse = glm::vec4(0.427451f, 0.470588f, 0.541176f, 1.0f),
-            .specular = glm::vec4(0.333333f, 0.333333f, 0.521569f, 1.0f),
-            .shininess = glm::vec4(9.84615f)
-        };
 
         RtUniformData data = {
             .viewProjection = view * proj,
@@ -210,73 +216,45 @@ namespace re
             m_ubs[i] = std::make_unique<re::UniformBuffer<RtUniformData>>(m_command_buffers);
             m_ubs[i]->update(data);
 
-            m_material_data[i] = std::make_unique<re::UniformBuffer<RtMaterialData>>(m_command_buffers);
-            m_material_data[i]->update(material_data);
+            m_material_data[i] = std::make_unique<re::UniformBuffer<RtMaterialData>>(m_materials.size(), m_command_buffers);
+            m_material_data[i]->update(m_materials.data());
         }
 
         RtObjDesc obj_desc {
             .vertex_addr = m_objects->mesh().vertex_buffer().address(),
             .index_addr = m_objects->mesh().index_buffer().address(),
         };
-        vk::DeviceSize size = sizeof(RtObjDesc);
-        m_obj_desc = std::make_unique<re::Buffer>(size,
+
+        m_obj_desc = std::make_unique<re::Buffer>(sizeof(RtObjDesc),
                                                   vk::BufferUsageFlagBits::eStorageBuffer,
                                                   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                                                   m_command_buffers);
         re::Buffer::set_data(&obj_desc, *m_obj_desc, m_command_buffers);
 
-        for (auto i = 0 ; i < 2; i++)
+        for (auto i = 0; i < 2; i++)
         {
-            vk::WriteDescriptorSetAccelerationStructureKHR accel;
-            accel.setAccelerationStructureCount(1);
-            accel.setPAccelerationStructures(&m_accelerator.tlas.tlas);
-
-            vk::WriteDescriptorSet accelw;
-            accelw.setDstBinding(0);
-            accelw.setDstSet(m_descriptors->get_set(i));
-            accelw.setDescriptorCount(1);
-            accelw.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
-            accelw.setDstArrayElement(0);
-            accelw.setPNext(&accel);
-            m_device.handle().updateDescriptorSets(1, &accelw, 0, nullptr, m_device.dispatch());
+            vk::WriteDescriptorSetAccelerationStructureKHR as_info;
+            as_info.setAccelerationStructureCount(1);
+            as_info.setPAccelerationStructures(&m_accelerator.tlas.tlas);
 
             vk::DescriptorImageInfo image_info;
             image_info.setImageView(m_output->view());
             image_info.setImageLayout(vk::ImageLayout::eGeneral);
 
-            vk::WriteDescriptorSet write;
-            write.setDstBinding(1);
-            write.setDstSet(m_descriptors->get_set(i));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eStorageImage);
-            write.setPImageInfo(&image_info);
-            write.setDstArrayElement(0);
-            m_device.handle().updateDescriptorSets(1, &write, 0, nullptr, m_device.dispatch());
+            auto ubo_info = DescriptorWrites::buffer_info<RtUniformData>(m_ubs[i]->buffer());
+            auto obj_info = DescriptorWrites::buffer_info<RtObjDesc>(m_obj_desc->buffer());
+            vk::DescriptorBufferInfo mat_info;
+            mat_info.setBuffer(m_material_data[i]->buffer());
+            mat_info.setRange(sizeof(RtMaterialData) * m_materials.size());
+            mat_info.setOffset(0);
 
-            vk::DescriptorBufferInfo ubo_info;
-            ubo_info.setBuffer(m_ubs[i]->buffer());
-            ubo_info.setOffset(0);
-            ubo_info.setRange(sizeof(RtUniformData));
-            m_descriptors->update_descriptor_set(i, 2, ubo_info);
-
-            vk::DescriptorBufferInfo obj_info;
-            obj_info.setBuffer(m_obj_desc->buffer());
-            obj_info.setOffset(0);
-            obj_info.setRange(sizeof(RtObjDesc));
-            vk::WriteDescriptorSet write2;
-            write2.setDstBinding(3);
-            write2.setDstSet(m_descriptors->get_set(i));
-            write2.setDescriptorCount(1);
-            write2.setDescriptorType(vk::DescriptorType::eStorageBuffer);
-            write2.setPBufferInfo(&obj_info);
-            write2.setDstArrayElement(0);
-            m_device.handle().updateDescriptorSets(1, &write2, 0, nullptr, m_device.dispatch());
-
-            vk::DescriptorBufferInfo material_info;
-            material_info.setBuffer(m_material_data[i]->buffer());
-            material_info.setOffset(0);
-            material_info.setRange(sizeof(RtMaterialData));
-            m_descriptors->update_descriptor_set(i, 4, material_info);
+            DescriptorWrites(m_device, *m_descriptors)
+                .acceleration_structure(i, 0, as_info)
+                .storage_image(i, 1, image_info)
+                .uniform_buffer(i, 2, ubo_info)
+                .storage_buffer(i, 3, obj_info)
+                .uniform_buffer(i, 4, mat_info)
+                .commit();
         }
     }
 
@@ -284,9 +262,16 @@ namespace re
     {
         vk::Result result;
 
+        vk::PushConstantRange push_constant;
+        push_constant.setOffset(0);
+        push_constant.setStageFlags(vk::ShaderStageFlagBits::eClosestHitKHR);
+        push_constant.setSize(sizeof(RtPushConstants));
+
         vk::PipelineLayoutCreateInfo pl_create_info;
         pl_create_info.setSetLayoutCount(1);
         pl_create_info.setPSetLayouts(&m_dsl);
+        pl_create_info.setPushConstantRangeCount(1);
+        pl_create_info.setPPushConstantRanges(&push_constant);
 
         result = m_device.handle().createPipelineLayout(&pl_create_info, nullptr, &m_pipeline_layout, m_device.dispatch());
 
