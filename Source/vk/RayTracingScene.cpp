@@ -120,6 +120,13 @@ namespace re
     {
 #pragma region material_library
         m_materials.push_back({
+            .ambient = glm::vec4(0.1745f, 0.01175f, 0.01175f, 0.55f),
+            .diffuse = glm::vec4(0.61424f, 0.04136f, 0.04136f, 0.55f),
+            .specular = glm::vec4(0.727811f, 0.626959f, 0.626959f, 0.55f),
+            .shininess = glm::vec4(76.8f)
+        });
+
+        m_materials.push_back({
             .ambient = glm::vec4(0.25f, 0.20725f, 0.20725f, 0.922f),
             .diffuse = glm::vec4(1.0f, 0.829f, 0.829f, 0.922f),
             .specular = glm::vec4(0.296648f, 0.296648f, 0.296648f, 0.922f),
