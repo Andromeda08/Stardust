@@ -3,12 +3,12 @@
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include "DepthBuffer.hpp"
-#include "Device.hpp"
-#include "Image/Image.hpp"
-#include "Image/ImageView.hpp"
-#include "GraphicsPipeline/RenderPass.hpp"
-#include "../Utility/Macro.hpp"
+#include <Vulkan/Device.hpp>
+#include <Vulkan/Image/Image.hpp>
+#include <Vulkan/Image/ImageView.hpp>
+#include <Vulkan/GraphicsPipeline/RenderPass.hpp>
+#include <Utility/Macro.hpp>
+#include <vk/Image.hpp>
 
 class Swapchain {
 public:
@@ -22,7 +22,7 @@ public:
     /**
      * @brief Build frame buffers after a render pass and depth buffer have been created.
      */
-    void createFrameBuffers(const RenderPass& renderPass, const DepthBuffer& depthBuffer);
+    void createFrameBuffers(const RenderPass& renderPass, const re::DepthBuffer& depthBuffer);
 
     /**
      * @brief Get framebuffer for the frame specified by index.
@@ -39,6 +39,8 @@ public:
     vk::Extent2D extent() const { return mExtent; }
 
     vk::Format format() const { return mFormat; }
+
+    uint32_t image_count() const { return mImages.size(); }
 #pragma endregion
 
 #pragma region scissor_viewport
@@ -63,6 +65,18 @@ public:
         viewport.setY(0.0f);
         viewport.setWidth((float) mExtent.width);
         viewport.setHeight((float) mExtent.height);
+        viewport.setMaxDepth(1.0f);
+        viewport.setMinDepth(0.0f);
+        return viewport;
+    }
+
+    vk::Viewport make_negative_viewport() const
+    {
+        vk::Viewport viewport;
+        viewport.setX(0.0f);
+        viewport.setY((float) mExtent.height);
+        viewport.setWidth((float) mExtent.width);
+        viewport.setHeight(-(float) mExtent.height);
         viewport.setMaxDepth(1.0f);
         viewport.setMinDepth(0.0f);
         return viewport;

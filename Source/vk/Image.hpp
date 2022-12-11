@@ -10,7 +10,7 @@ namespace re
     public:
         vkImage(vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling,
                 vk::ImageUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
-                const CommandBuffer& command_buffers);
+                vk::ImageAspectFlags aspect_flags, const CommandBuffer& command_buffers);
 
         /**
          * @brief Transitions the layout of the specified image from A to B.
@@ -43,5 +43,37 @@ namespace re
         vk::ImageView    m_view;
 
         const CommandBuffer& m_command_buffers;
+    };
+
+    class DepthBuffer : public vkImage
+    {
+    public:
+        DepthBuffer(vk::Extent2D extent, const CommandBuffer& command_buffers)
+            : vkImage(extent,
+                      find_depth_format(command_buffers.device()),
+                      vk::ImageTiling::eOptimal,
+                      vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                      vk::MemoryPropertyFlagBits::eDeviceLocal,
+                      vk::ImageAspectFlagBits::eDepth,
+                      command_buffers) {}
+
+    private:
+        static vk::Format find_depth_format(const Device& device,
+                                            const std::vector<vk::Format>& candidates = { vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint })
+        {
+            for (vk::Format format : candidates)
+            {
+                auto props = device.physicalDevice().getFormatProperties(format);
+
+                if ((props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) ==
+                    vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+                {
+                    return format;
+                }
+            }
+
+            throw std::runtime_error("Failed to find supported format for depth buffer.");
+        }
+
     };
 }

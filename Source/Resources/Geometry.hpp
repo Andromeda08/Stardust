@@ -3,13 +3,6 @@
 #include <vk/VertexData.hpp>
 #include <glm/glm.hpp>
 
-struct InstanceData
-{
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec3 scale;
-};
-
 class Geometry
 {
 public:
@@ -26,8 +19,8 @@ protected:
 class SphereGeometry : public Geometry
 {
 public:
-    SphereGeometry(float radius = 1.0f, glm::vec3 color = { 0.5f, 0.5f, 0.5f }, int resolution = 40)
-        : Geometry()
+    explicit SphereGeometry(float radius = 1.0f, glm::vec3 color = { 0.5f, 0.5f, 0.5f }, int resolution = 40)
+    : Geometry()
     {
         this->m_vertices = gen_vertices(resolution, resolution, radius, color);
         this->m_indices  = gen_indices(resolution, resolution);
@@ -107,8 +100,8 @@ private:
 class CubeGeometry : public Geometry
 {
 public:
-    CubeGeometry(float scale = 1.0f, glm::vec3 color = { 0.5f, 0.5f, 0.5f })
-        : Geometry()
+    explicit CubeGeometry(float scale = 1.0f, glm::vec3 color = { 0.5f, 0.5f, 0.5f })
+    : Geometry()
     {
         this->m_vertices = gen_vertices(scale, color);
         this->m_indices  = gen_indices();

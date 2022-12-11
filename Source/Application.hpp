@@ -2,24 +2,17 @@
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
-#include <Resources/Geometry.hpp>
 #include <Struct/ApplicationSettings.hpp>
 #include <Utility/Macro.hpp>
 #include <Vulkan/DebugMessenger.hpp>
-#include <Vulkan/DepthBuffer.hpp>
 #include <Vulkan/Swapchain.hpp>
 #include <Vulkan/Command/CommandBuffer.hpp>
 #include <Vulkan/Descriptor/DescriptorSets.hpp>
 #include <Vulkan/Synchronization/Fence.hpp>
 #include <Vulkan/Synchronization/Semaphore.hpp>
-#include <vk/Buffer.hpp>
-#include <vk/Sampler.hpp>
 #include <vk/Scene.hpp>
-#include <vk/Texture.hpp>
-
-#if !defined(__APPLE__)
-    #include <vk/RayTracingScene.hpp>
-#endif
+#include <vk/RayTracingScene.hpp>
+#include <Scenes/Terrain/TerrainScene.hpp>
 
 class Application {
 public:
@@ -35,13 +28,9 @@ public:
      */
     void run();
 
-    std::vector<const char*> deviceExtensions() const { return mRequiredDeviceExtensions; }
-
 private:
-    /**
-     * @brief Draw frame :D
-     */
     void rasterize();
+
     void raytrace();
 
     /**
@@ -66,22 +55,13 @@ private:
     void createSwapChain();
 
     /**
-     * @brief Creates the raster Graphics Pipeline
-     */
-    vk::Pipeline createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source);
-
-    /**
-     * @brief Updates the specified uniform buffer.
-     */
-    void updateUniformBuffer(size_t index);
-
-    /**
      * @brief Free resources.
      */
     void cleanup();
 
-#pragma region debug_and_print_utilities
-
+    /**
+     * @brief Names a couple of vulkan objects for debugging.
+     */
     void name_vk_objects();
 
     /**
@@ -89,39 +69,22 @@ private:
      */
     void printDevices();
 
-#pragma endregion
-
 private:
-    ApplicationSettings mSettings {};
-
-    VkDebugUtilsMessengerEXT mDebugMessenger;
-
-    std::unique_ptr<class Window>    mWindow;
-    std::unique_ptr<class Instance>  mInstance;
-    std::unique_ptr<class Surface>   mSurface;
-    std::unique_ptr<class Device>    mDevice;
-    std::unique_ptr<Swapchain>       mSwapChain;
-    std::unique_ptr<DepthBuffer>     mDepthBuffer;
-    std::unique_ptr<CommandBuffer>   mCommandBuffers;
+    ApplicationSettings             mSettings {};
+    VkDebugUtilsMessengerEXT        mDebugMessenger;
+    std::unique_ptr<class Window>   mWindow;
+    std::unique_ptr<class Instance> mInstance;
+    std::unique_ptr<class Surface>  mSurface;
+    std::unique_ptr<class Device>   mDevice;
+    std::unique_ptr<Swapchain>      mSwapChain;
+    std::unique_ptr<CommandBuffer>  mCommandBuffers;
 
 #pragma region rendering
 
-#if defined(__APPLE__)
-    std::unique_ptr<re::Scene> mScene;
-#else
-    std::unique_ptr<re::RayTracingScene> mScene;
-#endif
-
-    std::unique_ptr<RenderPass>     mRenderPass;
-    vk::DescriptorSetLayout         mDescriptorSetLayout;
-    std::unique_ptr<DescriptorSets> mDescriptorSets;
-    std::unique_ptr<re::Sampler>    mSampler2D;
-    std::unique_ptr<re::Texture>    mTexture2D;
-    vk::PipelineLayout              mPipelineLayout;
-    vk::Pipeline                    mGraphicsPipeline;
-    uint32_t                        mCurrentFrame {};
-
-    std::vector<std::unique_ptr<re::UniformBuffer<re::UniformData>>> mUniformBuffers;
+    std::unique_ptr<re::Scene>           mScene1;
+    std::unique_ptr<re::RayTracingScene> mScene2;
+    std::unique_ptr<TerrainScene>        mScene3;
+    uint32_t                             mCurrentFrame {0};
 
 #pragma endregion
 
@@ -129,14 +92,16 @@ private:
     std::vector<Semaphore> mRenderFinishedSemaphores = {};
     std::vector<Semaphore> mImageAvailableSemaphores = {};
 
-    std::vector<const char*> mDefaultExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        "VK_KHR_portability_subset"
-    };
+#pragma region device_extensions
 
-    // Device extensions with ray tracing in mind
-    const std::vector<const char*> mRequiredDeviceExtensions = {
+const std::vector<const char*> mRequiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+#if defined(__APPLE__)
+        "VK_KHR_portability_subset"
+#endif
+    };
+    const std::vector<const char*> mRaytracingDeviceExtensions = {
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
@@ -144,3 +109,5 @@ private:
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
 };
+
+#pragma endregion

@@ -1,64 +1,82 @@
 #pragma once
 
+#include <chrono>
+#include <memory>
 #include <random>
+#include <unordered_map>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <Camera.hpp>
 #include <Resources/Geometry.hpp>
 #include <Utility/Math.hpp>
 #include <Vulkan/Command/CommandBuffer.hpp>
+#include <Vulkan/Descriptor/DescriptorSetLayout.hpp>
+#include <Vulkan/Descriptor/DescriptorWrites.hpp>
 #include <vk/Buffer.hpp>
+#include <vk/Image.hpp>
 #include <vk/InstancedGeometry.hpp>
 #include <vk/Mesh.hpp>
 #include <vk/UniformData.hpp>
+#include <vk/Texture.hpp>
+#include <vk/PipelineBuilder.hpp>
 
 namespace re
 {
     class Scene
     {
     public:
-        explicit Scene(const CommandBuffer& command_buffer)
-        : m_command_buffers(command_buffer)
+        enum SceneBindings { eCamera, eDefaultTexture };
+        struct CameraUniform
         {
-            create_objects();
-        }
+            glm::mat4 view;
+            glm::mat4 projection;
+            glm::mat4 view_inverse;
+            glm::mat4 proj_inverse;
 
-        void create_objects()
-        {
-            std::default_random_engine rand(static_cast<unsigned>(time(nullptr)));
-            std::uniform_int_distribution<int> uniform_dist(-1 * 128, 128);
-            std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
-            std::uniform_real_distribution<float> scale_mod(1.0f, 4.0f);
+            glm::mat4 model;
+        };
 
-            for (int i = 0; i < 128; i++)
-            {
-                auto x = (float) uniform_dist(rand);
-                auto y = (float) uniform_dist(rand);
-                auto z = (float) uniform_dist(rand);
+        Scene(Swapchain& swapchain, const CommandBuffer& command_buffer);
 
-                m_instance_data.push_back({
-                    .translate = glm::vec3{ x, y, z },
-                    .scale = glm::vec3{ scale_mod(rand) },
-                    .r_axis = glm::vec3{ 1 },
-                    .r_angle = 0.0f,
-                    .color = glm::vec4{ uniform_float(rand), uniform_float(rand), uniform_float(rand), 1.0f }
-                });
-            }
+        virtual void rasterize(size_t current_frame, vk::CommandBuffer cmd);
 
-            m_objects.push_back(std::make_unique<InstancedGeometry>(new CubeGeometry(2.0f), m_instance_data, m_command_buffers));
-        }
-
-        virtual void draw(size_t current_frame, vk::CommandBuffer cmd) const
-        {
-
-            for (const auto& obj : m_objects)
-            {
-                obj->draw_instanced(cmd);
-            }
-        }
+        Camera& camera() { return *m_camera3d; }
 
     private:
-        const CommandBuffer& m_command_buffers;
+        void create_objects();
 
-        std::vector<InstanceData> m_instance_data;
-        std::vector<std::unique_ptr<InstancedGeometry>> m_objects;
+        void build_default_rendering_pipeline(const std::vector<std::string>& default_shaders);
+
+        void update_camera(uint32_t index) const;
+
+    private:
+        template <typename T>
+        using u_ptr = std::unique_ptr<T>;
+
+        const CommandBuffer& m_command_buffers;
+        const Device&        m_device;
+        Swapchain&           m_swapchain;
+
+        std::vector<u_ptr<re::Mesh>> m_objects;
+        std::vector<u_ptr<re::InstancedGeometry>> m_instanced_objects;
+
+        u_ptr<Camera> m_camera3d;
+        std::vector<u_ptr<re::UniformBuffer<CameraUniform>>> m_uniform_camera;
+
+        std::vector<u_ptr<re::Texture>> m_textures;
+        std::vector<u_ptr<re::Sampler>> m_samplers;
+
+        std::vector<vk::DescriptorSetLayoutBinding> m_dslb;
+        vk::DescriptorSetLayout                     m_dsl;
+        u_ptr<DescriptorSets>                       m_descriptors;
+
+        u_ptr<RenderPass>             m_render_pass;
+        u_ptr<re::DepthBuffer>        m_depth_buffer;
+        vk::Rect2D                    m_render_area;
+        std::array<vk::ClearValue, 2> m_clear_values;
+
+        Pipeline m_pipeline;
+
+        std::default_random_engine m_rand;
     };
 }

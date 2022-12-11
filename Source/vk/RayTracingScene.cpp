@@ -12,16 +12,11 @@ namespace re
         m_command_buffers.device().physicalDevice()
             .getProperties2(&pdp, m_command_buffers.device().dispatch());
 
-        // Build ray tracing scene and pipeline
         build_objects();
-        //build_reflection_scene();
         build_acceleration_structures();
         build_descriptors();
         build_rt_pipeline();
         build_sbt();
-
-        // Build compute pipeline for copying output to swapchain
-        // build_compute_pipeline();
     }
 
     void RayTracingScene::rasterize(uint32_t current_frame, vk::CommandBuffer cmd)
@@ -42,7 +37,7 @@ namespace re
             .acceleration_structure(current_frame, 0, as_info)
             .commit();
 
-        std::vector<RtPushConstants> pc = {{ 0 }};
+        std::vector<RtPushConstants> pc = {{ m_current_material }};
 
         cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_pipeline);
         cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_pipeline_layout, 0, 1,
@@ -116,48 +111,20 @@ namespace re
                                 subresource_range);
     }
 
-    void RayTracingScene::build_objects()
+    void RayTracingScene::build_objects(uint32_t entities)
     {
-#pragma region material_library
-        m_materials.push_back({
-            .ambient = glm::vec4(0.1745f, 0.01175f, 0.01175f, 0.55f),
-            .diffuse = glm::vec4(0.61424f, 0.04136f, 0.04136f, 0.55f),
-            .specular = glm::vec4(0.727811f, 0.626959f, 0.626959f, 0.55f),
-            .shininess = glm::vec4(76.8f)
-        });
-
-        m_materials.push_back({
-            .ambient = glm::vec4(0.25f, 0.20725f, 0.20725f, 0.922f),
-            .diffuse = glm::vec4(1.0f, 0.829f, 0.829f, 0.922f),
-            .specular = glm::vec4(0.296648f, 0.296648f, 0.296648f, 0.922f),
-            .shininess = glm::vec4(11.264f)
-        });
-
-        m_materials.push_back({
-            .ambient = glm::vec4(0.105882f, 0.058824f, 0.113725f, 1.0f),
-            .diffuse = glm::vec4(0.427451f, 0.470588f, 0.541176f, 1.0f),
-            .specular = glm::vec4(0.333333f, 0.333333f, 0.521569f, 1.0f),
-            .shininess = glm::vec4(9.84615f)
-        });
-
-        m_materials.push_back({
-            .ambient = glm::vec4(0.05375f, 0.05f, 0.06625f, 0.82f),
-            .diffuse = glm::vec4(0.18275f, 0.17f, 0.22525f, 0.82f),
-            .specular = glm::vec4(0.332741f, 0.328634f, 0.346435f, 0.82f),
-            .shininess = glm::vec4(38.4f)
-        });
-#pragma endregion
+        m_materials = { Materials::purple, Materials::obsidian, Materials::ruby, Materials::pearl,
+                        Materials::gold, Materials::emerald, Materials::cyan };
 
         auto seed = static_cast<unsigned>(time(nullptr));
         std::cout << "Seed: " << seed << std::endl;
 
-        // 1669071706
         std::default_random_engine rand(seed);
         std::uniform_int_distribution<int> uniform_dist(-48,48);
         std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
         std::uniform_real_distribution<float> scale_mod(1.0f, 5.0f);
 
-        for (int i = 0; i < 1024; i++)
+        for (int i = 0; i < entities; i++)
         {
             int mat = rand() % m_materials.size();
 
@@ -202,6 +169,7 @@ namespace re
                                                  vk::ImageTiling::eOptimal,
                                                  vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc,
                                                  vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                                 vk::ImageAspectFlagBits::eColor,
                                                  m_command_buffers);
 
         m_output->transition_layout(vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
@@ -223,7 +191,7 @@ namespace re
             m_ubs[i] = std::make_unique<re::UniformBuffer<RtUniformData>>(m_command_buffers);
             m_ubs[i]->update(data);
 
-            m_material_data[i] = std::make_unique<re::UniformBuffer<RtMaterialData>>(m_materials.size(), m_command_buffers);
+            m_material_data[i] = std::make_unique<re::UniformBuffer<Material>>(m_materials.size(), m_command_buffers);
             m_material_data[i]->update(m_materials.data());
         }
 
@@ -252,7 +220,7 @@ namespace re
             auto obj_info = DescriptorWrites::buffer_info<RtObjDesc>(m_obj_desc->buffer());
             vk::DescriptorBufferInfo mat_info;
             mat_info.setBuffer(m_material_data[i]->buffer());
-            mat_info.setRange(sizeof(RtMaterialData) * m_materials.size());
+            mat_info.setRange(sizeof(Material) * m_materials.size());
             mat_info.setOffset(0);
 
             DescriptorWrites(m_device, *m_descriptors)
@@ -282,9 +250,9 @@ namespace re
 
         result = m_device.handle().createPipelineLayout(&pl_create_info, nullptr, &m_pipeline_layout, m_device.dispatch());
 
-        ShaderModule sh_rgen(vk::ShaderStageFlagBits::eRaygenKHR, "reflection.rgen.spv", m_device);
-        ShaderModule sh_miss(vk::ShaderStageFlagBits::eMissKHR, "reflection.rmiss.spv", m_device);
-        ShaderModule sh_chit(vk::ShaderStageFlagBits::eClosestHitKHR, "reflection.rchit.spv", m_device);
+        Shader sh_rgen("reflection.rgen.spv", vk::ShaderStageFlagBits::eRaygenKHR, m_device);
+        Shader sh_miss("reflection.rmiss.spv", vk::ShaderStageFlagBits::eMissKHR,  m_device);
+        Shader sh_chit("reflection.rchit.spv", vk::ShaderStageFlagBits::eClosestHitKHR, m_device);
 
         std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = {
             sh_rgen.stage_info(), sh_miss.stage_info(), sh_chit.stage_info()
@@ -349,61 +317,14 @@ namespace re
         re::Buffer::set_data(data.data(), *m_sbt, m_command_buffers);
     }
 
-    void RayTracingScene::build_compute_pipeline()
+    void RayTracingScene::rt_keybinds(GLFWwindow *window)
     {
-        m_compute_dsl = DescriptorSetLayout()
-            .sampler(0, vk::ShaderStageFlagBits::eCompute)
-            .sampled_image(1, vk::ShaderStageFlagBits::eCompute)
-            .storage_image(2, vk::ShaderStageFlagBits::eCompute)
-            .get_bindings(m_compute_dslb)
-            .create(m_device);
-
-        m_compute_descriptors = std::make_unique<DescriptorSets>(m_compute_dslb, m_compute_dsl, m_device);
-
-        m_sampler = std::make_unique<re::Sampler>(m_device);
-
-        for (size_t i = 0; i < 2; i++)
-        {
-            vk::DescriptorImageInfo sampler;
-            sampler.setSampler(m_sampler->sampler());
-            vk::WriteDescriptorSet write1;
-            write1.setDstSet(m_compute_descriptors->get_set(i));
-            write1.setDstBinding(0);
-            write1.setDescriptorCount(1);
-            write1.setDescriptorType(vk::DescriptorType::eSampler);
-            write1.setPImageInfo(&sampler);
-            m_device.handle().updateDescriptorSets(1, &write1, 0, nullptr);
-
-            vk::DescriptorImageInfo sampled_info;
-            sampled_info.setImageLayout(vk::ImageLayout::eGeneral);
-            sampled_info.setImageView(m_output->view());
-            m_compute_descriptors->update_descriptor_set(i, 1, sampled_info);
-
-            vk::DescriptorImageInfo image_info;
-            image_info.setImageView(m_swap_chain.view(i));
-            image_info.setImageLayout(vk::ImageLayout::eGeneral);
-            vk::WriteDescriptorSet write;
-            write.setDstSet(m_compute_descriptors->get_set(i));
-            write.setDstBinding(2);
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eStorageImage);
-            write.setPImageInfo(&image_info);
-            m_device.handle().updateDescriptorSets(1, &write, 0, nullptr);
-        }
-
-        vk::PushConstantRange push_constant_range;
-        push_constant_range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-        push_constant_range.setOffset(0);
-        push_constant_range.setSize(8);
-
-        vk::PipelineLayoutCreateInfo create_info;
-        create_info.setSetLayoutCount(1);
-        create_info.setPSetLayouts(&m_compute_dsl);
-        create_info.setPushConstantRangeCount(1);
-        create_info.setPPushConstantRanges(&push_constant_range);
-
-        auto result = m_device.handle().createPipelineLayout(&create_info, nullptr, &m_compute_layout, m_device.dispatch());
-
-        m_compute_pipeline = ComputePipeline::make_compute_pipeline("swapchain.comp.spv", m_compute_layout, m_device);
+        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) m_current_material = 0;
+        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) m_current_material = 1;
+        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) m_current_material = 2;
+        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) m_current_material = 3;
+        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) m_current_material = 4;
+        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) m_current_material = 5;
+        if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) m_current_material = 6;
     }
 }

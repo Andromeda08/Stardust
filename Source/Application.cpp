@@ -3,18 +3,12 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
-#include <random>
 #include <stdexcept>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "Window.hpp"
 #include "Vulkan/Device.hpp"
 #include "Vulkan/Instance.hpp"
 #include "Vulkan/Surface.hpp"
 #include "Vulkan/Swapchain.hpp"
-#include "Vulkan/GraphicsPipeline/GraphicsPipelineBuilder.hpp"
-#include "Vulkan/GraphicsPipeline/RenderPass.hpp"
-#include "Vulkan/GraphicsPipeline/ShaderModule.hpp"
 #include "Vulkan/Descriptor/DescriptorSetLayout.hpp"
 
 void keyboard_input_handler(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -42,59 +36,30 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mSurface = std::make_unique<Surface>(*mInstance);
 
-    (mSettings.raytracing) ? selectRayTracingDevice() : selectDevice();
+    if (mSettings.raytracing)
+    {
+        try { selectRayTracingDevice(); }
+        catch (const std::runtime_error& e) {
+            std::cout << "Failed to find device with ray tracing support.\nRetrying without rt support...";
+            mSettings.raytracing = false;
+            selectDevice();
+        }
+    }
+    else
+    {
+        selectDevice();
+    }
 
     createSwapChain();
 
     mCommandBuffers = std::make_unique<CommandBuffer>(*mDevice);
 
-#pragma region raster_pipeline_setup
-    mDepthBuffer = std::make_unique<DepthBuffer>(mSwapChain->extent(), *mDevice, *mCommandBuffers);
-
-    mRenderPass = std::make_unique<RenderPass>(*mDevice, mSwapChain->format(), mDepthBuffer->format());
-
-    mSwapChain->createFrameBuffers(*mRenderPass, *mDepthBuffer);
-
-    auto ubo_binding = re::UniformBuffer<re::UniformData>::make_binding(0);
-    auto sampler_binding = re::Sampler::make_binding(1);
-
-    std::vector<vk::DescriptorSetLayoutBinding> bindings = { ubo_binding, sampler_binding };
-
-    vk::DescriptorSetLayoutCreateInfo layout_create_info;
-    layout_create_info.setBindingCount(bindings.size());
-    layout_create_info.setPBindings(bindings.data());
-    auto result = mDevice->handle().createDescriptorSetLayout(&layout_create_info, nullptr, &mDescriptorSetLayout);
-
-    mUniformBuffers.resize(2);
-    for (size_t i = 0; i < 2; i++)
+    mScene1 = std::make_unique<re::Scene>(*mSwapChain, *mCommandBuffers);
+    if (mSettings.raytracing)
     {
-        mUniformBuffers[i] = std::make_unique<re::UniformBuffer<re::UniformData>>(*mCommandBuffers);
-        updateUniformBuffer(i);
+        mScene2 = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
     }
-
-    mTexture2D = std::make_unique<re::Texture>("mirza_vulkan.jpg", *mCommandBuffers);
-    mSampler2D = std::make_unique<re::Sampler>(*mDevice);
-
-    mDescriptorSets = std::make_unique<DescriptorSets>(bindings, mDescriptorSetLayout, *mDevice);
-    for (size_t i = 0; i < 2; i++)
-    {
-        vk::DescriptorBufferInfo ubo_info;
-        ubo_info.setBuffer(mUniformBuffers[i]->buffer());
-        ubo_info.setOffset(0);
-        ubo_info.setRange(sizeof(re::UniformData));
-        mDescriptorSets->update_descriptor_set(i, 0, ubo_info);
-
-        vk::DescriptorImageInfo sampler_info;
-        sampler_info.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-        sampler_info.setImageView(mTexture2D->view());
-        sampler_info.setSampler(mSampler2D->sampler());
-        mDescriptorSets->update_descriptor_set(i, 1, sampler_info);
-    }
-
-    mGraphicsPipeline = createGraphicsPipeline("phong.vert.spv", "tex.frag.spv");
-#pragma endregion
-
-    mScene = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
+    //mScene3 = std::make_unique<TerrainScene>(glm::ivec2{ 1024, 1024 }, *mSwapChain, *mCommandBuffers);
 
     name_vk_objects();
 }
@@ -105,7 +70,12 @@ void Application::run()
     {
         glfwPollEvents();
 
-        raytrace();
+        (mSettings.raytracing)
+            ? mScene2->rt_keybinds(mWindow->handle())
+            : mScene1->camera().use_inputs(mWindow->handle());
+            //: mScene3->scene_key_bindings(mWindow->handle());
+
+        (mSettings.raytracing) ? raytrace() : rasterize();
 
         mDevice->waitIdle();
 
@@ -133,8 +103,8 @@ void Application::raytrace()
     vk::CommandBufferBeginInfo begin_info;
     res = cmd_buffer.begin(&begin_info);
 
-    mScene->trace_rays(mCurrentFrame, cmd_buffer);
-    mScene->blit(mCurrentFrame, cmd_buffer);
+    mScene2->trace_rays(mCurrentFrame, cmd_buffer);
+    mScene2->blit(mCurrentFrame, cmd_buffer);
 
     cmd_buffer.end();
 
@@ -182,38 +152,7 @@ void Application::rasterize()
     vk::CommandBufferBeginInfo begin_info;
     res = cmd_buffer.begin(&begin_info);
 
-    vk::Rect2D render_area;
-    render_area.setExtent(mSwapChain->extent());
-    render_area.setOffset({0,0});
-
-    std::array<vk::ClearValue, 2> clear_values {};
-    clear_values[0].setColor(std::array<float, 4>{ 0.13f, 0.13f, 0.17f, 1.0f });
-    clear_values[1].setDepthStencil({1.0f, 0 });
-
-    vk::RenderPassBeginInfo render_pass_info;
-    render_pass_info.setRenderPass(mRenderPass->handle());
-    render_pass_info.setFramebuffer(mSwapChain->framebuffer(mCurrentFrame));
-    render_pass_info.setRenderArea(render_area);
-    render_pass_info.setClearValueCount(clear_values.size());
-    render_pass_info.setPClearValues(clear_values.data());
-
-    cmd_buffer.beginRenderPass(&render_pass_info, vk::SubpassContents::eInline);
-
-    auto viewport = mSwapChain->make_viewport();
-    cmd_buffer.setViewport(0, 1, &viewport);
-
-    auto scissor = mSwapChain->make_scissor();
-    cmd_buffer.setScissor(0, 1, &scissor);
-
-    cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline);
-    cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0, 1,
-                                  &mDescriptorSets->get_set(mCurrentFrame), 0, nullptr);
-
-    updateUniformBuffer(mCurrentFrame);
-
-    mScene->rasterize(mCurrentFrame, cmd_buffer);
-
-    cmd_buffer.endRenderPass();
+    mScene3->rasterize(mCurrentFrame, cmd_buffer);
 
     cmd_buffer.end();
 
@@ -301,7 +240,8 @@ void Application::selectRayTracingDevice()
         std::cout << "Selected device: " << props.deviceName << std::endl;
     }
 
-    const auto extensions = mRequiredDeviceExtensions;
+    auto extensions = mRequiredDeviceExtensions;
+    extensions.insert(std::end(extensions), std::begin(mRaytracingDeviceExtensions), std::end(mRaytracingDeviceExtensions));
     mDevice = std::make_unique<Device>(*mInstance, *mSurface, *result, extensions);
 }
 
@@ -317,7 +257,7 @@ void Application::selectDevice()
         std::cout << "Selected device: " << props.deviceName << std::endl;
     }
 
-    mDevice = std::make_unique<Device>(*mInstance, *mSurface, result, mDefaultExtensions);
+    mDevice = std::make_unique<Device>(*mInstance, *mSurface, result, mRequiredDeviceExtensions);
 }
 
 void Application::createSwapChain()
@@ -330,70 +270,6 @@ void Application::createSwapChain()
         mRenderFinishedSemaphores.emplace_back(*mDevice);
         mInFlightFences.emplace_back(*mDevice);
     }
-}
-
-vk::Pipeline Application::createGraphicsPipeline(const std::string& vert_shader_source, const std::string& frag_shader_source)
-{
-    auto vert_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eVertex,
-                                                        vert_shader_source,
-                                                        *mDevice);
-
-    auto frag_shader = std::make_unique<ShaderModule>(vk::ShaderStageFlagBits::eFragment,
-                                                        frag_shader_source,
-                                                        *mDevice);
-
-    auto viewport = mSwapChain->make_viewport();
-    auto scissor = mSwapChain->make_scissor();
-
-    vk::PipelineLayoutCreateInfo create_info;
-    create_info.setSetLayoutCount(1);
-    create_info.setPSetLayouts(&mDescriptorSetLayout);
-
-    auto result = mDevice->handle().createPipelineLayout(&create_info, nullptr, &mPipelineLayout);
-
-    GraphicsPipelineState pipeline_state;
-    pipeline_state.add_binding_descriptions({
-        { 0, sizeof(re::VertexData), vk::VertexInputRate::eVertex },
-        { 1, sizeof(re::InstanceData), vk::VertexInputRate::eInstance }
-    });
-    pipeline_state.add_attribute_descriptions({
-        { 0, 0, vk::Format::eR32G32B32Sfloat, 0 },
-        { 1, 0, vk::Format::eR32G32B32Sfloat, offsetof(re::VertexData, color) },
-        { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(re::VertexData, normal) },
-        { 3, 0, vk::Format::eR32G32Sfloat, offsetof(re::VertexData, uv) },
-        { 4, 1, vk::Format::eR32G32B32Sfloat, 0 },
-        { 5, 1, vk::Format::eR32G32B32Sfloat, offsetof(re::InstanceData, scale) },
-        { 6, 1, vk::Format::eR32G32B32Sfloat, offsetof(re::InstanceData, r_axis) },
-        { 7, 1, vk::Format::eR32Sfloat, offsetof(re::InstanceData, r_angle) },
-        { 8, 1, vk::Format::eR32G32B32Sfloat, offsetof(re::InstanceData, color) }
-    });
-    pipeline_state.add_scissor(scissor);
-    pipeline_state.add_viewport(viewport);
-
-    GraphicsPipelineBuilder builder(*mDevice, mPipelineLayout, *mRenderPass, pipeline_state);
-    builder.add_shader(*vert_shader);
-    builder.add_shader(*frag_shader);
-
-    return builder.create_pipeline();
-}
-
-void Application::updateUniformBuffer(size_t index)
-{
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    auto current_time = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-
-    auto model = glm::mat4(1.0f); // glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(1, 1, 0));
-    auto view = glm::lookAt(glm::vec3(10, 10, 10), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
-    auto proj = glm::perspective(glm::radians(45.0f), mSwapChain->aspectRatio(), 0.1f, 2000.0f);
-
-    re::UniformData ubo {
-        .view_projection = proj * view,
-        .model = model,
-        .time = time
-    };
-
-    mUniformBuffers[index]->update(ubo);
 }
 
 void Application::cleanup()

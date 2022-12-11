@@ -1,7 +1,9 @@
 #include "Swapchain.hpp"
 
+#include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <vulkan/vk_enum_string_helper.h>
 
 Swapchain::Swapchain(const Device &device,
                      vk::PresentModeKHR preferredPresentMode,
@@ -81,9 +83,11 @@ Swapchain::Swapchain(const Device &device,
 
         auto res = mDevice.handle().createImageView(&ImageViewcreateInfo, nullptr, &mImageViews[i]);
     }
+
+    std::cout << "Swapchain format: " << string_VkFormat(static_cast<VkFormat>(mFormat)) << std::endl;
 }
 
-void Swapchain::createFrameBuffers(const RenderPass& renderPass, const DepthBuffer& depthBuffer)
+void Swapchain::createFrameBuffers(const RenderPass& renderPass, const re::DepthBuffer& depthBuffer)
 {
     mFrameBuffers.resize(2);
 
@@ -114,10 +118,10 @@ Swapchain::SwapChainSupportDetails Swapchain::querySwapChainSupport()
 }
 
 vk::SurfaceFormatKHR Swapchain::pickFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
-    // Pick a format that is of the format B8G8R8A8_UNORM and non-linear srgb colorspace.
+    // Pick a format that is of the format B8G8R8A8_SRGB and non-linear srgb colorspace.
     for (const auto& format : formats)
     {
-        if (format.format == vk::Format::eB8G8R8A8Unorm && format.colorSpace == vk::ColorSpaceKHR::eExtendedSrgbNonlinearEXT) {
+        if (format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eExtendedSrgbNonlinearEXT) {
             return format;
         }
     }

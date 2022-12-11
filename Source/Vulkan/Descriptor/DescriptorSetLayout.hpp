@@ -16,6 +16,8 @@ struct DescriptorSetLayout
 
     DescriptorSetLayout& sampler(uint32_t b, vk::ShaderStageFlags stage_flags);
 
+    DescriptorSetLayout& combined_image_sampler(uint32_t binding, vk::ShaderStageFlags stage_flags);
+
     DescriptorSetLayout& accelerator(uint32_t b, vk::ShaderStageFlags stage_flags);
 
     vk::DescriptorSetLayout create(const Device& device);

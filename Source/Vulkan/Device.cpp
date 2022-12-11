@@ -4,6 +4,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <sstream>
+#include <vulkan/vk_enum_string_helper.h>
 
 Device::Device(const Instance& instance,
                const Surface& surface,
@@ -17,15 +19,11 @@ Device::Device(const Instance& instance,
     // Find queues
     const auto queueFamilies   = mPhysicalDevice.getQueueFamilyProperties();
     const auto graphicsFamily = findQueue(queueFamilies, vk::QueueFlagBits::eGraphics, {});
-#if !defined(__APPLE__)
     const auto computeFamily  = findQueue(queueFamilies, vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
-#endif
 
     // Get index using iterator dark magic
     mGraphicsFamilyIdx = static_cast<uint32_t>(graphicsFamily - std::begin(queueFamilies));
-#if !defined(__APPLE__)
     mComputeFamilyIdx  = static_cast<uint32_t>(computeFamily  - std::begin(queueFamilies));
-#endif
 
     // Get present family index
     uint32_t presentIndex = 0;
@@ -37,11 +35,7 @@ Device::Device(const Instance& instance,
     }
 
     // => set of unique queues
-    std::set<uint32_t> uniqueQueueFamilies = { mGraphicsFamilyIdx, mPresentFamilyIdx };
-
-#if !defined(__APPLE__)
-    uniqueQueueFamilies.insert(mComputeFamilyIdx);
-#endif
+    std::set<uint32_t> uniqueQueueFamilies = { mGraphicsFamilyIdx, mPresentFamilyIdx, mComputeFamilyIdx };
 
     // Create queues
     float queuePriority = 1.0f;
@@ -69,6 +63,16 @@ Device::Device(const Instance& instance,
     vk::PhysicalDeviceFeatures deviceFeatures {};
     deviceFeatures.setSamplerAnisotropy(true);
     deviceFeatures.setShaderInt64(true);
+    deviceFeatures.setFillModeNonSolid(true);
+
+    bool raytracing_features = false;
+    for (const auto ext : requiredExtensions)
+    {
+        if (std::string(ext) == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+        {
+            raytracing_features = true;
+        }
+    }
 
     vk::PhysicalDeviceSynchronization2FeaturesKHR s2_features;
     s2_features.setSynchronization2(true);
@@ -103,16 +107,16 @@ Device::Device(const Instance& instance,
     createInfo.setPpEnabledExtensionNames(requiredExtensions.data());
     createInfo.setQueueCreateInfoCount(static_cast<uint32_t>(queueCreateInfos.size()));
     createInfo.setPQueueCreateInfos(queueCreateInfos.data());
-    createInfo.setPNext(&rt_features);
+    if (raytracing_features)
+    {
+        createInfo.setPNext(&rt_features);
+    }
 
     auto result = mPhysicalDevice.createDevice(&createInfo, nullptr, &mDevice);
 
     mDevice.getQueue(mGraphicsFamilyIdx, 0, &mGraphicsQueue);
     mDevice.getQueue(mPresentFamilyIdx, 0, &mPresentQueue);
-
-#if !defined(__APPLE__)
     mDevice.getQueue(mComputeFamilyIdx, 0, &mComputeQueue);
-#endif
 
     vk::DynamicLoader dl;
     auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
@@ -149,26 +153,32 @@ void Device::checkRequiredDeviceExtensions(vk::PhysicalDevice physicalDevice, co
 
     if (!_requiredExtensions.empty())
     {
-        throw std::runtime_error("There are missing device extensions!");
+        std::stringstream msg;
+        msg << "Missing device extensions!";
+        for (const auto& ext : _requiredExtensions)
+        {
+            msg << ext;
+        }
+        throw std::runtime_error(msg.str());
     }
 }
 
-std::vector<vk::QueueFamilyProperties>::const_iterator Device::findQueue(const std::vector<vk::QueueFamilyProperties>& queueFamilies,
-                                                                         vk::QueueFlagBits required,
-                                                                         vk::QueueFlagBits excluded)
+std::vector<vk::QueueFamilyProperties>::const_iterator
+Device::findQueue(const std::vector<vk::QueueFamilyProperties>& queueFamilies,
+                  vk::QueueFlagBits required, vk::QueueFlagBits excluded)
 {
     const auto family = std::find_if(
-        std::begin(queueFamilies),
-        std::end(queueFamilies),
+        std::begin(queueFamilies), std::end(queueFamilies),
         [required, excluded](const vk::QueueFamilyProperties& props) {
-            return (props.queueCount > 0)
-                   && (props.queueFlags & required)
-                   && !(props.queueFlags & excluded);
+            return (props.queueCount > 0 && (props.queueFlags & required) && !(props.queueFlags & excluded));
         });
 
     if (family == queueFamilies.end())
     {
-        throw std::runtime_error("Failed to find some queue family.");
+        std::stringstream msg;
+        msg << "Failed to find queue family with required flag: \"";
+        msg << string_VkQueueFlagBits(static_cast<VkQueueFlagBits>(required)) << "\".";
+        throw std::runtime_error(msg.str());
     }
 
     return family;

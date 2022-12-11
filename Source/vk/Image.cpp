@@ -9,8 +9,8 @@ namespace re
 {
     vkImage::vkImage(vk::Extent2D extent,vk::Format format, vk::ImageTiling tiling,
                      vk::ImageUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
-                     const CommandBuffer& command_buffers)
-    : m_command_buffers(command_buffers), m_extent(extent), m_format(format)
+                     vk::ImageAspectFlags aspect_flags, const CommandBuffer& command_buffers)
+        : m_command_buffers(command_buffers), m_extent(extent), m_format(format)
     {
         vk::Result result;
         auto& device = command_buffers.device();
@@ -40,7 +40,7 @@ namespace re
 
         // Create ImageView
         vk::ImageSubresourceRange range;
-        range.setAspectMask(vk::ImageAspectFlagBits::eColor);
+        range.setAspectMask(aspect_flags);
         range.setBaseMipLevel(0);
         range.setLevelCount(1);
         range.setBaseArrayLayer(0);

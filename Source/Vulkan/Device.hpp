@@ -29,20 +29,14 @@ public:
 
     const Surface& surface() const { return mSurface; }
 
-    #pragma region Queue_indices_and_handles
-
     uint32_t  graphics_index() const { return mGraphicsFamilyIdx; }
     vk::Queue graphics_queue() const { return mGraphicsQueue; }
 
     uint32_t  present_index() const { return mPresentFamilyIdx; }
     vk::Queue present_queue() const { return mPresentQueue; }
 
-#if !defined(__APPLE__)
     uint32_t  compute_index() const { return mComputeFamilyIdx; }
     vk::Queue compute_queue() const { return mComputeQueue; }
-#endif
-
-    #pragma endregion
 
 private:
     /**
@@ -56,9 +50,9 @@ private:
      * @param required Required queue flag bits
      * @param excluded Excluded queue flag bits
      */
-    static std::vector<vk::QueueFamilyProperties>::const_iterator findQueue(const std::vector<vk::QueueFamilyProperties>& queueFamilies,
-                                                                     vk::QueueFlagBits required,
-                                                                     vk::QueueFlagBits excluded);
+    static std::vector<vk::QueueFamilyProperties>::const_iterator
+    findQueue(const std::vector<vk::QueueFamilyProperties>& queueFamilies,
+              vk::QueueFlagBits required, vk::QueueFlagBits excluded);
 
 private:
     vk::PhysicalDevice mPhysicalDevice;
@@ -75,8 +69,6 @@ private:
     uint32_t  mPresentFamilyIdx {};
     vk::Queue mPresentQueue {};
 
-#if !defined(__APPLE__)
     uint32_t  mComputeFamilyIdx {};
     vk::Queue mComputeQueue {};
-#endif
 };

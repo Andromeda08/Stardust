@@ -67,6 +67,20 @@ struct DescriptorWrites
         return *this;
     }
 
+    DescriptorWrites& combined_image_sampler(uint32_t set, uint32_t binding, const vk::DescriptorImageInfo& image_info)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_sets.get_set(set));
+        write.setDescriptorCount(1);
+        write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+        write.setPImageInfo(&image_info);
+        write.setDstArrayElement(0);
+
+        _writes.push_back(write);
+        return *this;
+    }
+
     void commit()
     {
         _device.handle().updateDescriptorSets(_writes.size(),_writes.data(),

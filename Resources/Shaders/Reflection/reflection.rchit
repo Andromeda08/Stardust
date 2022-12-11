@@ -35,7 +35,7 @@ layout (set = 0, binding = 2) uniform UBO {
     mat4 projInverse;
 } uni;
 layout (set = 0, binding = 3) buffer ObjDesc { ObjectDesc object_description; };
-layout (set = 0, binding = 4) uniform MaterialUniform { Material materials[3]; };
+layout (set = 0, binding = 4) uniform MaterialUniform { Material materials[7]; };
 
 layout (push_constant) uniform RtPushConstants
 {

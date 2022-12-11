@@ -42,6 +42,12 @@ DescriptorSetLayout& DescriptorSetLayout::sampler(uint32_t b, vk::ShaderStageFla
     return *this;
 }
 
+DescriptorSetLayout &DescriptorSetLayout::combined_image_sampler(uint32_t binding, vk::ShaderStageFlags stage_flags)
+{
+    bindings.push_back(make_binding(binding, 1, vk::DescriptorType::eCombinedImageSampler, stage_flags));
+    return *this;
+}
+
 DescriptorSetLayout& DescriptorSetLayout::accelerator(uint32_t b, vk::ShaderStageFlags stage_flags)
 {
     bindings.push_back(make_binding(b, 1, vk::DescriptorType::eAccelerationStructureKHR, stage_flags));
