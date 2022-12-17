@@ -1,10 +1,10 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
-#include <Vulkan/Device.hpp>
 #include <vk/Buffer.hpp>
 #include <vk/Mesh.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
+#include <vk/Device/Device.hpp>
 
 struct BlasInfo
 {
@@ -12,7 +12,7 @@ struct BlasInfo
     std::unique_ptr<re::Buffer>  buffer;
     vk::DeviceAddress            blas_address {0};
 
-    static BlasInfo create_blas(const re::Mesh& mesh, const CommandBuffer& command_buffers);
+    static BlasInfo create_blas(const re::Mesh& mesh, const CommandBuffers& command_buffers);
 };
 
 struct TlasInfo
@@ -23,6 +23,6 @@ struct TlasInfo
 
     static TlasInfo create_tlas(uint32_t instance_count,
                                 vk::DeviceAddress instance_address,
-                                const CommandBuffer& command_buffers);
+                                const CommandBuffers& command_buffers);
 };
 

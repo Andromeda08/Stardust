@@ -1,7 +1,7 @@
 #include "RtAccelerator.hpp"
 
 RtAccelerator
-RtAccelerator::create_accelerator(const re::InstancedGeometry &objects, const CommandBuffer &command_buffers)
+RtAccelerator::create_accelerator(const re::InstancedGeometry &objects, const CommandBuffers& command_buffers)
 {
     auto& device = command_buffers.device();
     auto& d = device.dispatch();
@@ -57,8 +57,8 @@ RtAccelerator::create_accelerator(const re::InstancedGeometry &objects, const Co
     return accelerator;
 }
 
-void RtAccelerator::rebuild_top_level(re::InstancedGeometry &objects, RtAccelerator &accelerator,
-                                      const CommandBuffer &command_buffers)
+void RtAccelerator::rebuild_top_level(re::InstancedGeometry& objects, RtAccelerator &accelerator,
+                                      const CommandBuffers& command_buffers)
 {
     static auto start_time = std::chrono::high_resolution_clock::now();
     auto current_time = std::chrono::high_resolution_clock::now();

@@ -2,8 +2,7 @@
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include "../Device.hpp"
-#include "../../Utility/Macro.hpp"
+#include <vk/Device/Device.hpp>
 
 class DescriptorSets
 {

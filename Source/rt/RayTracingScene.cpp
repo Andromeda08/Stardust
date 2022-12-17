@@ -1,10 +1,10 @@
 #include "RayTracingScene.hpp"
 
-#include <Vulkan/Descriptor/DescriptorWrites.hpp>
+#include <vk/Descriptors/DescriptorWrites.hpp>
 
 namespace re
 {
-    RayTracingScene::RayTracingScene(const Swapchain &swap_chain, const CommandBuffer &command_buffers)
+    RayTracingScene::RayTracingScene(const Swapchain &swap_chain, const CommandBuffers &command_buffers)
     : m_command_buffers(command_buffers), m_device(command_buffers.device()), m_swap_chain(swap_chain)
     {
         vk::PhysicalDeviceProperties2 pdp;
@@ -74,13 +74,13 @@ namespace re
     {
         vk::ImageSubresourceRange subresource_range { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 
-        re::vkImage::set_layout(cmd, m_swap_chain.image(current_frame),
-                                vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                                subresource_range);
+        re::Image::set_layout(cmd, m_swap_chain[current_frame],
+                              vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+                              subresource_range);
 
-        re::vkImage::set_layout(cmd, m_output->image(),
-                                vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal,
-                                subresource_range);
+        re::Image::set_layout(cmd, m_output->image(),
+                              vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal,
+                              subresource_range);
 
         vk::Offset3D blit_size {
             static_cast<int32_t>(m_swap_chain.extent().width),
@@ -102,13 +102,13 @@ namespace re
                       m_swap_chain.image(current_frame), vk::ImageLayout::eTransferDstOptimal,
                       1, &blit_info, vk::Filter::eNearest);
 
-        re::vkImage::set_layout(cmd, m_swap_chain.image(current_frame),
-                                vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR,
-                                subresource_range);
+        re::Image::set_layout(cmd, m_swap_chain.image(current_frame),
+                              vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR,
+                              subresource_range);
 
-        re::vkImage::set_layout(cmd, m_output->image(),
-                                vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral,
-                                subresource_range);
+        re::Image::set_layout(cmd, m_output->image(),
+                              vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral,
+                              subresource_range);
     }
 
     void RayTracingScene::build_objects(uint32_t entities)
@@ -164,19 +164,19 @@ namespace re
 
         m_descriptors = std::make_unique<DescriptorSets>(m_dslb, m_dsl, m_device);
 
-        m_output = std::make_unique<re::vkImage>(m_swap_chain.extent(),
-                                                 vk::Format::eR16G16B16A16Sfloat,
-                                                 vk::ImageTiling::eOptimal,
+        m_output = std::make_unique<re::Image>(m_swap_chain.extent(),
+                                               vk::Format::eR16G16B16A16Sfloat,
+                                               vk::ImageTiling::eOptimal,
                                                  vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc,
-                                                 vk::MemoryPropertyFlagBits::eDeviceLocal,
-                                                 vk::ImageAspectFlagBits::eColor,
-                                                 m_command_buffers);
+                                               vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                               vk::ImageAspectFlagBits::eColor,
+                                               m_command_buffers);
 
         m_output->transition_layout(vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
 
         auto view = glm::lookAt(glm::vec3(10, 4, 10), glm::vec3(0, 0, 0), glm::vec3(0, -1, 0));
-        auto proj = glm::perspective(glm::radians(45.0f), m_swap_chain.aspectRatio(), 0.1f, 1000.0f);
+        auto proj = glm::perspective(glm::radians(45.0f), m_swap_chain.aspect_ratio(), 0.1f, 1000.0f);
 
         RtUniformData data = {
             .viewProjection = view * proj,

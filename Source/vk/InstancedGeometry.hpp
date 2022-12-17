@@ -9,7 +9,7 @@ namespace re
     class InstancedGeometry
     {
     public:
-        InstancedGeometry(Geometry* geometry, const std::vector<InstanceData>& instance_data, const CommandBuffer& command_buffer)
+        InstancedGeometry(Geometry* geometry, const std::vector<InstanceData>& instance_data, const CommandBuffers& command_buffer)
         : m_instance_data(instance_data)
         {
             m_mesh = std::make_unique<Mesh>(geometry, command_buffer);

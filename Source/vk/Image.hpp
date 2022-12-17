@@ -1,16 +1,16 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
 
 namespace re
 {
-    class vkImage
+    class Image
     {
     public:
-        vkImage(vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling,
-                vk::ImageUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
-                vk::ImageAspectFlags aspect_flags, const CommandBuffer& command_buffers);
+        Image(vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling,
+              vk::ImageUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
+              vk::ImageAspectFlags aspect_flags, const CommandBuffers& command_buffers);
 
         /**
          * @brief Transitions the layout of the specified image from A to B.
@@ -42,20 +42,20 @@ namespace re
         vk::DeviceMemory m_memory;
         vk::ImageView    m_view;
 
-        const CommandBuffer& m_command_buffers;
+        const CommandBuffers& m_command_buffers;
     };
 
-    class DepthBuffer : public vkImage
+    class DepthBuffer : public Image
     {
     public:
-        DepthBuffer(vk::Extent2D extent, const CommandBuffer& command_buffers)
-            : vkImage(extent,
-                      find_depth_format(command_buffers.device()),
-                      vk::ImageTiling::eOptimal,
-                      vk::ImageUsageFlagBits::eDepthStencilAttachment,
-                      vk::MemoryPropertyFlagBits::eDeviceLocal,
-                      vk::ImageAspectFlagBits::eDepth,
-                      command_buffers) {}
+        DepthBuffer(vk::Extent2D extent, const CommandBuffers& command_buffers)
+            : Image(extent,
+                    find_depth_format(command_buffers.device()),
+                    vk::ImageTiling::eOptimal,
+                    vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                    vk::MemoryPropertyFlagBits::eDeviceLocal,
+                    vk::ImageAspectFlagBits::eDepth,
+                    command_buffers) {}
 
     private:
         static vk::Format find_depth_format(const Device& device,

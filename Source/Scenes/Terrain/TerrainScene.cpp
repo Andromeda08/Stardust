@@ -1,10 +1,10 @@
 #include "TerrainScene.hpp"
 
 #include <glm/gtc/noise.hpp>
-#include <Vulkan/Descriptor/DescriptorSetLayout.hpp>
-#include <Vulkan/Descriptor/DescriptorWrites.hpp>
+#include <vk/Descriptors/DescriptorSetLayout.hpp>
+#include <vk/Descriptors/DescriptorWrites.hpp>
 
-TerrainScene::TerrainScene(glm::ivec2 dim, Swapchain& swapchain, const CommandBuffer& command_buffer)
+TerrainScene::TerrainScene(glm::ivec2 dim, Swapchain& swapchain, const CommandBuffers& command_buffer)
 : m_command_buffers(command_buffer), m_device(command_buffer.device())
 , m_swapchain(swapchain), m_dimensions(dim)
 {
@@ -20,7 +20,7 @@ TerrainScene::TerrainScene(glm::ivec2 dim, Swapchain& swapchain, const CommandBu
     m_clear_values[1].setDepthStencil({ 1.0f, 0 });
     m_render_area = vk::Rect2D({ 0, 0 }, m_swapchain.extent());
 
-    m_swapchain.createFrameBuffers(*m_render_pass, *m_depth_buffer);
+    m_swapchain.create_frame_buffers(*m_render_pass, *m_depth_buffer);
 }
 
 void TerrainScene::generate_height_map()
@@ -139,7 +139,7 @@ void TerrainScene::rasterize(uint32_t current_frame, vk::CommandBuffer cmd)
     begin_info.setPClearValues(m_clear_values.data());
     begin_info.setFramebuffer(m_swapchain.framebuffer(current_frame));
 
-    auto viewport = m_swapchain.make_negative_viewport();
+    auto viewport = m_swapchain.make_viewport();
     auto scissor = m_swapchain.make_scissor();
 
     cmd.beginRenderPass(&begin_info, vk::SubpassContents::eInline);

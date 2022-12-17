@@ -2,17 +2,18 @@
 
 #include <memory>
 #include <vector>
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
-#include <Vulkan/Descriptor/DescriptorSets.hpp>
-#include <Vulkan/Device.hpp>
-#include <Vulkan/Swapchain.hpp>
+#include <Scenes/Camera.hpp>
 #include <vk/Buffer.hpp>
 #include <vk/InstancedGeometry.hpp>
-#include <vk/PipelineBuilder.hpp>
-#include <Camera.hpp>
+#include <vk/Pipelines/PipelineBuilder.hpp>
+#include <vk/Pipelines/RenderPass.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
+#include <vk/Descriptors/DescriptorSets.hpp>
+#include <vk/Device/Device.hpp>
+#include <vk/Presentation/Swapchain.hpp>
 
 class TerrainScene
 {
@@ -23,7 +24,7 @@ public:
         glm::vec4 camera_pos;
     };
 
-    TerrainScene(glm::ivec2 dim, Swapchain& swapchain, const CommandBuffer& command_buffer);
+    TerrainScene(glm::ivec2 dim, Swapchain& swapchain, const CommandBuffers& command_buffer);
 
     void rasterize(uint32_t current_frame, vk::CommandBuffer cmd);
 
@@ -61,7 +62,7 @@ private:
 
     Pipeline m_pipeline;
 
-    const CommandBuffer& m_command_buffers;
-    const Device&        m_device;
-          Swapchain&     m_swapchain;
+    const CommandBuffers& m_command_buffers;
+    const Device&         m_device;
+          Swapchain&      m_swapchain;
 };

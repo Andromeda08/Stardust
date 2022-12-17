@@ -6,7 +6,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
 
-// Namespace containing Math utilities
+/**
+ * @brief Namespace containing Math utilities
+ */
 namespace Math
 {
     /**

@@ -1,7 +1,7 @@
 #include "AccelerationStructure.hpp"
 #include <iostream>
 
-BlasInfo BlasInfo::create_blas(const re::Mesh& mesh, const CommandBuffer& command_buffers)
+BlasInfo BlasInfo::create_blas(const re::Mesh& mesh, const CommandBuffers& command_buffers)
 {
     auto& d = command_buffers.device();
     auto device = command_buffers.device().handle();
@@ -86,7 +86,7 @@ BlasInfo BlasInfo::create_blas(const re::Mesh& mesh, const CommandBuffer& comman
 
 TlasInfo TlasInfo::create_tlas(uint32_t instance_count,
                                vk::DeviceAddress instance_address,
-                               const CommandBuffer& command_buffers)
+                               const CommandBuffers& command_buffers)
 {
     auto& device = command_buffers.device();
     auto dispatch = command_buffers.device().dispatch();

@@ -3,7 +3,7 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 #include "Instance.hpp"
-#include "../Utility/Macro.hpp"
+#include <Utility/Macro.hpp>
 
 class Surface {
 public:

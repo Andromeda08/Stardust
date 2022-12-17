@@ -4,8 +4,8 @@
 #include <typeinfo>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
 #include <vk/Image.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
 
 namespace re
 {
@@ -18,7 +18,7 @@ namespace re
         NON_COPIABLE(Buffer)
 
         Buffer(vk::DeviceSize buffer_size, vk::BufferUsageFlags usage_flags,
-               vk::MemoryPropertyFlags property_flags, const CommandBuffer& command_buffer)
+               vk::MemoryPropertyFlags property_flags, const CommandBuffers& command_buffer)
         : m_command_buffer(command_buffer)
         , m_device(command_buffer.device())
         , m_size(buffer_size)
@@ -54,7 +54,7 @@ namespace re
          * @brief Copies specified data to target buffer.
          */
         template <typename T>
-        static void set_data(T* data, const Buffer& dst, const CommandBuffer& command_buffer)
+        static void set_data(T* data, const Buffer& dst, const CommandBuffers& command_buffer)
         {
             auto device = command_buffer.device().handle();
             auto dispatch = command_buffer.device().dispatch();
@@ -68,7 +68,7 @@ namespace re
         /**
          * @brief Copy data from source to destination Buffer
          */
-        static void copy_buffer(const Buffer& src, const Buffer& dst, const CommandBuffer& command_buffer)
+        static void copy_buffer(const Buffer& src, const Buffer& dst, const CommandBuffers& command_buffer)
         {
             auto cmd = command_buffer.begin_single_time();
             {
@@ -84,7 +84,7 @@ namespace re
         /**
          * @brief Copy buffer contents to Image
          */
-        static void copy_to_image(const Buffer& src, const vkImage& image, const CommandBuffer& command_buffers)
+        static void copy_to_image(const Buffer& src, const Image& image, const CommandBuffers& command_buffers)
         {
             auto cmd = command_buffers.begin_single_time();
             {
@@ -117,7 +117,7 @@ namespace re
         /**
          * @brief Creates a host visible staging buffer.
          */
-        static std::unique_ptr<Buffer> make_staging_buffer(vk::DeviceSize buffer_size, const CommandBuffer& command_buffer)
+        static std::unique_ptr<Buffer> make_staging_buffer(vk::DeviceSize buffer_size, const CommandBuffers& command_buffer)
         {
             return std::make_unique<Buffer>(buffer_size, vk::BufferUsageFlagBits::eTransferSrc,
                                             vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -167,15 +167,15 @@ namespace re
         }
 
     protected:
-        vk::Buffer              m_buffer;
-        vk::DeviceMemory        m_memory;
+        vk::Buffer               m_buffer;
+        vk::DeviceMemory         m_memory;
 
-        vk::DeviceSize          m_size;
-        vk::BufferUsageFlags    m_usage_flags;
-        vk::MemoryPropertyFlags m_property_flags;
+        vk::DeviceSize           m_size;
+        vk::BufferUsageFlags     m_usage_flags;
+        vk::MemoryPropertyFlags  m_property_flags;
 
-        const CommandBuffer&    m_command_buffer;
-        const Device&           m_device;
+        const CommandBuffers&    m_command_buffer;
+        const Device&            m_device;
     };
 
 #pragma region Specific_Buffer_Types
@@ -186,7 +186,7 @@ namespace re
     public:
         NON_COPIABLE(IndexBuffer)
 
-        IndexBuffer(const std::vector<T>& indices, const CommandBuffer& command_buffer)
+        IndexBuffer(const std::vector<T>& indices, const CommandBuffers& command_buffer)
         : Buffer(sizeof(T) * indices.size(),
                  vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
                  vk::MemoryPropertyFlagBits::eDeviceLocal,
@@ -224,7 +224,7 @@ namespace re
     public:
         NON_COPIABLE(VertexBuffer)
 
-        VertexBuffer(const std::vector<T>& vertices, const CommandBuffer& command_buffer)
+        VertexBuffer(const std::vector<T>& vertices, const CommandBuffers& command_buffer)
         : Buffer(sizeof(T) * vertices.size(),
                  vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
                  vk::MemoryPropertyFlagBits::eDeviceLocal,
@@ -259,7 +259,7 @@ namespace re
     public:
         NON_COPIABLE(InstanceBuffer)
 
-        InstanceBuffer(const std::vector<T>& instance_data, const CommandBuffer& command_buffer)
+        InstanceBuffer(const std::vector<T>& instance_data, const CommandBuffers& command_buffer)
         : Buffer(sizeof(T) * instance_data.size(),
                  vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
                  vk::MemoryPropertyFlagBits::eDeviceLocal,
@@ -294,17 +294,17 @@ namespace re
     public:
         NON_COPIABLE(UniformBuffer)
 
-        explicit UniformBuffer(const CommandBuffer& command_buffer)
+        explicit UniformBuffer(const CommandBuffers& command_buffer)
         : Buffer(sizeof(T), vk::BufferUsageFlagBits::eUniformBuffer,
                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                  command_buffer) {}
 
-        explicit UniformBuffer(uint32_t obj_count, const CommandBuffer& command_buffer)
+        explicit UniformBuffer(uint32_t obj_count, const CommandBuffers& command_buffer)
         : Buffer(sizeof(T) * obj_count, vk::BufferUsageFlagBits::eUniformBuffer,
                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                  command_buffer) {}
 
-        UniformBuffer(const T& ubo, const CommandBuffer& command_buffer)
+        UniformBuffer(const T& ubo, const CommandBuffers& command_buffer)
         : Buffer(sizeof(T), vk::BufferUsageFlagBits::eUniformBuffer,
                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                  command_buffer)

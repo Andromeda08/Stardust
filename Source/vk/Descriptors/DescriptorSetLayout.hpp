@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include "../Device.hpp"
+#include <vk/Device/Device.hpp>
 
 struct DescriptorSetLayout
 {

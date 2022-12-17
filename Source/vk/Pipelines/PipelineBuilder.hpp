@@ -2,13 +2,12 @@
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Device.hpp>
-#include <Vulkan/Swapchain.hpp>
-#include <Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp>
-#include <Vulkan/GraphicsPipeline/RenderPass.hpp>
-#include <vk/Pipeline.hpp>
 #include <vk/Shader.hpp>
-
+#include <vk/Device/Device.hpp>
+#include <vk/Pipelines/Pipeline.hpp>
+#include <vk/Pipelines/PipelineState.hpp>
+#include <vk/Pipelines/RenderPass.hpp>
+#include <vk/Presentation/Swapchain.hpp>
 
 struct PipelineBuilder
 {
@@ -42,7 +41,7 @@ private:
     std::vector<vk::DescriptorSetLayout> descriptor_set_layouts;
     std::vector<vk::PushConstantRange>   push_constant_ranges;
 
-    GraphicsPipelineState pipeline_state;
+    PipelineState pipeline_state;
     std::vector<std::unique_ptr<re::Shader>> shaders;
     std::vector<vk::PipelineShaderStageCreateInfo> shader_stages;
     std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shader_groups;

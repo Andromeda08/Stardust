@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <vk/Buffer.hpp>
+#include <vk/Geometry.hpp>
 #include <vk/InstanceData.hpp>
 #include <vk/VertexData.hpp>
-#include <vk/Buffer.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
-#include <Resources/Geometry.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
 
 namespace re
 {
@@ -15,7 +15,7 @@ namespace re
         using IB_t = IndexBuffer<uint32_t>;
 
     public:
-        Mesh(Geometry* geometry, const CommandBuffer& command_buffer)
+        Mesh(Geometry* geometry, const CommandBuffers& command_buffer)
         : m_geometry(geometry)
         , m_command_buffer(command_buffer)
         {
@@ -38,13 +38,13 @@ namespace re
 
         const IB_t& index_buffer() const { return *m_index_buffer; }
 
-        const CommandBuffer& command_buffers() const { return m_command_buffer; }
+        const CommandBuffers& command_buffers() const { return m_command_buffer; }
 
     private:
         std::unique_ptr<Geometry> m_geometry;
         std::unique_ptr<VB_t>     m_vertex_buffer;
         std::unique_ptr<IB_t>     m_index_buffer;
 
-        const CommandBuffer&      m_command_buffer;
+        const CommandBuffers&      m_command_buffer;
     };
 }

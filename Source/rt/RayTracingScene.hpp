@@ -2,12 +2,9 @@
 
 #include <memory>
 #include <random>
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Swapchain.hpp>
-#include <Vulkan/Descriptor/DescriptorSetLayout.hpp>
-#include <Vulkan/Descriptor/DescriptorSets.hpp>
 #include <rt/AccelerationStructure.hpp>
 #include <rt/RtAccelerator.hpp>
 #include <vk/Image.hpp>
@@ -16,6 +13,9 @@
 #include <vk/Sampler.hpp>
 #include <vk/Material.hpp>
 #include <vk/Shader.hpp>
+#include <vk/Descriptors/DescriptorSetLayout.hpp>
+#include <vk/Descriptors/DescriptorSets.hpp>
+#include <vk/Presentation/Swapchain.hpp>
 
 namespace re
 {
@@ -38,7 +38,7 @@ namespace re
             int material_index;
         };
 
-        RayTracingScene(const Swapchain& swap_chain, const CommandBuffer& command_buffers);
+        RayTracingScene(const Swapchain& swap_chain, const CommandBuffers& command_buffers);
 
         void trace_rays(uint32_t current_frame, vk::CommandBuffer cmd);
 
@@ -87,7 +87,7 @@ namespace re
 
         // Raytracing: AS, UB, output image, SBT.
         RtAccelerator m_accelerator;
-        std::unique_ptr<re::vkImage> m_output;
+        std::unique_ptr<re::Image> m_output;
         std::vector<std::unique_ptr<re::UniformBuffer<RtUniformData>>> m_ubs;
         std::vector<std::unique_ptr<re::UniformBuffer<Material>>> m_material_data;
         std::unique_ptr<re::Buffer> m_sbt;
@@ -110,8 +110,8 @@ namespace re
         int m_current_material = 0;
 
         // Vulkan dependencies
-        const CommandBuffer& m_command_buffers;
-        const Device&        m_device;
-        const Swapchain&     m_swap_chain;
+        const CommandBuffers& m_command_buffers;
+        const Device&         m_device;
+        const Swapchain&      m_swap_chain;
     };
 }

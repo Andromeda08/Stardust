@@ -4,7 +4,7 @@
 
 namespace re
 {
-    Scene::Scene(Swapchain &swapchain, const CommandBuffer &command_buffer)
+    Scene::Scene(Swapchain &swapchain, const CommandBuffers& command_buffer)
     : m_command_buffers(command_buffer), m_device(command_buffer.device()), m_swapchain(swapchain)
     {
         m_rand     = std::default_random_engine(static_cast<unsigned>(time(nullptr)));
@@ -17,7 +17,7 @@ namespace re
         m_clear_values[1].setDepthStencil({ 1.0f, 0 });
         m_render_area = vk::Rect2D({ 0, 0 }, m_swapchain.extent());
 
-        m_swapchain.createFrameBuffers(*m_render_pass, *m_depth_buffer);
+        m_swapchain.create_frame_buffers(*m_render_pass, *m_depth_buffer);
     }
 
     void Scene::rasterize(size_t current_frame, vk::CommandBuffer cmd)
@@ -31,7 +31,7 @@ namespace re
         begin_info.setPClearValues(m_clear_values.data());
         begin_info.setFramebuffer(m_swapchain.framebuffer(current_frame));
 
-        auto viewport = m_swapchain.make_negative_viewport();
+        auto viewport = m_swapchain.make_viewport();
         auto scissor = m_swapchain.make_scissor();
 
         cmd.beginRenderPass(&begin_info, vk::SubpassContents::eInline);
@@ -65,12 +65,12 @@ namespace re
             auto z = (float) uniform_dist(m_rand);
 
             instance_data.push_back({
-                                        .translate = glm::vec3{ x, y, z },
-                                        .scale = glm::vec3{ scale_mod(m_rand) },
-                                        .r_axis = glm::vec3{ 1 },
-                                        .r_angle = 0.0f,
-                                        .color = glm::vec4{ uniform_float(m_rand), uniform_float(m_rand), uniform_float(m_rand), 1.0f }
-                                    });
+                .translate = glm::vec3{ x, y, z },
+                .scale = glm::vec3{ scale_mod(m_rand) },
+                .r_axis = glm::vec3{ 1 },
+                .r_angle = 0.0f,
+                .color = glm::vec4{ uniform_float(m_rand), uniform_float(m_rand), uniform_float(m_rand), 1.0f }
+            });
         }
 
         m_instanced_objects.push_back(std::make_unique<InstancedGeometry>(new CubeGeometry(2.0f), instance_data, m_command_buffers));
@@ -142,7 +142,7 @@ namespace re
         auto eye = glm::vec3{sinf(time_since_start) * radius, 5, cosf(time_since_start) * radius};
 
         auto view = glm::lookAt(eye, glm::vec3{ 0, 0, 0 }, glm::vec3{ 0, -1, 0 });
-        auto proj = glm::perspective(glm::radians(45.0f), m_swapchain.aspectRatio(), 0.1f, 5000.0f);
+        auto proj = glm::perspective(glm::radians(45.0f), m_swapchain.aspect_ratio(), 0.1f, 5000.0f);
 
         CameraUniform cu {
             .view = m_camera3d->view(),

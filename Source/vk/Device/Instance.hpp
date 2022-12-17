@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include "../Utility/Macro.hpp"
-#include "../Window.hpp"
+#include <Utility/Macro.hpp>
+#include <Window.hpp>
 
 class Instance {
 public:

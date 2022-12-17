@@ -3,13 +3,13 @@
 #include <sstream>
 #include <stdexcept>
 #include <vulkan/vk_enum_string_helper.h>
-#include <Vulkan/Device.hpp>
+#include <vk/Device/Device.hpp>
 
 namespace re
 {
-    vkImage::vkImage(vk::Extent2D extent,vk::Format format, vk::ImageTiling tiling,
-                     vk::ImageUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
-                     vk::ImageAspectFlags aspect_flags, const CommandBuffer& command_buffers)
+    Image::Image(vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling,
+                 vk::ImageUsageFlags usage_flags, vk::MemoryPropertyFlags property_flags,
+                 vk::ImageAspectFlags aspect_flags, const CommandBuffers& command_buffers)
         : m_command_buffers(command_buffers), m_extent(extent), m_format(format)
     {
         vk::Result result;
@@ -56,7 +56,7 @@ namespace re
     }
 
     void
-    vkImage::transition_layout(vk::ImageLayout from, vk::ImageLayout to)
+    Image::transition_layout(vk::ImageLayout from, vk::ImageLayout to)
     {
         auto cmd = m_command_buffers.begin_single_time();
         {
@@ -119,9 +119,9 @@ namespace re
     }
 
     void
-    vkImage::set_layout(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout old_layout, vk::ImageLayout new_layout,
-                        vk::ImageSubresourceRange subresource_range, vk::PipelineStageFlags src_stage_mask,
-                        vk::PipelineStageFlags dst_stage_mask)
+    Image::set_layout(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout old_layout, vk::ImageLayout new_layout,
+                      vk::ImageSubresourceRange subresource_range, vk::PipelineStageFlags src_stage_mask,
+                      vk::PipelineStageFlags dst_stage_mask)
     {
         vk::ImageMemoryBarrier barrier;
         barrier.setOldLayout(old_layout);

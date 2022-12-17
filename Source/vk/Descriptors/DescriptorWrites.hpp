@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include "../Device.hpp"
+#include <vk/Device/Device.hpp>
 #include "DescriptorSets.hpp"
 
 struct DescriptorWrites

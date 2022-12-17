@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <Vulkan/Device.hpp>
+#include <vk/Device/Device.hpp>
 
 namespace re
 {

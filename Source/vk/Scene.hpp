@@ -3,22 +3,22 @@
 #include <chrono>
 #include <memory>
 #include <random>
-#include <unordered_map>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <Camera.hpp>
-#include <Resources/Geometry.hpp>
+#include <Scenes/Camera.hpp>
 #include <Utility/Math.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
-#include <Vulkan/Descriptor/DescriptorSetLayout.hpp>
-#include <Vulkan/Descriptor/DescriptorWrites.hpp>
 #include <vk/Buffer.hpp>
+#include <vk/Geometry.hpp>
 #include <vk/Image.hpp>
 #include <vk/InstancedGeometry.hpp>
 #include <vk/Mesh.hpp>
-#include <vk/UniformData.hpp>
 #include <vk/Texture.hpp>
-#include <vk/PipelineBuilder.hpp>
+#include <vk/UniformData.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
+#include <vk/Descriptors/DescriptorSetLayout.hpp>
+#include <vk/Descriptors/DescriptorWrites.hpp>
+#include <vk/Pipelines/PipelineBuilder.hpp>
+#include <vk/Presentation/Swapchain.hpp>
 
 namespace re
 {
@@ -36,7 +36,7 @@ namespace re
             glm::mat4 model;
         };
 
-        Scene(Swapchain& swapchain, const CommandBuffer& command_buffer);
+        Scene(Swapchain& swapchain, const CommandBuffers& command_buffer);
 
         virtual void rasterize(size_t current_frame, vk::CommandBuffer cmd);
 
@@ -53,9 +53,9 @@ namespace re
         template <typename T>
         using u_ptr = std::unique_ptr<T>;
 
-        const CommandBuffer& m_command_buffers;
-        const Device&        m_device;
-        Swapchain&           m_swapchain;
+        const CommandBuffers& m_command_buffers;
+        const Device&         m_device;
+        Swapchain&            m_swapchain;
 
         std::vector<u_ptr<re::Mesh>> m_objects;
         std::vector<u_ptr<re::InstancedGeometry>> m_instanced_objects;

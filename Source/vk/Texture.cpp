@@ -6,7 +6,7 @@
 namespace re
 {
 
-    Texture::Texture(const std::string &image, const CommandBuffer &command_buffer)
+    Texture::Texture(const std::string &image, const CommandBuffers& command_buffer)
     : m_command_buffers(command_buffer), m_device(command_buffer.device())
     {
         int img_w, img_h, img_ch;
@@ -28,13 +28,13 @@ namespace re
         stbi_image_free(pixels);
 
         // Create Image & View intended to be used for sampling
-        m_image = std::make_unique<vkImage>(m_extent,
-                                            vk::Format::eR8G8B8A8Srgb,
-                                            vk::ImageTiling::eOptimal,
+        m_image = std::make_unique<Image>(m_extent,
+                                          vk::Format::eR8G8B8A8Srgb,
+                                          vk::ImageTiling::eOptimal,
                                             vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
-                                            vk::MemoryPropertyFlagBits::eDeviceLocal,
-                                            vk::ImageAspectFlagBits::eColor,
-                                            m_command_buffers);
+                                          vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                          vk::ImageAspectFlagBits::eColor,
+                                          m_command_buffers);
 
         // Upload image to buffer, then prepare for shader usage
         m_image->transition_layout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);

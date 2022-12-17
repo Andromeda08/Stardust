@@ -1,6 +1,6 @@
 #include "Math.hpp"
 
-std::ostream& operator<<(std::ostream& os, const vk::TransformMatrixKHR& rhs)
+std::ostream &operator<<(std::ostream &os, const vk::TransformMatrixKHR &rhs)
 {
     auto& m = rhs.matrix;
     for (size_t i = 0 ; i < 3; i++)
@@ -16,7 +16,7 @@ std::ostream& operator<<(std::ostream& os, const vk::TransformMatrixKHR& rhs)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const glm::mat4& rhs)
+std::ostream &operator<<(std::ostream &os, const glm::mat4 &rhs)
 {
     for (int i = 0; i < 4; i++)
     {

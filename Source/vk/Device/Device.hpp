@@ -6,7 +6,7 @@
 
 #include "Instance.hpp"
 #include "Surface.hpp"
-#include "../Utility/Macro.hpp"
+#include <Utility/Macro.hpp>
 
 class Device {
 public:
