@@ -39,45 +39,53 @@ add_executable(${PROJECT_NAME}
 
         Source/Application.cpp Source/Application.hpp
         Source/Window.cpp Source/Window.cpp
-        Source/Vulkan/DebugMessenger.hpp
-        Source/Vulkan/Instance.cpp Source/Vulkan/Instance.hpp
-        Source/Vulkan/Device.cpp Source/Vulkan/Device.hpp
-        Source/Vulkan/Image/ImageView.cpp Source/Vulkan/Image/ImageView.hpp
-        Source/Vulkan/Image/Image.cpp Source/Vulkan/Image/Image.hpp
-        Source/Vulkan/Surface.cpp Source/Vulkan/Surface.hpp
-        Source/Vulkan/Swapchain.cpp Source/Vulkan/Swapchain.hpp
-        Source/Vulkan/Synchronization/Semaphore.cpp Source/Vulkan/Synchronization/Semaphore.hpp
-        Source/Vulkan/Synchronization/Fence.cpp Source/Vulkan/Synchronization/Fence.hpp
-        Source/Vulkan/Command/CommandPool.cpp Source/Vulkan/Command/CommandPool.hpp
-        Source/Vulkan/Command/CommandBuffers.cpp Source/Vulkan/Command/CommandBuffer.hpp
-        Source/Vulkan/Descriptor/DescriptorSets.cpp Source/Vulkan/Descriptor/DescriptorSets.hpp
-        Source/Vulkan/GraphicsPipeline/RenderPass.cpp Source/Vulkan/GraphicsPipeline/RenderPass.hpp
-        Source/Vulkan/GraphicsPipeline/GraphicsPipelineState.hpp
 
-        Source/Camera.hpp
-        Source/Resources/Geometry.hpp
         Source/vk/Buffer.hpp
-        Source/vk/InstanceData.hpp
-        Source/vk/InstancedGeometry.hpp
-        Source/vk/Material.hpp
+        Source/vk/Geometry.hpp
         Source/vk/Mesh.hpp
-        Source/vk/Pipeline.hpp
+        Source/vk/InstancedGeometry.hpp
+
+        Source/vk/Material.hpp
+        Source/vk/InstanceData.hpp
         Source/vk/UniformData.hpp
         Source/vk/VertexData.hpp
 
-        Source/vk/Image.hpp Source/vk/Image.cpp
-        Source/rt/AccelerationStructure.hpp Source/rt/AccelerationStructure.cpp
-        Source/rt/RtAccelerator.hpp Source/rt/RtAccelerator.cpp
-        Source/Vulkan/Descriptor/DescriptorWrites.hpp Source/Vulkan/Descriptor/DescriptorWrites.cpp
-        Source/Vulkan/Descriptor/DescriptorSetLayout.hpp Source/Vulkan/Descriptor/DescriptorSetLayout.cpp
-        Source/vk/PipelineBuilder.hpp Source/vk/PipelineBuilder.cpp
+        Source/vk/Image.hpp   Source/vk/Image.cpp
         Source/vk/Sampler.hpp Source/vk/Sampler.cpp
-        Source/vk/Shader.hpp Source/vk/Shader.cpp
+        Source/vk/Shader.hpp  Source/vk/Shader.cpp
         Source/vk/Texture.hpp Source/vk/Texture.cpp
 
+        Source/vk/Commands/CommandPool.cpp    Source/vk/Commands/CommandPool.hpp
+        Source/vk/Commands/CommandBuffers.cpp Source/vk/Commands/CommandBuffers.hpp
+
+        Source/vk/Descriptors/DescriptorWrites.hpp    Source/vk/Descriptors/DescriptorWrites.cpp
+        Source/vk/Descriptors/DescriptorSetLayout.hpp Source/vk/Descriptors/DescriptorSetLayout.cpp
+        Source/vk/Descriptors/DescriptorSets.cpp      Source/vk/Descriptors/DescriptorSets.hpp
+
+        Source/vk/Device/DebugMessenger.hpp
+        Source/vk/Device/Instance.cpp       Source/vk/Device/Instance.hpp
+        Source/vk/Device/Device.cpp         Source/vk/Device/Device.hpp
+        Source/vk/Device/Surface.cpp        Source/vk/Device/Surface.hpp
+
+        Source/vk/Pipelines/Pipeline.hpp
+        Source/vk/Pipelines/PipelineBuilder.cpp Source/vk/Pipelines/PipelineBuilder.hpp
+        Source/vk/Pipelines/PipelineBuilder.hpp Source/vk/Pipelines/PipelineBuilder.cpp
+        Source/vk/Pipelines/PipelineState.hpp   Source/vk/Pipelines/PipelineState.cpp
+        Source/vk/Pipelines/RenderPass.cpp      Source/vk/Pipelines/RenderPass.hpp
+
+        Source/vk/Presentation/Swapchain.cpp Source/vk/Presentation/Swapchain.hpp
+        Source/vk/Presentation/SwapchainCapabilities.hpp
+
+        Source/vk/Synchronization/Semaphore.cpp Source/vk/Synchronization/Semaphore.hpp
+        Source/vk/Synchronization/Fence.cpp     Source/vk/Synchronization/Fence.hpp
+
+        Source/rt/AccelerationStructure.hpp Source/rt/AccelerationStructure.cpp
+        Source/rt/RtAccelerator.hpp         Source/rt/RtAccelerator.cpp
+        Source/rt/RayTracingScene.hpp       Source/rt/RayTracingScene.cpp
+
+        Source/Scenes/Camera.hpp
         Source/vk/Scene.hpp Source/vk/Scene.cpp
-        Source/Scenes/Terrain/TerrainScene.cpp Source/Scenes/Terrain/TerrainScene.hpp
-        Source/vk/RayTracingScene.hpp Source/vk/RayTracingScene.cpp)
+        Source/Scenes/Terrain/TerrainScene.cpp Source/Scenes/Terrain/TerrainScene.hpp)
 
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
