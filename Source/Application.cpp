@@ -1,25 +1,25 @@
 #include "Application.hpp"
+
 #include <array>
 #include <chrono>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
-#include "Window.hpp"
-#include "Vulkan/Device.hpp"
-#include "Vulkan/Instance.hpp"
-#include "Vulkan/Surface.hpp"
-#include "Vulkan/Swapchain.hpp"
-#include "Vulkan/Descriptor/DescriptorSetLayout.hpp"
+#include <Window.hpp>
+#include <vk/Device/Device.hpp>
+#include <vk/Device/Instance.hpp>
+#include <vk/Device/Surface.hpp>
 
 void keyboard_input_handler(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
         glfwSetWindowShouldClose(window, true);
+    }
 }
 
 Application::Application(const ApplicationSettings& app_settings)
 : mSettings(app_settings)
-, mCurrentFrame(0)
 {
 #if defined(__APPLE__)
     // Yeah, we're not going to do this any time soon.
@@ -52,7 +52,7 @@ Application::Application(const ApplicationSettings& app_settings)
 
     createSwapChain();
 
-    mCommandBuffers = std::make_unique<CommandBuffer>(*mDevice);
+    mCommandBuffers = std::make_unique<CommandBuffers>(*mDevice);
 
     mScene1 = std::make_unique<re::Scene>(*mSwapChain, *mCommandBuffers);
     if (mSettings.raytracing)
@@ -85,28 +85,22 @@ void Application::run()
     Application::cleanup();
 }
 
-void Application::raytrace()
+uint32_t Application::begin_frame()
 {
-    auto hDevice = mDevice->handle();
+    vk::Result result;
+    auto fence = mInFlightFences[mCurrentFrame].handle();
+    result = mDevice->handle().waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max());
+    result = mDevice->handle().resetFences(1, &fence);
 
-    auto wait = mInFlightFences[mCurrentFrame].handle();
-    auto res = hDevice.waitForFences(1, &wait, true, std::numeric_limits<uint64_t>::max());
-    res = hDevice.resetFences(1, &wait);
+    return mDevice->handle().acquireNextImageKHR(mSwapChain->handle(),
+                                                 std::numeric_limits<uint64_t>::max(),
+                                                 mImageAvailableSemaphores[mCurrentFrame].handle(),
+                                                 nullptr).value;
+}
 
-    vk::Semaphore semaphore = mImageAvailableSemaphores[mCurrentFrame].handle();
-    auto result = hDevice.acquireNextImageKHR(mSwapChain->handle(), std::numeric_limits<uint64_t>::max(), semaphore, nullptr);
-
-    res = hDevice.resetFences(1, &wait);
-    auto cmd_buffer = mCommandBuffers->get_buffer(mCurrentFrame);
-    cmd_buffer.reset();
-
-    vk::CommandBufferBeginInfo begin_info;
-    res = cmd_buffer.begin(&begin_info);
-
-    mScene2->trace_rays(mCurrentFrame, cmd_buffer);
-    mScene2->blit(mCurrentFrame, cmd_buffer);
-
-    cmd_buffer.end();
+void Application::submit_frame(const vk::CommandBuffer& command_buffer, uint32_t acquired_index)
+{
+    vk::Result result;
 
     vk::Semaphore wait_semaphores[] = { mImageAvailableSemaphores[mCurrentFrame].handle() };
     vk::Semaphore signal_semaphores[] = { mRenderFinishedSemaphores[mCurrentFrame].handle() };
@@ -117,67 +111,54 @@ void Application::raytrace()
     submit_info.setPWaitSemaphores(wait_semaphores);
     submit_info.setPWaitDstStageMask(wait_stages);
     submit_info.setCommandBufferCount(1);
-    submit_info.setCommandBuffers(cmd_buffer);
+    submit_info.setCommandBuffers(command_buffer);
     submit_info.setSignalSemaphoreCount(1);
     submit_info.setPSignalSemaphores(signal_semaphores);
-    res = mDevice->graphics_queue().submit(1, &submit_info, wait);
+    result = mDevice->graphics_queue().submit(1, &submit_info, mInFlightFences[mCurrentFrame].handle());
 
     vk::PresentInfoKHR present_info;
     present_info.setWaitSemaphoreCount(1);
     present_info.setPWaitSemaphores(signal_semaphores);
     present_info.setSwapchainCount(1);
     present_info.setPSwapchains(&mSwapChain->handle());
-    present_info.setImageIndices(result.value);
+    present_info.setImageIndices(acquired_index);
     present_info.setPResults(nullptr);
-    res = mDevice->present_queue().presentKHR(&present_info);
+    result = mDevice->present_queue().presentKHR(&present_info);
+}
+
+void Application::raytrace()
+{
+    auto acquired_index = begin_frame();
+    vk::Result result;
+
+    auto cmd = mCommandBuffers->operator[](mCurrentFrame);
+    vk::CommandBufferBeginInfo begin_info;
+    result = cmd.begin(&begin_info);
+    {
+        mScene2->trace_rays(mCurrentFrame, cmd);
+        mScene2->blit(mCurrentFrame, cmd);
+    }
+    cmd.end();
+
+    submit_frame(cmd, acquired_index);
 
     mCurrentFrame = (mCurrentFrame + 1) % 2;
 }
 
 void Application::rasterize()
 {
-    auto hDevice = mDevice->handle();
+    auto acquired_index = begin_frame();
+    vk::Result result;
 
-    auto wait = mInFlightFences[mCurrentFrame].handle();
-    auto res = hDevice.waitForFences(1, &wait, true, UINT64_MAX);
-    res = hDevice.resetFences(1, &wait);
-
-    vk::Semaphore semaphore = mImageAvailableSemaphores[mCurrentFrame].handle();
-    auto result = hDevice.acquireNextImageKHR(mSwapChain->handle(), UINT64_MAX, semaphore, nullptr);
-
-    res = hDevice.resetFences(1, &wait);
-    auto cmd_buffer = mCommandBuffers->get_buffer(mCurrentFrame);
-    cmd_buffer.reset();
-
+    auto cmd = mCommandBuffers->operator[](mCurrentFrame);
     vk::CommandBufferBeginInfo begin_info;
-    res = cmd_buffer.begin(&begin_info);
+    result = cmd.begin(&begin_info);
+    {
+        mScene1->rasterize(mCurrentFrame, cmd);
+    }
+    cmd.end();
 
-    mScene3->rasterize(mCurrentFrame, cmd_buffer);
-
-    cmd_buffer.end();
-
-    vk::Semaphore wait_semaphores[] = { mImageAvailableSemaphores[mCurrentFrame].handle() };
-    vk::Semaphore signal_semaphores[] = { mRenderFinishedSemaphores[mCurrentFrame].handle() };
-    vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
-
-    vk::SubmitInfo submit_info;
-    submit_info.setWaitSemaphoreCount(1);
-    submit_info.setPWaitSemaphores(wait_semaphores);
-    submit_info.setPWaitDstStageMask(wait_stages);
-    submit_info.setCommandBufferCount(1);
-    submit_info.setCommandBuffers(cmd_buffer);
-    submit_info.setSignalSemaphoreCount(1);
-    submit_info.setPSignalSemaphores(signal_semaphores);
-    res = mDevice->graphics_queue().submit(1, &submit_info, wait);
-
-    vk::PresentInfoKHR present_info;
-    present_info.setWaitSemaphoreCount(1);
-    present_info.setPWaitSemaphores(signal_semaphores);
-    present_info.setSwapchainCount(1);
-    present_info.setPSwapchains(&mSwapChain->handle());
-    present_info.setImageIndices(result.value);
-    present_info.setPResults(nullptr);
-    res = mDevice->present_queue().presentKHR(&present_info);
+    submit_frame(cmd, acquired_index);
 
     mCurrentFrame = (mCurrentFrame + 1) % 2;
 }
@@ -274,7 +255,7 @@ void Application::createSwapChain()
 
 void Application::cleanup()
 {
-    mSwapChain->destroy();
+    mSwapChain->cleanup();
 
     Debug::destroy_vk_debug_msgr_ext(static_cast<VkInstance>(mInstance->handle()),
                                      mDebugMessenger,
@@ -286,16 +267,16 @@ void Application::cleanup()
 void Application::name_vk_objects()
 {
     // Name swapchain images.
-    for (size_t i = 0; i < 2; i++)
+    for (size_t i = 0; i < mSwapChain->image_count(); i++)
     {
         std::stringstream ss {};
         ss << "Swapchain image [" << std::to_string(i) << "]";
 
         vk::DebugUtilsObjectNameInfoEXT swapchain_image;
-        swapchain_image.setObjectHandle((uint64_t) static_cast<VkImage>(mSwapChain->image(i)));
+        swapchain_image.setObjectHandle((uint64_t) static_cast<VkImage>(mSwapChain->operator[](i)));
         swapchain_image.setObjectType(vk::ObjectType::eImage);
         swapchain_image.setPObjectName(ss.str().c_str());
-        auto r1 = mDevice->handle().setDebugUtilsObjectNameEXT(&swapchain_image, mDevice->dispatch());
+        auto result = mDevice->handle().setDebugUtilsObjectNameEXT(&swapchain_image, mDevice->dispatch());
     }
 }
 

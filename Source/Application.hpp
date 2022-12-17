@@ -2,17 +2,17 @@
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
+#include <Scenes/Terrain/TerrainScene.hpp>
 #include <Struct/ApplicationSettings.hpp>
 #include <Utility/Macro.hpp>
-#include <Vulkan/DebugMessenger.hpp>
-#include <Vulkan/Swapchain.hpp>
-#include <Vulkan/Command/CommandBuffer.hpp>
-#include <Vulkan/Descriptor/DescriptorSets.hpp>
-#include <Vulkan/Synchronization/Fence.hpp>
-#include <Vulkan/Synchronization/Semaphore.hpp>
 #include <vk/Scene.hpp>
-#include <vk/RayTracingScene.hpp>
-#include <Scenes/Terrain/TerrainScene.hpp>
+#include <rt/RayTracingScene.hpp>
+#include <vk/Commands/CommandBuffers.hpp>
+#include <vk/Descriptors/DescriptorSets.hpp>
+#include <vk/Device/DebugMessenger.hpp>
+#include <vk/Presentation/Swapchain.hpp>
+#include <vk/Synchronization/Fence.hpp>
+#include <vk/Synchronization/Semaphore.hpp>
 
 class Application {
 public:
@@ -30,8 +30,20 @@ public:
 
 private:
     void rasterize();
-
     void raytrace();
+
+    /**
+     * @brief Acquire the next swapchain image for presentation.
+     * @returns Acquired swapchain image index.
+     */
+    uint32_t begin_frame();
+
+    /**
+     * @brief Submit and present the current frame.
+     * @param command_buffer Rendering command buffer
+     * @param acquired_index Swapchain image index
+     */
+    void submit_frame(const vk::CommandBuffer& command_buffer, uint32_t acquired_index);
 
     /**
      * @brief Sets up the vulkan debug messenger
@@ -70,14 +82,14 @@ private:
     void printDevices();
 
 private:
-    ApplicationSettings             mSettings {};
-    VkDebugUtilsMessengerEXT        mDebugMessenger;
-    std::unique_ptr<class Window>   mWindow;
-    std::unique_ptr<class Instance> mInstance;
-    std::unique_ptr<class Surface>  mSurface;
-    std::unique_ptr<class Device>   mDevice;
-    std::unique_ptr<Swapchain>      mSwapChain;
-    std::unique_ptr<CommandBuffer>  mCommandBuffers;
+    ApplicationSettings              mSettings {};
+    VkDebugUtilsMessengerEXT         mDebugMessenger {};
+    std::unique_ptr<class Window>    mWindow;
+    std::unique_ptr<class Instance>  mInstance;
+    std::unique_ptr<class Surface>   mSurface;
+    std::unique_ptr<class Device>    mDevice;
+    std::unique_ptr<Swapchain>       mSwapChain;
+    std::unique_ptr<CommandBuffers>  mCommandBuffers;
 
 #pragma region rendering
 
@@ -94,13 +106,14 @@ private:
 
 #pragma region device_extensions
 
-const std::vector<const char*> mRequiredDeviceExtensions = {
+    const std::vector<const char*> mRequiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 #if defined(__APPLE__)
         "VK_KHR_portability_subset"
 #endif
     };
+
     const std::vector<const char*> mRaytracingDeviceExtensions = {
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
