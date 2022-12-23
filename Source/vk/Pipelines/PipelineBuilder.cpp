@@ -122,10 +122,10 @@ PipelineBuilder& PipelineBuilder::make_rt_shader_groups()
 
     for (auto i = 0; i < shaders.size(); i++)
     {
-        shader_stages.push_back(shaders[i]->stage_info());
-        auto stage = std::end(shader_stages)->stage;
+        auto stage_info = shaders[i]->stage_info();
+        shader_stages.push_back(stage_info);
 
-        switch (stage)
+        switch (stage_info.stage)
         {
             case vk::ShaderStageFlagBits::eRaygenKHR:
             case vk::ShaderStageFlagBits::eMissKHR:
