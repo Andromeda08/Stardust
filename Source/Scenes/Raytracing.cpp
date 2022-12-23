@@ -240,7 +240,7 @@ namespace sd
 
             vk::DescriptorBufferInfo mat_info;
             mat_info.setBuffer(m_uniform_material[i]->buffer());
-            mat_info.setRange(sizeof(Material) * m_materials.size());
+            mat_info.setRange(sizeof(Material) * m_mats.size());
             mat_info.setOffset(0);
 
             DescriptorWrites(m_device, *m_rt_descriptors.sets)
