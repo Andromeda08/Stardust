@@ -196,8 +196,8 @@ vk::Viewport Swapchain::make_viewport() const
     vk::Viewport vp;
 
     vp.setX(0.0f);
-    vp.setY(static_cast<float>(m_extent.height));
     vp.setWidth(static_cast<float>(m_extent.width));
+    vp.setY(static_cast<float>(m_extent.height));
     vp.setHeight(-1.0f * static_cast<float>(m_extent.height));
     vp.setMaxDepth(1.0f);
     vp.setMinDepth(0.0f);

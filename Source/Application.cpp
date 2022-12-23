@@ -6,6 +6,9 @@
 #include <limits>
 #include <stdexcept>
 #include <Window.hpp>
+#include <Scenes/Scene.hpp>
+#include <Scenes/Raytracing.hpp>
+#include <Scenes/Voxels.hpp>
 #include <vk/Device/Device.hpp>
 #include <vk/Device/Instance.hpp>
 #include <vk/Device/Surface.hpp>
@@ -54,12 +57,27 @@ Application::Application(const ApplicationSettings& app_settings)
 
     mCommandBuffers = std::make_unique<CommandBuffers>(*mDevice);
 
-    mScene1 = std::make_unique<re::Scene>(*mSwapChain, *mCommandBuffers);
-    if (mSettings.raytracing)
-    {
-        mScene2 = std::make_unique<re::RayTracingScene>(*mSwapChain, *mCommandBuffers);
-    }
-    //mScene3 = std::make_unique<TerrainScene>(glm::ivec2{ 1024, 1024 }, *mSwapChain, *mCommandBuffers);
+    mSceneManager = std::make_unique<sd::SceneManager>();
+
+    // Scene "generators"
+    const auto gen_raster_scene = [&]() {
+        auto scene = std::make_unique<sd::Scene>(*mSwapChain, *mCommandBuffers);
+        scene->add_object("sphere", "default", Math::model(glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), "SphereR");
+        scene->add_object("sphere", "default", Math::model(glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), "SphereG");
+        scene->add_object("sphere", "default", Math::model(glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), "SphereB");
+        scene->add_object("sphere", "default", Math::model(glm::vec3(0.0f, 0.0f, 0.0f)), glm::vec4(1.0f), "SphereW");
+        return scene;
+    };
+    const auto gen_raytracing_scene = [&]() {
+        return std::make_unique<sd::Raytracing>(*mSwapChain, *mCommandBuffers);
+    };
+    const auto gen_instanced_scene = [&]() {
+        return std::make_unique<sd::Voxels>(glm::ivec2{ 1024, 1024 }, *mSwapChain, *mCommandBuffers);
+    };
+
+    mSceneManager->add_scene(gen_raster_scene, "Raster");
+    mSceneManager->add_scene(gen_raytracing_scene, "Raytracing");
+    mSceneManager->add_scene(gen_instanced_scene, "Instanced");
 
     name_vk_objects();
 }
@@ -70,12 +88,8 @@ void Application::run()
     {
         glfwPollEvents();
 
-        (mSettings.raytracing)
-            ? mScene2->rt_keybinds(mWindow->handle())
-            : mScene1->camera().use_inputs(mWindow->handle());
-            //: mScene3->scene_key_bindings(mWindow->handle());
-
-        (mSettings.raytracing) ? raytrace() : rasterize();
+        mSceneManager->register_keybinds(mWindow->handle());
+        render();
 
         mDevice->waitIdle();
 
@@ -83,6 +97,24 @@ void Application::run()
     }
 
     Application::cleanup();
+}
+
+void Application::render()
+{
+    auto acquired_index = begin_frame();
+    vk::Result result;
+
+    auto cmd = mCommandBuffers->operator[](mCurrentFrame);
+    vk::CommandBufferBeginInfo begin_info;
+    result = cmd.begin(&begin_info);
+    {
+        mSceneManager->render_active_scene(mCurrentFrame, cmd);
+    }
+    cmd.end();
+
+    submit_frame(cmd, acquired_index);
+
+    mCurrentFrame = (mCurrentFrame + 1) % 2;
 }
 
 uint32_t Application::begin_frame()
@@ -124,43 +156,6 @@ void Application::submit_frame(const vk::CommandBuffer& command_buffer, uint32_t
     present_info.setImageIndices(acquired_index);
     present_info.setPResults(nullptr);
     result = mDevice->present_queue().presentKHR(&present_info);
-}
-
-void Application::raytrace()
-{
-    auto acquired_index = begin_frame();
-    vk::Result result;
-
-    auto cmd = mCommandBuffers->operator[](mCurrentFrame);
-    vk::CommandBufferBeginInfo begin_info;
-    result = cmd.begin(&begin_info);
-    {
-        mScene2->trace_rays(mCurrentFrame, cmd);
-        mScene2->blit(mCurrentFrame, cmd);
-    }
-    cmd.end();
-
-    submit_frame(cmd, acquired_index);
-
-    mCurrentFrame = (mCurrentFrame + 1) % 2;
-}
-
-void Application::rasterize()
-{
-    auto acquired_index = begin_frame();
-    vk::Result result;
-
-    auto cmd = mCommandBuffers->operator[](mCurrentFrame);
-    vk::CommandBufferBeginInfo begin_info;
-    result = cmd.begin(&begin_info);
-    {
-        mScene1->rasterize(mCurrentFrame, cmd);
-    }
-    cmd.end();
-
-    submit_frame(cmd, acquired_index);
-
-    mCurrentFrame = (mCurrentFrame + 1) % 2;
 }
 
 void Application::setupDebugMessenger()

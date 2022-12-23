@@ -2,13 +2,9 @@
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
-#include <Scenes/Terrain/TerrainScene.hpp>
+#include <Scenes/SceneManager.hpp>
 #include <Struct/ApplicationSettings.hpp>
-#include <Utility/Macro.hpp>
-#include <vk/Scene.hpp>
-#include <rt/RayTracingScene.hpp>
 #include <vk/Commands/CommandBuffers.hpp>
-#include <vk/Descriptors/DescriptorSets.hpp>
 #include <vk/Device/DebugMessenger.hpp>
 #include <vk/Presentation/Swapchain.hpp>
 #include <vk/Synchronization/Fence.hpp>
@@ -29,8 +25,10 @@ public:
     void run();
 
 private:
-    void rasterize();
-    void raytrace();
+    /**
+     * @breif Render currently active scene.
+     */
+    void render();
 
     /**
      * @brief Acquire the next swapchain image for presentation.
@@ -93,10 +91,8 @@ private:
 
 #pragma region rendering
 
-    std::unique_ptr<re::Scene>           mScene1;
-    std::unique_ptr<re::RayTracingScene> mScene2;
-    std::unique_ptr<TerrainScene>        mScene3;
-    uint32_t                             mCurrentFrame {0};
+    std::unique_ptr<sd::SceneManager> mSceneManager;
+    uint32_t                          mCurrentFrame {0};
 
 #pragma endregion
 
