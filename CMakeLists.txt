@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(VkRaytracing)
+project(Stardust)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -28,10 +28,12 @@ add_subdirectory(ThirdParty/glm)
 # Create executable
 add_executable(${PROJECT_NAME}
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
+        ThirdParty/spv-reflect/spirv_reflect.cpp ThirdParty/spv-reflect/spirv_reflect.h
 
         Source/main.cpp
 
         Source/Utility/Macro.hpp
+        Source/Utility/Clock.hpp
         Source/Utility/Math.hpp Source/Utility/Math.cpp
 
         Source/Struct/ApplicationSettings.hpp
@@ -81,11 +83,12 @@ add_executable(${PROJECT_NAME}
 
         Source/rt/AccelerationStructure.hpp Source/rt/AccelerationStructure.cpp
         Source/rt/RtAccelerator.hpp         Source/rt/RtAccelerator.cpp
-        Source/rt/RayTracingScene.hpp       Source/rt/RayTracingScene.cpp
 
-        Source/Scenes/Camera.hpp
-        Source/vk/Scene.hpp Source/vk/Scene.cpp
-        Source/Scenes/Terrain/TerrainScene.cpp Source/Scenes/Terrain/TerrainScene.hpp)
+        Source/Scenes/SceneManager.hpp Source/Scenes/SceneManager.cpp
+        Source/Scenes/Camera.hpp Source/Scenes/Camera.cpp
+        Source/Scenes/Scene.cpp Source/Scenes/Scene.hpp
+        Source/Scenes/Voxels.hpp Source/Scenes/Voxels.cpp
+        Source/Scenes/Raytracing.cpp Source/Scenes/Raytracing.hpp)
 
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
