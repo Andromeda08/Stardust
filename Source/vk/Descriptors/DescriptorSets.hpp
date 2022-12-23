@@ -21,6 +21,8 @@ public:
                                uint32_t binding,
                                const vk::DescriptorImageInfo& image_info);
 
+    const vk::DescriptorSet& operator[](size_t i) const { return get_set(i); }
+
     const vk::DescriptorSet& get_set(size_t i) const { return m_sets[i]; }
 
     vk::DescriptorSetLayout layout() const { return m_layout; }
