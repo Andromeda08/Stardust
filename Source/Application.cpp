@@ -226,6 +226,15 @@ void Application::selectDevice()
     const auto& devices = mInstance->physicalDevices();
     auto result = devices[0];
 
+    for (const auto& d : devices)
+    {
+        auto props = d.getProperties();
+        if (props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+        {
+            result = d;
+        }
+    }
+
     if (mSettings.logging)
     {
         Application::printDevices();
@@ -233,7 +242,9 @@ void Application::selectDevice()
         std::cout << "Selected device: " << props.deviceName << std::endl;
     }
 
-    mDevice = std::make_unique<Device>(*mInstance, *mSurface, result, mRequiredDeviceExtensions);
+    auto extensions = mRequiredDeviceExtensions;
+    extensions.insert(std::end(extensions), std::begin(mRaytracingDeviceExtensions), std::end(mRaytracingDeviceExtensions));
+    mDevice = std::make_unique<Device>(*mInstance, *mSurface, result, extensions);
 }
 
 void Application::createSwapChain()

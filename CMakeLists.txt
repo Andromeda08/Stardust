@@ -3,21 +3,8 @@ project(Stardust)
 
 set(CMAKE_CXX_STANDARD 20)
 
-if (WIN32)
-    set(CMAKE_EXE_LINKER_FLAGS "-static")
-    set(PYTHON "py")
-endif()
-
-IF(APPLE)
-    set(CMAKE_CXX_STANDARD 17)
-    set(PYTHON "python3")
-
-    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-    set(CMAKE_HAVE_THREADS_LIBRARY 1)
-    set(CMAKE_USE_WIN32_THREADS_INIT 0)
-    set(CMAKE_USE_PTHREADS_INIT 1)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-ENDIF()
+set(CMAKE_EXE_LINKER_FLAGS "-static")
+set(PYTHON "py")
 
 # Set up dependencies
 find_package(Vulkan REQUIRED)
@@ -103,3 +90,28 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${PYTHON} compile_shaders.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+
+add_executable("Test"
+        Test/main.cpp
+        Test/Window/Window.hpp Test/Window/Window.cpp Test/Window/WindowOptions.hpp
+        Test/Application/Application.hpp Test/Application/Application.cpp Test/Application/ApplicationOptions.hpp
+
+        Test/Vulkan/Context.cpp Test/Vulkan/Context.hpp Test/Vulkan/ContextOptions.hpp Test/Vulkan/ContextBuilder.hpp
+        Test/Vulkan/ContextBuilder.cpp Test/Vulkan/DeviceFeatures.hpp Test/Vulkan/Queues.hpp
+
+        Test/Vulkan/Presentation/Swapchain.cpp Test/Vulkan/Presentation/Swapchain.hpp
+        Test/Vulkan/Presentation/SwapchainBuilder.hpp  Test/Vulkan/Presentation/SwapchainBuilder.cpp
+        Test/Vulkan/Presentation/SwapchainCapabilities.hpp
+
+        Test/Vulkan/CommandBuffers.cpp Test/Vulkan/CommandBuffers.hpp
+
+        Test/Vulkan/Descriptors/Descriptor.cpp Test/Vulkan/Descriptors/Descriptor.hpp
+        Test/Vulkan/Descriptors/DescriptorBuilder.hpp Test/Vulkan/Descriptors/DescriptorBuilder.cpp
+        Test/Vulkan/Descriptors/DescriptorWrites.cpp Test/Vulkan/Descriptors/DescriptorWrites.hpp
+
+        Test/Vulkan/Rendering/ShaderModule.cpp Test/Vulkan/Rendering/ShaderModule.hpp)
+
+target_compile_definitions("Test" PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+target_link_libraries("Test" ${Vulkan_LIBRARIES} glfw glm)
+target_include_directories("Test" PUBLIC
+        ${Vulkan_INCLUDE_DIRS} Test ThirdParty/stb)

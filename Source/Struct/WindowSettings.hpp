@@ -10,6 +10,11 @@ struct WindowSettings
     bool fullscreen = false;
     bool resizable  = false;
 
+    void setSize(int32_t width, int32_t height)
+    {
+        resolution = { width, height };
+    }
+
     int width() const { return resolution.x; }
 
     int height() const { return resolution.y; }
