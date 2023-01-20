@@ -10,7 +10,9 @@ namespace sdvk
     public:
         CommandBuffers(uint32_t buffer_count, const Context& context);
 
-        void execute_single_time(const std::function<void(vk::CommandBuffer const&)>& commands);
+        void execute_single_time(const std::function<void(vk::CommandBuffer const&)>& commands) const;
+
+        const vk::CommandBuffer& begin(uint32_t id) const;
 
         const vk::CommandBuffer& get(uint32_t id) const;
 

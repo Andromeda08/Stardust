@@ -105,6 +105,7 @@ namespace sdvk
             vk::Result result;
             vk::SemaphoreCreateInfo sci;
             vk::FenceCreateInfo fci;
+            fci.setFlags(vk::FenceCreateFlagBits::eSignaled);
 
             result = m_ctx.device().createSemaphore(&sci, nullptr, &m_sync.s_image_available[i]);
             result = m_ctx.device().createSemaphore(&sci, nullptr, &m_sync.s_render_finished[i]);
@@ -162,5 +163,44 @@ namespace sdvk
             throw std::out_of_range("Swapchain image view index \"" + std::to_string(id) + "\" out of bounds.");
         }
         return m_views[id];
+    }
+
+    uint32_t Swapchain::acquire_frame(uint32_t current_frame) const
+    {
+        vk::Result result;
+        auto fence = m_sync.f_in_flight[current_frame];
+        result = m_ctx.device().waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max());
+        result = m_ctx.device().resetFences(1, &fence);
+        return m_ctx.device().acquireNextImageKHR(m_swapchain,
+                                                  std::numeric_limits<uint64_t>::max(),
+                                                  m_sync.s_image_available[current_frame],
+                                                  nullptr).value;
+    }
+
+    void Swapchain::submit_and_present(uint32_t current_frame, uint32_t acquired_frame, vk::CommandBuffer const& command_buffer) const
+    {
+        vk::Result result;
+        vk::Semaphore wait_semaphores[] = { m_sync.s_image_available[current_frame] };
+        vk::Semaphore signal_semaphores[] = { m_sync.s_render_finished[current_frame] };
+        vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+        vk::SubmitInfo submit_info;
+        submit_info.setWaitSemaphoreCount(1);
+        submit_info.setPWaitSemaphores(wait_semaphores);
+        submit_info.setPWaitDstStageMask(wait_stages);
+        submit_info.setCommandBufferCount(1);
+        submit_info.setCommandBuffers(command_buffer);
+        submit_info.setSignalSemaphoreCount(1);
+        submit_info.setPSignalSemaphores(signal_semaphores);
+        result = m_ctx.q_graphics().queue.submit(1, &submit_info, m_sync.f_in_flight[current_frame]);
+
+        vk::PresentInfoKHR present_info;
+        present_info.setWaitSemaphoreCount(1);
+        present_info.setPWaitSemaphores(signal_semaphores);
+        present_info.setSwapchainCount(1);
+        present_info.setPSwapchains(&m_swapchain);
+        present_info.setImageIndices(acquired_frame);
+        present_info.setPResults(nullptr);
+        result = m_ctx.q_present().queue.presentKHR(&present_info);
     }
 }

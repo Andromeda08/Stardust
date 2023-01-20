@@ -212,8 +212,8 @@ namespace sdvk
                 auto props = pd.getProperties();
                 std::cout << "- " << props.deviceName << " [" << to_string(props.deviceType) << "]" << std::endl;
             }
-            auto props = m_physical_device.getProperties();
-            std::cout << "Selected device: " << props.deviceName << std::endl;
+            m_physical_device_properties = m_physical_device.getProperties();
+            std::cout << "Selected device: " << m_physical_device_properties.deviceName << std::endl;
         }
     }
 
@@ -277,10 +277,9 @@ namespace sdvk
             queue_infos.push_back(queue_info);
         }
 
-        DeviceFeatures device_features;
-        device_features.device_features.setSamplerAnisotropy(true);
-        device_features.device_features.setShaderInt64(true);
-        device_features.device_features.setFillModeNonSolid(true);
+        m_device_features.device_features.setSamplerAnisotropy(true);
+        m_device_features.device_features.setShaderInt64(true);
+        m_device_features.device_features.setFillModeNonSolid(true);
 
         vk::DeviceCreateInfo create_info;
         create_info.setEnabledLayerCount(validation_layers.size());
@@ -293,8 +292,8 @@ namespace sdvk
 
         if (options.raytracing)
         {
-            device_features.with_ray_tracing();
-            create_info.setPNext(&device_features.ray_tracing_pipeline);
+            m_device_features.with_ray_tracing();
+            create_info.setPNext(&m_device_features.ray_tracing_pipeline);
         }
 
         vk::Result result = m_physical_device.createDevice(&create_info, nullptr, &m_device);
@@ -305,8 +304,6 @@ namespace sdvk
         m_device.getQueue(compute, 0, &m_compute_queue.queue);
         m_present_queue.index = present;
         m_device.getQueue(present, 0, &m_present_queue.queue);
-
-        m_device_features = device_features;
 
         if (options.debug)
         {
@@ -326,5 +323,28 @@ namespace sdvk
             name_info.setPObjectName("Present Queue");
             result = m_device.setDebugUtilsObjectNameEXT(&name_info);
         }
+    }
+
+    void Context::allocate_memory(vk::MemoryRequirements const& memory_requirements,
+                                  vk::MemoryPropertyFlags memory_property_flags,
+                                  vk::DeviceMemory* memory) const
+    {
+        auto type_index = find_memory_type_index(memory_requirements.memoryTypeBits, memory_property_flags);
+        vk::MemoryAllocateInfo alloc_info { memory_requirements.size, type_index };
+        auto result = m_device.allocateMemory(&alloc_info, nullptr, memory);
+    }
+
+    uint32_t Context::find_memory_type_index(uint32_t filter, vk::MemoryPropertyFlags flags) const
+    {
+        auto props = m_physical_device.getMemoryProperties();
+        for (uint32_t i = 0; i < props.memoryTypeCount; i++)
+        {
+            if ((filter & (1 << i)) && (props.memoryTypes[i].propertyFlags & flags) == flags)
+            {
+                return i;
+            }
+        }
+
+        throw std::runtime_error("Failed to find suitable memory type.");
     }
 }

@@ -31,7 +31,7 @@ namespace sdvk
         vk::Result result = m_ctx.device().createCommandPool(&create_info, nullptr, &m_pool);
     }
 
-    void CommandBuffers::execute_single_time(const std::function<void(const vk::CommandBuffer&)>& commands)
+    void CommandBuffers::execute_single_time(const std::function<void(const vk::CommandBuffer&)>& commands) const
     {
         vk::CommandBufferAllocateInfo allocate_info;
         allocate_info.setLevel(vk::CommandBufferLevel::ePrimary);
@@ -72,5 +72,12 @@ namespace sdvk
     const vk::CommandBuffer& CommandBuffers::operator[](uint32_t id) const
     {
         return get(id);
+    }
+
+    const vk::CommandBuffer& CommandBuffers::begin(uint32_t id) const
+    {
+        vk::CommandBufferBeginInfo begin_info;
+        get(id).begin(&begin_info);
+        return m_buffers[id];
     }
 }

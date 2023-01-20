@@ -16,9 +16,10 @@ namespace sdvk
 
         Swapchain(SwapchainCapabilities const& capabilities, Context const& context);
 
-        /**
-         * @brief Create a scissor based on the current extent.
-         */
+        [[nodiscard]] uint32_t acquire_frame(uint32_t current_frame) const;
+
+        void submit_and_present(uint32_t current_frame, uint32_t acquired_frame, vk::CommandBuffer const& command_buffer) const;
+
         vk::Rect2D make_scissor() const;
 
         /**

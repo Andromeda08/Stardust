@@ -93,25 +93,46 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 add_executable("Test"
         Test/main.cpp
+
+        ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
+
         Test/Window/Window.hpp Test/Window/Window.cpp Test/Window/WindowOptions.hpp
         Test/Application/Application.hpp Test/Application/Application.cpp Test/Application/ApplicationOptions.hpp
 
-        Test/Vulkan/Context.cpp Test/Vulkan/Context.hpp Test/Vulkan/ContextOptions.hpp Test/Vulkan/ContextBuilder.hpp
-        Test/Vulkan/ContextBuilder.cpp Test/Vulkan/DeviceFeatures.hpp Test/Vulkan/Queues.hpp
+        Test/Resources/CameraUniformData.hpp
+        Test/Resources/Geometry.hpp
+        Test/Resources/VertexData.hpp
 
-        Test/Vulkan/Presentation/Swapchain.cpp Test/Vulkan/Presentation/Swapchain.hpp
-        Test/Vulkan/Presentation/SwapchainBuilder.hpp  Test/Vulkan/Presentation/SwapchainBuilder.cpp
-        Test/Vulkan/Presentation/SwapchainCapabilities.hpp
-
+        Test/Vulkan/Buffer.hpp Test/Vulkan/Buffer.cpp
+        Test/Vulkan/Context.cpp Test/Vulkan/Context.hpp
+        Test/Vulkan/ContextBuilder.cpp Test/Vulkan/ContextBuilder.hpp Test/Vulkan/ContextOptions.hpp
         Test/Vulkan/CommandBuffers.cpp Test/Vulkan/CommandBuffers.hpp
+        Test/Vulkan/DeviceFeatures.hpp
+        Test/Vulkan/Utils.hpp
+        Test/Vulkan/Queues.hpp
 
         Test/Vulkan/Descriptors/Descriptor.cpp Test/Vulkan/Descriptors/Descriptor.hpp
         Test/Vulkan/Descriptors/DescriptorBuilder.hpp Test/Vulkan/Descriptors/DescriptorBuilder.cpp
         Test/Vulkan/Descriptors/DescriptorWrites.cpp Test/Vulkan/Descriptors/DescriptorWrites.hpp
 
-        Test/Vulkan/Rendering/ShaderModule.cpp Test/Vulkan/Rendering/ShaderModule.hpp)
+        Test/Vulkan/Image/Sampler.hpp
+        Test/Vulkan/Image/Image.cpp Test/Vulkan/Image/Image.hpp
 
-target_compile_definitions("Test" PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+        Test/Vulkan/Rendering/ShaderModule.cpp Test/Vulkan/Rendering/ShaderModule.hpp
+        Test/Vulkan/Rendering/Mesh.cpp Test/Vulkan/Rendering/Mesh.hpp
+        Test/Vulkan/Rendering/Pipeline.hpp
+        Test/Vulkan/Rendering/PipelineBuilder.cpp Test/Vulkan/Rendering/PipelineBuilder.hpp
+        Test/Vulkan/Rendering/PipelineState.cpp Test/Vulkan/Rendering/PipelineState.hpp
+        Test/Vulkan/Rendering/RenderPass.cpp Test/Vulkan/Rendering/RenderPass.hpp
+
+        Test/Vulkan/Presentation/Swapchain.cpp Test/Vulkan/Presentation/Swapchain.hpp
+        Test/Vulkan/Presentation/SwapchainBuilder.hpp  Test/Vulkan/Presentation/SwapchainBuilder.cpp
+        Test/Vulkan/Presentation/SwapchainCapabilities.hpp
+
+        Test/Vulkan/Image/DepthBuffer.cpp Test/Vulkan/Image/DepthBuffer.hpp
+        Test/Vulkan/Image/Texture.cpp Test/Vulkan/Image/Texture.hpp Test/Resources/Primitives/Cube.hpp Test/Resources/Primitives/Sphere.hpp)
+
+target_compile_definitions("Test" PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
 target_link_libraries("Test" ${Vulkan_LIBRARIES} glfw glm)
 target_include_directories("Test" PUBLIC
         ${Vulkan_INCLUDE_DIRS} Test ThirdParty/stb)
