@@ -93,54 +93,56 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 set(V2 "Stardust2")
 add_executable(${V2}
-        Test/main.cpp
+        Stardust/main.cpp
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
 
-        Test/Window/Window.hpp Test/Window/Window.cpp Test/Window/WindowOptions.hpp
-        Test/Application/Application.hpp Test/Application/Application.cpp Test/Application/ApplicationOptions.hpp
+        Stardust/Window/Window.hpp Stardust/Window/Window.cpp Stardust/Window/WindowOptions.hpp
+        Stardust/Application/Application.hpp Stardust/Application/Application.cpp Stardust/Application/ApplicationOptions.hpp
 
-        Test/Scene/Transform.hpp
+        Stardust/Resources/CameraUniformData.hpp
+        Stardust/Resources/Geometry.hpp
+        Stardust/Resources/VertexData.hpp
+        Stardust/Resources/Primitives/Cube.hpp
+        Stardust/Resources/Primitives/Sphere.hpp
 
-        Test/Resources/CameraUniformData.hpp
-        Test/Resources/Geometry.hpp
-        Test/Resources/VertexData.hpp
-        Test/Resources/Primitives/Cube.hpp
-        Test/Resources/Primitives/Sphere.hpp
+        Stardust/Vulkan/Buffer.hpp Stardust/Vulkan/Buffer.cpp
+        Stardust/Vulkan/Context.cpp Stardust/Vulkan/Context.hpp
+        Stardust/Vulkan/ContextBuilder.cpp Stardust/Vulkan/ContextBuilder.hpp Stardust/Vulkan/ContextOptions.hpp
+        Stardust/Vulkan/CommandBuffers.cpp Stardust/Vulkan/CommandBuffers.hpp
+        Stardust/Vulkan/DeviceFeatures.hpp
+        Stardust/Vulkan/Utils.hpp
+        Stardust/Vulkan/Queues.hpp
 
-        Test/Vulkan/Buffer.hpp Test/Vulkan/Buffer.cpp
-        Test/Vulkan/Context.cpp Test/Vulkan/Context.hpp
-        Test/Vulkan/ContextBuilder.cpp Test/Vulkan/ContextBuilder.hpp Test/Vulkan/ContextOptions.hpp
-        Test/Vulkan/CommandBuffers.cpp Test/Vulkan/CommandBuffers.hpp
-        Test/Vulkan/DeviceFeatures.hpp
-        Test/Vulkan/Utils.hpp
-        Test/Vulkan/Queues.hpp
+        Stardust/Vulkan/Descriptors/Descriptor.cpp Stardust/Vulkan/Descriptors/Descriptor.hpp
+        Stardust/Vulkan/Descriptors/DescriptorBuilder.hpp Stardust/Vulkan/Descriptors/DescriptorBuilder.cpp
+        Stardust/Vulkan/Descriptors/DescriptorWrites.cpp Stardust/Vulkan/Descriptors/DescriptorWrites.hpp
 
-        Test/Vulkan/Descriptors/Descriptor.cpp Test/Vulkan/Descriptors/Descriptor.hpp
-        Test/Vulkan/Descriptors/DescriptorBuilder.hpp Test/Vulkan/Descriptors/DescriptorBuilder.cpp
-        Test/Vulkan/Descriptors/DescriptorWrites.cpp Test/Vulkan/Descriptors/DescriptorWrites.hpp
+        Stardust/Vulkan/Image/Sampler.hpp
+        Stardust/Vulkan/Image/Image.cpp Stardust/Vulkan/Image/Image.hpp
 
-        Test/Vulkan/Image/Sampler.hpp
-        Test/Vulkan/Image/Image.cpp Test/Vulkan/Image/Image.hpp
+        Stardust/Vulkan/Rendering/ShaderModule.cpp Stardust/Vulkan/Rendering/ShaderModule.hpp
+        Stardust/Vulkan/Rendering/Mesh.cpp Stardust/Vulkan/Rendering/Mesh.hpp
+        Stardust/Vulkan/Rendering/Pipeline.hpp
+        Stardust/Vulkan/Rendering/PipelineBuilder.cpp Stardust/Vulkan/Rendering/PipelineBuilder.hpp
+        Stardust/Vulkan/Rendering/PipelineState.cpp Stardust/Vulkan/Rendering/PipelineState.hpp
+        Stardust/Vulkan/Rendering/RenderPass.cpp Stardust/Vulkan/Rendering/RenderPass.hpp
 
-        Test/Vulkan/Rendering/ShaderModule.cpp Test/Vulkan/Rendering/ShaderModule.hpp
-        Test/Vulkan/Rendering/Mesh.cpp Test/Vulkan/Rendering/Mesh.hpp
-        Test/Vulkan/Rendering/Pipeline.hpp
-        Test/Vulkan/Rendering/PipelineBuilder.cpp Test/Vulkan/Rendering/PipelineBuilder.hpp
-        Test/Vulkan/Rendering/PipelineState.cpp Test/Vulkan/Rendering/PipelineState.hpp
-        Test/Vulkan/Rendering/RenderPass.cpp Test/Vulkan/Rendering/RenderPass.hpp
+        Stardust/Vulkan/Presentation/Swapchain.cpp Stardust/Vulkan/Presentation/Swapchain.hpp
+        Stardust/Vulkan/Presentation/SwapchainBuilder.hpp Stardust/Vulkan/Presentation/SwapchainBuilder.cpp
+        Stardust/Vulkan/Presentation/SwapchainCapabilities.hpp
 
-        Test/Vulkan/Presentation/Swapchain.cpp Test/Vulkan/Presentation/Swapchain.hpp
-        Test/Vulkan/Presentation/SwapchainBuilder.hpp  Test/Vulkan/Presentation/SwapchainBuilder.cpp
-        Test/Vulkan/Presentation/SwapchainCapabilities.hpp
+        Stardust/Vulkan/Image/DepthBuffer.cpp Stardust/Vulkan/Image/DepthBuffer.hpp
+        Stardust/Vulkan/Image/Texture.cpp Stardust/Vulkan/Image/Texture.hpp
 
-        Test/Vulkan/Image/DepthBuffer.cpp Test/Vulkan/Image/DepthBuffer.hpp
-        Test/Vulkan/Image/Texture.cpp Test/Vulkan/Image/Texture.hpp
+        Stardust/Vulkan/Raytracing/Blas.cpp Stardust/Vulkan/Raytracing/Blas.hpp
+        Stardust/Vulkan/Raytracing/Tlas.cpp Stardust/Vulkan/Raytracing/Tlas.hpp
 
-        Test/Scene/Object.hpp
-
-        Test/Vulkan/Raytracing/Blas.cpp Test/Vulkan/Raytracing/Blas.hpp Test/Vulkan/Raytracing/Tlas.cpp Test/Vulkan/Raytracing/Tlas.hpp Test/Scene/Scene.hpp Test/Scene/Scene.cpp Test/Scene/Light.hpp)
+        Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
+        Stardust/Scene/Transform.hpp
+        Stardust/Scene/Object.hpp
+        Stardust/Scene/Light.hpp)
 
 target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
 target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm)
-target_include_directories(${V2} PUBLIC ${Vulkan_INCLUDE_DIRS} Test ThirdParty/stb)
+target_include_directories(${V2} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb)
