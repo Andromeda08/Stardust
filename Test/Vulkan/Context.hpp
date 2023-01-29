@@ -35,6 +35,12 @@ namespace sdvk
 
         bool is_debug() const { return m_debug_messenger; }
 
+        bool raytracing() const {
+            return std::find(
+                std::begin(m_enabled_device_extensions),std::end(m_enabled_device_extensions),VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                != std::end(m_enabled_device_extensions);
+        }
+
     private:
         void create_instance(ContextOptions const& options);
 

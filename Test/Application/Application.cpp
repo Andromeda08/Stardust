@@ -1,31 +1,7 @@
 #include "Application.hpp"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <Resources/Primitives/Cube.hpp>
-#include <Resources/CameraUniformData.hpp>
 #include <Vulkan/ContextBuilder.hpp>
-#include <Vulkan/Descriptors/Descriptor.hpp>
-#include <Vulkan/Descriptors/DescriptorBuilder.hpp>
-#include <Vulkan/Image/DepthBuffer.hpp>
 #include <Vulkan/Presentation/SwapchainBuilder.hpp>
-#include <Vulkan/Rendering/Mesh.hpp>
-#include <Vulkan/Rendering/PipelineBuilder.hpp>
-#include <Vulkan/Rendering/RenderPass.hpp>
-
-uint32_t g_current_frame = 0;
-std::unique_ptr<sdvk::Mesh> g_mesh;
-std::unique_ptr<sdvk::DepthBuffer> g_depth;
-std::unique_ptr<sdvk::RenderPass> g_render_pass;
-sdvk::Pipeline g_pipeline;
-std::array<vk::ClearValue, 2> g_clear_values;
-std::array<vk::Framebuffer, 2> g_framebuffers;
-
-struct PushConstantBlock
-{
-    glm::vec4 color;
-    glm::mat4 view, proj;
-};
 
 namespace sd
 {
@@ -50,38 +26,10 @@ namespace sd
             .with_defaults()
             .create();
 
+        m_scene = std::make_unique<Scene>(*m_command_buffers, *m_context, *m_swapchain);
+
         /*
-        vk::Sampler test_sampler = sdvk::SamplerBuilder()
-            .with_anisotropy(m_context->device_properties().limits.maxSamplerAnisotropy)
-            .create(m_context->device());
-
-        auto test_image = sdvk::Image::Builder()
-            .with_extent({ 128, 128 })
-            .create(*m_context);
-
-        std::vector<uint32_t> indices = {0, 0, 0};
-        auto test_index_buffer = sdvk::Buffer::Builder()
-            .with_name("Test Index Buffer")
-            .with_size(sizeof(uint32_t) * indices.size())
-            .as_index_buffer()
-            .create_with_data(indices.data(), *m_command_buffers, *m_context);
-
-        std::vector<sd::VertexData> vertices = {{{0, 0, 0}, {1, 1, 1}, {0, 0}}};
-        auto test_vertex_buffer = sdvk::Buffer::Builder()
-            .with_name("Test Vertex Buffer")
-            .with_size(sizeof(sd::VertexData) * vertices.size())
-            .as_vertex_buffer()
-            .create_with_data(vertices.data(), *m_command_buffers, *m_context);
-
-        TestUniform uniform {};
-        auto test_uniform_buffer = sdvk::Buffer::Builder()
-            .with_name("Test Uniform Buffer")
-            .with_size(sizeof(TestUniform))
-            .as_uniform_buffer()
-            .create_with_data(&uniform, *m_command_buffers, *m_context);
-        */
-
-        g_mesh = std::make_unique<sdvk::Mesh>(new primitives::Cube(), *m_command_buffers, *m_context);
+        g_mesh = std::make_unique<sdvk::Mesh>(new primitives::Cube(), *m_command_buffers, *m_context, "Cube");
         g_depth = std::make_unique<sdvk::DepthBuffer>(m_swapchain->extent(), *m_context);
         g_render_pass = std::make_unique<sdvk::RenderPass>(m_swapchain->format(), g_depth->format(), *m_context);
         g_pipeline = sdvk::PipelineBuilder(*m_context)
@@ -113,11 +61,13 @@ namespace sd
             attachments[0] = m_swapchain->view(i);
             result = m_context->device().createFramebuffer(&create_info, nullptr, &g_framebuffers[i]);
         }
+         */
     }
 
     void Application::run()
     {
-        m_window->while_open([&](){
+        /*
+        auto old_fn = [&](){
             auto acquired_frame = m_swapchain->acquire_frame(g_current_frame);
 
             auto command_buffer = m_command_buffers->begin(g_current_frame);
@@ -153,6 +103,19 @@ namespace sd
 
             g_current_frame = (g_current_frame + 1) % m_swapchain->image_count();
 
+            m_context->device().waitIdle();
+        };
+        */
+
+        m_window->while_open([&](){
+            auto acquired_frame = m_swapchain->acquire_frame(m_current_frame);
+
+            auto command_buffer = m_command_buffers->begin(m_current_frame);
+            m_scene->rasterize(m_current_frame, command_buffer);
+            command_buffer.end();
+
+            m_swapchain->submit_and_present(m_current_frame, acquired_frame, command_buffer);
+            m_current_frame = (m_current_frame + 1) % m_swapchain->image_count();
             m_context->device().waitIdle();
         });
     }

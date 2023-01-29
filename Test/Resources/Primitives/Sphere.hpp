@@ -5,7 +5,7 @@
 
 namespace sd::primitives
 {
-    class Sphere : sd::Geometry
+    class Sphere : public sd::Geometry
     {
     public:
         explicit Sphere(float radius = 1.0f, int32_t tesselation = 60) : sd::Geometry()

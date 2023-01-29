@@ -91,7 +91,8 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${PYTHON} compile_shaders.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
-add_executable("Test"
+set(V2 "Stardust2")
+add_executable(${V2}
         Test/main.cpp
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
@@ -99,9 +100,13 @@ add_executable("Test"
         Test/Window/Window.hpp Test/Window/Window.cpp Test/Window/WindowOptions.hpp
         Test/Application/Application.hpp Test/Application/Application.cpp Test/Application/ApplicationOptions.hpp
 
+        Test/Scene/Transform.hpp
+
         Test/Resources/CameraUniformData.hpp
         Test/Resources/Geometry.hpp
         Test/Resources/VertexData.hpp
+        Test/Resources/Primitives/Cube.hpp
+        Test/Resources/Primitives/Sphere.hpp
 
         Test/Vulkan/Buffer.hpp Test/Vulkan/Buffer.cpp
         Test/Vulkan/Context.cpp Test/Vulkan/Context.hpp
@@ -130,9 +135,12 @@ add_executable("Test"
         Test/Vulkan/Presentation/SwapchainCapabilities.hpp
 
         Test/Vulkan/Image/DepthBuffer.cpp Test/Vulkan/Image/DepthBuffer.hpp
-        Test/Vulkan/Image/Texture.cpp Test/Vulkan/Image/Texture.hpp Test/Resources/Primitives/Cube.hpp Test/Resources/Primitives/Sphere.hpp)
+        Test/Vulkan/Image/Texture.cpp Test/Vulkan/Image/Texture.hpp
 
-target_compile_definitions("Test" PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
-target_link_libraries("Test" ${Vulkan_LIBRARIES} glfw glm)
-target_include_directories("Test" PUBLIC
-        ${Vulkan_INCLUDE_DIRS} Test ThirdParty/stb)
+        Test/Scene/Object.hpp
+
+        Test/Vulkan/Raytracing/Blas.cpp Test/Vulkan/Raytracing/Blas.hpp Test/Vulkan/Raytracing/Tlas.cpp Test/Vulkan/Raytracing/Tlas.hpp Test/Scene/Scene.hpp Test/Scene/Scene.cpp Test/Scene/Light.hpp)
+
+target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
+target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm)
+target_include_directories(${V2} PUBLIC ${Vulkan_INCLUDE_DIRS} Test ThirdParty/stb)

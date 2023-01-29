@@ -3,6 +3,7 @@
 #include <memory>
 #include <Resources/Geometry.hpp>
 #include <Vulkan/Buffer.hpp>
+#include <Vulkan/Raytracing/Blas.hpp>
 
 namespace sdvk
 {
@@ -19,9 +20,16 @@ namespace sdvk
 
         const sd::Geometry& geometry() const { return *m_geometry; }
 
+        const std::string& name() const { return m_name; }
+
+        const vk::DeviceAddress& blas_address() const { return m_blas->address(); }
+
     private:
-        std::unique_ptr<sd::Geometry> m_geometry;
-        std::unique_ptr<Buffer> m_vertex_buffer;
-        std::unique_ptr<Buffer> m_index_buffer;
+        std::string m_name;
+
+        std::shared_ptr<sd::Geometry> m_geometry;
+        std::shared_ptr<Buffer> m_vertex_buffer;
+        std::shared_ptr<Buffer> m_index_buffer;
+        std::unique_ptr<Blas> m_blas;
     };
 }

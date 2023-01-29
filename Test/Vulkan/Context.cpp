@@ -153,7 +153,7 @@ namespace sdvk
     void Context::select_device(const ContextOptions& options)
     {
         std::vector<vk::PhysicalDevice> physical_devices = m_instance.enumeratePhysicalDevices();
-        physical_devices | std::views::filter([](vk::PhysicalDevice pd){
+        physical_devices | std::views::filter([](vk::PhysicalDevice const& pd){
             auto props = pd.getProperties();
             return props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu
                 || props.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
