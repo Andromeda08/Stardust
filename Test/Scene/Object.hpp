@@ -1,11 +1,13 @@
 #pragma once
 
 #include "Transform.hpp"
+#include <Vulkan/Rendering/Mesh.hpp>
 
 namespace sd
 {
     struct Object
     {
-        Transform m_transform;
+        Transform transform;
+        sdvk::Mesh const& mesh;
     };
 }

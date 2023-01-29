@@ -68,7 +68,7 @@ namespace sdvk
 
     Buffer::Builder& Buffer::Builder::as_storage_buffer()
     {
-        _usage_flags = vk::BufferUsageFlagBits::eStorageBuffer;
+        _usage_flags = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         _memory_property_flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
         return *this;
     }
@@ -77,6 +77,13 @@ namespace sdvk
     {
         _usage_flags = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
         _memory_property_flags = vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible;
+        return *this;
+    }
+
+    Buffer::Builder& Buffer::Builder::as_acceleration_structure_storage()
+    {
+        _usage_flags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        _memory_property_flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
         return *this;
     }
 

@@ -31,6 +31,8 @@ namespace sdvk
 
             Builder& as_storage_buffer();
 
+            Builder& as_acceleration_structure_storage();
+
             Builder& as_shader_binding_table();
 
             std::unique_ptr<Buffer> create(Context const& ctx);
