@@ -4,8 +4,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 #include <Resources/CameraUniformData.hpp>
+#include <Scene/Camera.hpp>
 #include <Scene/Object.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Context.hpp>
@@ -26,6 +28,8 @@ namespace sd
 
         void rasterize(uint32_t current_frame, vk::CommandBuffer const& cmd);
 
+        void register_keybinds(GLFWwindow* p_window);
+
     private:
         std::vector<Object> m_objects;
         std::unordered_map<std::string, std::shared_ptr<sdvk::Mesh>> m_meshes;
@@ -34,6 +38,7 @@ namespace sd
         std::unique_ptr<sdvk::Tlas> m_tlas;
         std::unique_ptr<sdvk::Descriptor> m_descriptor;
 
+        std::unique_ptr<Camera> m_camera;
         std::vector<std::unique_ptr<sdvk::Buffer>> m_uniform_camera;
 
         struct Rendering {

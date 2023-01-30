@@ -17,65 +17,65 @@ add_executable(${PROJECT_NAME}
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
         ThirdParty/spv-reflect/spirv_reflect.cpp ThirdParty/spv-reflect/spirv_reflect.h
 
-        Source/main.cpp
+        Old/main.cpp
 
-        Source/Utility/Macro.hpp
-        Source/Utility/Clock.hpp
-        Source/Utility/Math.hpp Source/Utility/Math.cpp
+        Old/Utility/Macro.hpp
+        Old/Utility/Clock.hpp
+        Old/Utility/Math.hpp Old/Utility/Math.cpp
 
-        Source/Struct/ApplicationSettings.hpp
-        Source/Struct/WindowSettings.hpp
+        Old/Struct/ApplicationSettings.hpp
+        Old/Struct/WindowSettings.hpp
 
-        Source/Application.cpp Source/Application.hpp
-        Source/Window.cpp Source/Window.cpp
+        Old/Application.cpp Old/Application.hpp
+        Old/Window.cpp Old/Window.cpp
 
-        Source/vk/Buffer.hpp
-        Source/vk/Geometry.hpp
-        Source/vk/Mesh.hpp
-        Source/vk/InstancedGeometry.hpp
+        Old/vk/Buffer.hpp
+        Old/vk/Geometry.hpp
+        Old/vk/Mesh.hpp
+        Old/vk/InstancedGeometry.hpp
 
-        Source/vk/Material.hpp
-        Source/vk/InstanceData.hpp
-        Source/vk/UniformData.hpp
-        Source/vk/VertexData.hpp
+        Old/vk/Material.hpp
+        Old/vk/InstanceData.hpp
+        Old/vk/UniformData.hpp
+        Old/vk/VertexData.hpp
 
-        Source/vk/Image.hpp   Source/vk/Image.cpp
-        Source/vk/Sampler.hpp Source/vk/Sampler.cpp
-        Source/vk/Shader.hpp  Source/vk/Shader.cpp
-        Source/vk/Texture.hpp Source/vk/Texture.cpp
+        Old/vk/Image.hpp Old/vk/Image.cpp
+        Old/vk/Sampler.hpp Old/vk/Sampler.cpp
+        Old/vk/Shader.hpp Old/vk/Shader.cpp
+        Old/vk/Texture.hpp Old/vk/Texture.cpp
 
-        Source/vk/Commands/CommandPool.cpp    Source/vk/Commands/CommandPool.hpp
-        Source/vk/Commands/CommandBuffers.cpp Source/vk/Commands/CommandBuffers.hpp
+        Old/vk/Commands/CommandPool.cpp Old/vk/Commands/CommandPool.hpp
+        Old/vk/Commands/CommandBuffers.cpp Old/vk/Commands/CommandBuffers.hpp
 
-        Source/vk/Descriptors/DescriptorWrites.hpp    Source/vk/Descriptors/DescriptorWrites.cpp
-        Source/vk/Descriptors/DescriptorSetLayout.hpp Source/vk/Descriptors/DescriptorSetLayout.cpp
-        Source/vk/Descriptors/DescriptorSets.cpp      Source/vk/Descriptors/DescriptorSets.hpp
+        Old/vk/Descriptors/DescriptorWrites.hpp Old/vk/Descriptors/DescriptorWrites.cpp
+        Old/vk/Descriptors/DescriptorSetLayout.hpp Old/vk/Descriptors/DescriptorSetLayout.cpp
+        Old/vk/Descriptors/DescriptorSets.cpp Old/vk/Descriptors/DescriptorSets.hpp
 
-        Source/vk/Device/DebugMessenger.hpp
-        Source/vk/Device/Instance.cpp       Source/vk/Device/Instance.hpp
-        Source/vk/Device/Device.cpp         Source/vk/Device/Device.hpp
-        Source/vk/Device/Surface.cpp        Source/vk/Device/Surface.hpp
+        Old/vk/Device/DebugMessenger.hpp
+        Old/vk/Device/Instance.cpp Old/vk/Device/Instance.hpp
+        Old/vk/Device/Device.cpp Old/vk/Device/Device.hpp
+        Old/vk/Device/Surface.cpp Old/vk/Device/Surface.hpp
 
-        Source/vk/Pipelines/Pipeline.hpp
-        Source/vk/Pipelines/PipelineBuilder.cpp Source/vk/Pipelines/PipelineBuilder.hpp
-        Source/vk/Pipelines/PipelineBuilder.hpp Source/vk/Pipelines/PipelineBuilder.cpp
-        Source/vk/Pipelines/PipelineState.hpp   Source/vk/Pipelines/PipelineState.cpp
-        Source/vk/Pipelines/RenderPass.cpp      Source/vk/Pipelines/RenderPass.hpp
+        Old/vk/Pipelines/Pipeline.hpp
+        Old/vk/Pipelines/PipelineBuilder.cpp Old/vk/Pipelines/PipelineBuilder.hpp
+        Old/vk/Pipelines/PipelineBuilder.hpp Old/vk/Pipelines/PipelineBuilder.cpp
+        Old/vk/Pipelines/PipelineState.hpp Old/vk/Pipelines/PipelineState.cpp
+        Old/vk/Pipelines/RenderPass.cpp Old/vk/Pipelines/RenderPass.hpp
 
-        Source/vk/Presentation/Swapchain.cpp Source/vk/Presentation/Swapchain.hpp
-        Source/vk/Presentation/SwapchainCapabilities.hpp
+        Old/vk/Presentation/Swapchain.cpp Old/vk/Presentation/Swapchain.hpp
+        Old/vk/Presentation/SwapchainCapabilities.hpp
 
-        Source/vk/Synchronization/Semaphore.cpp Source/vk/Synchronization/Semaphore.hpp
-        Source/vk/Synchronization/Fence.cpp     Source/vk/Synchronization/Fence.hpp
+        Old/vk/Synchronization/Semaphore.cpp Old/vk/Synchronization/Semaphore.hpp
+        Old/vk/Synchronization/Fence.cpp Old/vk/Synchronization/Fence.hpp
 
-        Source/rt/AccelerationStructure.hpp Source/rt/AccelerationStructure.cpp
-        Source/rt/RtAccelerator.hpp         Source/rt/RtAccelerator.cpp
+        Old/rt/AccelerationStructure.hpp Old/rt/AccelerationStructure.cpp
+        Old/rt/RtAccelerator.hpp Old/rt/RtAccelerator.cpp
 
-        Source/Scenes/SceneManager.hpp Source/Scenes/SceneManager.cpp
-        Source/Scenes/Camera.hpp Source/Scenes/Camera.cpp
-        Source/Scenes/Scene.cpp Source/Scenes/Scene.hpp
-        Source/Scenes/Voxels.hpp Source/Scenes/Voxels.cpp
-        Source/Scenes/Raytracing.cpp Source/Scenes/Raytracing.hpp)
+        Old/Scenes/SceneManager.hpp Old/Scenes/SceneManager.cpp
+        Old/Scenes/Camera.hpp Old/Scenes/Camera.cpp
+        Old/Scenes/Scene.cpp Old/Scenes/Scene.hpp
+        Old/Scenes/Voxels.hpp Old/Scenes/Voxels.cpp
+        Old/Scenes/Raytracing.cpp Old/Scenes/Raytracing.hpp)
 
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
@@ -83,7 +83,7 @@ add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
 target_include_directories(${PROJECT_NAME} PUBLIC
         ${Vulkan_INCLUDE_DIRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ${CMAKE_CURRENT_SOURCE_DIR}/Old
         ThirdParty/spv-reflect
         ThirdParty/stb)
 
@@ -141,7 +141,7 @@ add_executable(${V2}
         Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
         Stardust/Scene/Transform.hpp
         Stardust/Scene/Object.hpp
-        Stardust/Scene/Light.hpp)
+        Stardust/Scene/Light.hpp Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp)
 
 target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
 target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm)

@@ -51,9 +51,5 @@ def compile_shaders():
 if not os.path.exists(f"{bin_dir}"):
     os.makedirs(f"{bin_dir}")
 
-if platform.system() == "Darwin":
-    slash = "/"
-    target_vk = "vulkan1.2"
-
 sort_shaders()
 compile_shaders()

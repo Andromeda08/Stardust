@@ -13,12 +13,15 @@ namespace sdvk
         vk::PhysicalDeviceMaintenance4FeaturesKHR maintenance4;
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR ray_tracing_pipeline;
         vk::PhysicalDeviceSynchronization2FeaturesKHR synchronization2;
+        vk::PhysicalDeviceRayQueryFeaturesKHR ray_query;
 
         DeviceFeatures() = default;
 
         void with_ray_tracing()
         {
+            ray_query.setRayQuery(true);
             synchronization2.setSynchronization2(true);
+            synchronization2.setPNext(&ray_query);
             maintenance4.setMaintenance4(true);
             maintenance4.setPNext(&synchronization2);
             descriptor_indexing.setRuntimeDescriptorArray(true);

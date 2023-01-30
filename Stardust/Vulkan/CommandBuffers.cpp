@@ -77,7 +77,7 @@ namespace sdvk
     const vk::CommandBuffer& CommandBuffers::begin(uint32_t id) const
     {
         vk::CommandBufferBeginInfo begin_info;
-        get(id).begin(&begin_info);
+        auto result = get(id).begin(&begin_info);
         return m_buffers[id];
     }
 }

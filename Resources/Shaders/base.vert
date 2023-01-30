@@ -18,7 +18,6 @@ layout (set = 0, binding = 0) uniform CameraUniformData
     vec4 eye;
 } camera;
 
-
 layout (location = 0) out vec3 fragPos;
 layout (location = 1) out vec3 fragNormal;
 layout (location = 2) out vec2 fragUV;
@@ -27,7 +26,7 @@ layout (location = 3) out vec3 fragColor;
 void main() {
     gl_Position = camera.proj * camera.view * obj_pcd.model * vec4(inPosition, 1.0);
 
-    fragPos = (camera.proj * camera.view * obj_pcd.model * vec4(inPosition, 1.0)).xyz;
+    fragPos = (obj_pcd.model * vec4(inPosition, 1.0)).xyz;
     fragNormal = inNormal;
     fragUV = inUV;
     fragColor = obj_pcd.color.xyz;

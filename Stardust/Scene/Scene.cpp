@@ -8,25 +8,20 @@
 
 namespace sd
 {
-
     Scene::Scene(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context, const sdvk::Swapchain& swapchain)
     : m_command_buffers(command_buffers), m_context(context), m_swapchain(swapchain)
     {
-        auto view = glm::lookAt(glm::vec3{5.0f, 5.0f, 5.0f}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
-        auto proj = glm::perspective(glm::radians(45.0f), m_swapchain.aspect_ratio(), 0.1f, 1000.0f);
-        CameraUniformData cud
         {
-            .view = view,
-            .proj = proj,
-            .view_inverse = glm::inverse(view),
-            .proj_inverse = glm::inverse(proj),
-            .eye = {5.0f, 5.0f, 5.0f, 1.0f}
-        };
+            auto scext = swapchain.extent();
+            m_camera = std::make_unique<Camera>(glm::ivec2(scext.width, scext.height), glm::vec3(5.0f));
+        }
 
         m_descriptor = sdvk::DescriptorBuilder()
             .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+            .accelerator(1, vk::ShaderStageFlagBits::eFragment)
             .create(context.device(), m_swapchain.image_count());
 
+        auto cud = m_camera->uniform_data();
         m_uniform_camera.resize(m_swapchain.image_count());
         for (int32_t i = 0; i < m_swapchain.image_count(); i++)
         {
@@ -69,8 +64,8 @@ namespace sd
             .create_pipeline_layout()
             .add_attribute_descriptions({ VertexData::attribute_descriptions() })
             .add_binding_descriptions({ VertexData::binding_description() })
-            .add_shader("base.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("base.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .add_shader("rq_light.vert.spv", vk::ShaderStageFlagBits::eVertex)
+            .add_shader("rq_light.frag.spv", vk::ShaderStageFlagBits::eFragment)
             .create_graphics_pipeline(*m_rendering.render_pass);
 
         std::string cube = "cube", sphere = "sphere";
@@ -79,25 +74,52 @@ namespace sd
 
         Object obj_cube;
         obj_cube.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes[cube]);
-        obj_cube.transform.position = {2, 0, 0};
+        obj_cube.transform.position = {2, 0.5f, 0};
         obj_cube.color = { 0.8f, 0.1f, 0.9f, 1.0f };
+
+        Object obj_cube2;
+        obj_cube2.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes[cube]);
+        obj_cube2.transform.position = {-5, 0.5f, -5};
+        obj_cube2.color = { 0.4f, 0.1f, 0.9f, 1.0f };
+
+        Object obj_cube3;
+        obj_cube3.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes[cube]);
+        obj_cube3.transform.position = {4, 0.5f, 2};
+        obj_cube3.transform.scale = {2, 2, 2};
+        obj_cube3.color = { 0.1f, 1.0f, 0.2f, 1.0f };
+
+        Object obj_plane;
+        obj_plane.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes[cube]);
+        obj_plane.transform.scale = { 25, 0.05f, 25 };
+        obj_plane.color = { 0.5f, 0.5f, 0.5f, 1.0f };
 
         Object obj_sphere;
         obj_sphere.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes[sphere]);
-        obj_sphere.transform.position = {-2, 0, 0};
+        obj_sphere.transform.position = {-2, 1.0f, 0};
         obj_sphere.color = { 0.0f, 0.7f, 0.9f, 1.0f };
 
+        m_objects.push_back(obj_plane);
         m_objects.push_back(obj_cube);
+        m_objects.push_back(obj_cube2);
+        m_objects.push_back(obj_cube3);
         m_objects.push_back(obj_sphere);
 
         if (m_context.raytracing())
         {
             m_tlas = sdvk::Tlas::Builder().with_name("[TLAS] Scene").create(m_objects, m_command_buffers, m_context);
+            vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &m_tlas->tlas() };
+            for (int32_t i = 0; i < m_swapchain.image_count(); i++)
+            {
+                sdvk::DescriptorWrites(m_context.device(), *m_descriptor).acceleration_structure(i, 1, as_info).commit();
+            }
         }
     }
 
     void Scene::rasterize(uint32_t current_frame, const vk::CommandBuffer& cmd)
     {
+        auto cud = m_camera->uniform_data();
+        m_uniform_camera[current_frame]->set_data(&cud, m_context.device());
+
         vk::RenderPassBeginInfo begin_info;
         begin_info.setRenderPass(m_rendering.render_pass->handle());
         begin_info.setRenderArea({{0,0}, m_swapchain.extent()});
@@ -127,5 +149,10 @@ namespace sd
         }
 
         cmd.endRenderPass();
+    }
+
+    void Scene::register_keybinds(GLFWwindow* p_window)
+    {
+        m_camera->register_keys(p_window);
     }
 }
