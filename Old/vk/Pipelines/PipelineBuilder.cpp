@@ -64,6 +64,11 @@ PipelineBuilder& PipelineBuilder::add_shader(const std::string& shader_src, vk::
 
 Pipeline PipelineBuilder::create_graphics_pipeline(const RenderPass& render_pass)
 {
+    return PipelineBuilder::create_graphics_pipeline(render_pass.handle());
+}
+
+Pipeline PipelineBuilder::create_graphics_pipeline(const vk::RenderPass& render_pass)
+{
     if (!pipeline.pipeline_layout)
     {
         throw std::runtime_error("You must first create a vk::PipelineLayout object before creating a pipeline!");
@@ -90,7 +95,7 @@ Pipeline PipelineBuilder::create_graphics_pipeline(const RenderPass& render_pass
     create_info.setPStages(shader_stages.data());
 
     create_info.setLayout(pipeline.pipeline_layout);
-    create_info.setRenderPass(render_pass.handle());
+    create_info.setRenderPass(render_pass);
     create_info.setPNext(nullptr);
 
     vk::Result result;

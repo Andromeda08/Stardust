@@ -30,6 +30,8 @@ struct PipelineBuilder
      */
     Pipeline create_graphics_pipeline(const RenderPass& render_pass);
 
+    Pipeline create_graphics_pipeline(const vk::RenderPass& render_pass);
+
     PipelineBuilder& make_rt_shader_groups();
 
     /**

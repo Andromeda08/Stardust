@@ -22,7 +22,7 @@ namespace sd
             .add_shader("reflection.rmiss.spv", vk::ShaderStageFlagBits::eMissKHR)
             .add_shader("reflection.rchit.spv", vk::ShaderStageFlagBits::eClosestHitKHR)
             .make_rt_shader_groups()
-            .create_ray_tracing_pipeline(1);
+            .create_ray_tracing_pipeline(2);
 
         m_materials.insert({ "reflection", reflection });
 
@@ -72,7 +72,7 @@ namespace sd
 
         auto e = m_swapchain.extent();
         cmd.traceRaysKHR(&raygen_sbt, &miss_sbt, &chit_sbt, &callable_sbt,
-                         e.width, e.height, 1, m_device.dispatch());
+                         e.width, e.height, 2, m_device.dispatch());
 
         blit(current_frame, cmd);
     }

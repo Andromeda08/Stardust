@@ -74,7 +74,17 @@ Application::Application(const ApplicationSettings& app_settings)
     const auto gen_instanced_scene = [&]() {
         return std::make_unique<sd::Voxels>(glm::ivec2{ 1024, 1024 }, *mSwapChain, *mCommandBuffers);
     };
+    const auto gen_test_scene = [&]() {
+        auto scene = std::make_unique<sd::Scene>(*mSwapChain, *mCommandBuffers);
+        scene->add_object("cube", "default", Math::model(glm::vec3(0.0f), glm::vec3(25, 0.05f, 25)), glm::vec4(0.5f), "Plane");
+        scene->add_object("cube", "default", Math::model(glm::vec3(-5, 1.0f, -5)), glm::vec4(0.7f, 0.1f, 0.9f, 1.0f), "Cube1");
+        scene->add_object("cube", "default", Math::model(glm::vec3(-7, 1.0f, 3), glm::vec3(1.5f)), glm::vec4(0.2f, 0.1f, 0.9f, 1.0f), "Cube2");
+        scene->add_object("cube", "default", Math::model(glm::vec3(2, 1.0f, 8)), glm::vec4(0.1f, 0.7f, 0.9f, 1.0f), "Cube3");
+        scene->add_object("sphereL", "default", Math::model(glm::vec3(5)), glm::vec4(1.0f), "Light");
+        return scene;
+    };
 
+    mSceneManager->add_scene(gen_test_scene, "Test");
     mSceneManager->add_scene(gen_raster_scene, "Raster");
     mSceneManager->add_scene(gen_raytracing_scene, "Raytracing");
     mSceneManager->add_scene(gen_instanced_scene, "Instanced");
@@ -226,15 +236,6 @@ void Application::selectDevice()
     const auto& devices = mInstance->physicalDevices();
     auto result = devices[0];
 
-    for (const auto& d : devices)
-    {
-        auto props = d.getProperties();
-        if (props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-        {
-            result = d;
-        }
-    }
-
     if (mSettings.logging)
     {
         Application::printDevices();
@@ -242,9 +243,7 @@ void Application::selectDevice()
         std::cout << "Selected device: " << props.deviceName << std::endl;
     }
 
-    auto extensions = mRequiredDeviceExtensions;
-    extensions.insert(std::end(extensions), std::begin(mRaytracingDeviceExtensions), std::end(mRaytracingDeviceExtensions));
-    mDevice = std::make_unique<Device>(*mInstance, *mSurface, result, extensions);
+    mDevice = std::make_unique<Device>(*mInstance, *mSurface, result, mRequiredDeviceExtensions);
 }
 
 void Application::createSwapChain()

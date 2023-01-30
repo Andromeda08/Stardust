@@ -143,7 +143,7 @@ namespace sd
         m_materials.insert({ "default", pipeline });
 
         m_meshes["sphere"] = std::make_shared<re::Mesh>(new SphereGeometry(0.25f, glm::vec3(0.5f), 120), m_command_buffers);
+        m_meshes["sphereL"] = std::make_shared<re::Mesh>(new SphereGeometry(1.0f, glm::vec3(0.5f), 120), m_command_buffers);
+        m_meshes["cube"] = std::make_shared<re::Mesh>(new CubeGeometry(), m_command_buffers);
     }
-
-
 }

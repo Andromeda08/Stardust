@@ -24,6 +24,7 @@
 #include <Scenes/Camera.hpp>
 #include <Utility/Clock.hpp>
 #include <Utility/Math.hpp>
+#include <SSAO/SSAO.hpp>
 
 namespace sd
 {
