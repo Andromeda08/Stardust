@@ -1,5 +1,6 @@
 #include "RTAOKernel.hpp"
 
+#include <glm/ext/matrix_relational.hpp>
 #include <Vulkan/Image/Sampler.hpp>
 #include <Vulkan/Descriptors/DescriptorBuilder.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
@@ -99,16 +100,23 @@ namespace sd
     void RTAOKernel::run(const glm::mat4& view_mtx, const vk::CommandBuffer& command_buffer)
     {
         update_descriptors();
-        m_ao_params.acc_frames = m_frame;
 
         // AO accumulation when camera is stationary.
         static glm::mat4 ref_mat = glm::mat4(1.0f);
-        if (view_mtx != ref_mat)
+        auto eq = glm::equal(glm::mat4(ref_mat), glm::mat4(view_mtx), 0.001f);
+        if (!(eq.x && eq.y && eq.z && eq.w))
         {
             ref_mat = view_mtx;
             m_frame = -1;
         }
         m_frame++;
+
+        m_ao_params.acc_frames = m_frame;
+
+        if (m_frame * m_ao_params.acc_frames > m_ao_params.max_samples)
+        {
+            return;
+        }
 
         /**
          * Expected G-Buffer properties:

@@ -149,7 +149,7 @@ namespace sd
         m_meshes[sphere] = std::make_shared<sdvk::Mesh>(new primitives::Sphere(1.0f, 120), m_command_buffers, m_context, sphere);
 
         load_objects_from_json("objects.json");
-        /*for (int32_t i = -12; i < 13; i++)
+        for (int32_t i = -12; i < 13; i++)
         {
             Object obj;
             obj.name = "cube" + std::to_string(i + 12);
@@ -169,7 +169,7 @@ namespace sd
                 obj2.mesh = m_meshes["cube"];
                 m_objects.push_back(obj2);
             }
-        }*/
+        }
 
         if (m_context.raytracing())
         {

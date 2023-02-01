@@ -226,18 +226,18 @@ void main()
         occlusion = pow(clamp(occlusion, 0, 1), rtao_power);
     }
 
-    imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), vec4(occlusion));
+    //imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), vec4(occlusion));
 
-    // Writting out the AO
-//    if(frame_number == 0)
-//    {
-//        imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), vec4(occlusion));
-//    }
-//    else
-//    {
-//        // Accumulating over time
-//        float old_ao     = imageLoad(outImage, ivec2(gl_GlobalInvocationID.xy)).x;
-//        float new_result = mix(old_ao, occlusion, 1.0f / float(frame_number + 1));
-//        imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), vec4(new_result));
-//    }
+    //Writting out the AO
+    if(frame_number == 0)
+    {
+        imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), vec4(occlusion));
+    }
+    else
+    {
+        // Accumulating over time
+        float old_ao     = imageLoad(outImage, ivec2(gl_GlobalInvocationID.xy)).x;
+        float new_result = mix(old_ao, occlusion, 1.0f / float(frame_number + 1));
+        imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), vec4(new_result));
+    }
 }

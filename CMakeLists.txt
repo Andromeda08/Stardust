@@ -12,7 +12,6 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(ThirdParty/glfw)
 add_subdirectory(ThirdParty/glm)
 add_subdirectory(ThirdParty/json)
-
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 add_executable(${PROJECT_NAME}
@@ -74,10 +73,9 @@ add_executable(${PROJECT_NAME}
         Stardust/Rendering/SSAO/SSAOKernel.cpp Stardust/Rendering/SSAO/SSAOKernel.hpp
         Stardust/Rendering/SSAO/SSAOParams.hpp)
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG USE_NSIGHT_AFTERMATH=1)
+target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb ThirdParty/aftermath/include)
-
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${PYTHON} compile_shaders.py
