@@ -1,4 +1,4 @@
-#include "RtaoKernel.hpp"
+#include "RTAOKernel.hpp"
 
 #include <Vulkan/Image/Sampler.hpp>
 #include <Vulkan/Descriptors/DescriptorBuilder.hpp>
@@ -10,7 +10,7 @@ namespace sd
     RTAOKernel::RTAOKernel(const std::shared_ptr<sdvk::Image>& g_buffer, const std::shared_ptr<sdvk::Tlas>& tlas,
                            const std::string& compute_shader, const sdvk::CommandBuffers& command_buffers,
                            const sdvk::Context& context)
-    : m_command_buffers(command_buffers), m_context(context)
+    : AmbientOcclusion(command_buffers, context)
     {
         m_g_buffer = std::shared_ptr<sdvk::Image>(g_buffer);
         m_tlas = std::shared_ptr<sdvk::Tlas>(tlas);

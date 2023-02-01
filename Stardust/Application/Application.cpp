@@ -27,18 +27,17 @@ namespace sd
             .create();
 
         m_scene = std::make_unique<Scene>(*m_command_buffers, *m_context, *m_swapchain);
-        m_scene2 = std::make_unique<Scene2>(*m_command_buffers, *m_context, *m_swapchain);
     }
 
     void Application::run()
     {
         m_window->while_open([&](){
-            m_scene2->register_keybinds(m_window->handle());
+            m_scene->register_keybinds(m_window->handle());
 
             auto acquired_frame = m_swapchain->acquire_frame(m_current_frame);
 
             auto command_buffer = m_command_buffers->begin(m_current_frame);
-            m_scene2->rasterize(m_current_frame, command_buffer);
+            m_scene->rasterize(m_current_frame, command_buffer);
             command_buffer.end();
 
             m_swapchain->submit_and_present(m_current_frame, acquired_frame, command_buffer);

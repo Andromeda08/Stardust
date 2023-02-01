@@ -8,7 +8,7 @@
 #include <Vulkan/Image/Image.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
-#include "RtaoParams.hpp"
+#include "RTAOParams.hpp"
 
 namespace sd
 {
@@ -54,8 +54,6 @@ namespace sd
 
         void run(const glm::mat4& view_mtx, vk::CommandBuffer const& command_buffer) override;
 
-        const sdvk::Image& get_result() const { return *m_ao_buffer; }
-
     private:
         void create_resources();
 
@@ -68,10 +66,9 @@ namespace sd
 
         std::unique_ptr<sdvk::Descriptor> m_ao_descriptor;
         sdvk::Pipeline m_ao_pipeline;
+        vk::Sampler    m_sampler;
         RTAOParams     m_ao_params {};
         int32_t        m_frame {0};
-
-        vk::Sampler m_sampler;
 
         struct {
             vk::DescriptorImageInfo g_buffer, ao_buffer;
@@ -80,8 +77,5 @@ namespace sd
 
         std::shared_ptr<sdvk::Image> m_g_buffer;
         std::shared_ptr<sdvk::Tlas>  m_tlas;
-
-        const sdvk::CommandBuffers& m_command_buffers;
-        const sdvk::Context& m_context;
     };
 }

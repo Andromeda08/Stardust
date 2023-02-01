@@ -1,99 +1,155 @@
 #include "Scene.hpp"
-
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <Rendering/RTAO/RTAOKernel.hpp>
 #include <Resources/Primitives/Cube.hpp>
 #include <Resources/Primitives/Sphere.hpp>
 #include <Vulkan/Descriptors/DescriptorBuilder.hpp>
 #include <Vulkan/Descriptors/DescriptorWrites.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
-#include <Vulkan/Image/Sampler.hpp>
 
 namespace sd
 {
     Scene::Scene(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context, const sdvk::Swapchain& swapchain)
     : m_command_buffers(command_buffers), m_context(context), m_swapchain(swapchain)
     {
-        {
-            auto scext = swapchain.extent();
-            m_camera = std::make_unique<Camera>(glm::ivec2(scext.width, scext.height), glm::vec3(5.0f));
-        }
+        m_render_settings.ambient_occlusion.mode = AmbientOcclusionMode::eRTAO;
 
-        m_descriptor = sdvk::DescriptorBuilder()
+        auto extent = m_swapchain.extent();
+        m_camera = std::make_unique<Camera>(glm::ivec2(extent.width, extent.height), glm::vec3(5.0f));
+
+        #pragma region offscreen
+        m_offscreen_render_target.g_buffer = sdvk::Image::Builder()
+            .with_extent(m_swapchain.extent())
+            .with_format(vk::Format::eR32G32B32A32Sfloat)
+            .with_sample_count(vk::SampleCountFlagBits::e1)
+            .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
+            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
+            .with_name("G-Buffer")
+            .create(m_context);
+
+        m_offscreen_render_target.output = sdvk::Image::Builder()
+            .with_extent(m_swapchain.extent())
+            .with_format(m_swapchain.format())
+            .with_sample_count(vk::SampleCountFlagBits::e1)
+            .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
+            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
+            .with_name("Offscreen render")
+            .create(m_context);
+
+        m_offscreen_render_target.depth_image = std::make_unique<sdvk::DepthBuffer>(m_swapchain.extent(), vk::SampleCountFlagBits::e1, m_context);
+
+        m_offscreen_render_target.clear_values[0].setColor(std::array<float, 4>{ 0.1f, 0.1f, 0.1f, 0.1f });
+        m_offscreen_render_target.clear_values[1].setColor(std::array<float, 4>{ 0, 0, 0, 0 });
+        m_offscreen_render_target.clear_values[2].setDepthStencil({ 1.0f, 0 });
+
+        m_offscreen_render_target.render_pass = sdvk::RenderPass::Builder()
+            .add_color_attachment(m_offscreen_render_target.output->format(), vk::SampleCountFlagBits::e1)
+            .add_color_attachment(m_offscreen_render_target.g_buffer->format(), vk::SampleCountFlagBits::e1)
+            .set_depth_attachment(m_offscreen_render_target.depth_image->format(), vk::SampleCountFlagBits::e1)
+            .make_subpass()
+            .with_name("Offscreen RenderPass")
+            .create(m_context);
+
+        m_offscreen_render_target.descriptor = sdvk::DescriptorBuilder()
             .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
             .accelerator(1, vk::ShaderStageFlagBits::eFragment)
+            .with_name("Offscreen")
             .create(context.device(), m_swapchain.image_count());
 
-        auto cud = m_camera->uniform_data();
         m_uniform_camera.resize(m_swapchain.image_count());
-        for (int32_t i = 0; i < m_swapchain.image_count(); i++)
+        auto camera_data = m_camera->uniform_data();
+        for (int32_t i = 0; i < m_uniform_camera.size(); i++)
         {
             m_uniform_camera[i] = sdvk::Buffer::Builder()
                 .with_size(sizeof(CameraUniformData))
                 .as_uniform_buffer()
-                .create(context);
+                .with_name("Camera UB #" + std::to_string(i))
+                .create(m_context);
 
-            m_uniform_camera[i]->set_data(&cud, context.device());
+            m_uniform_camera[i]->set_data(&camera_data, m_context.device());
 
-            vk::DescriptorBufferInfo info = { m_uniform_camera[i]->buffer(), 0, sizeof(CameraUniformData) };
-            sdvk::DescriptorWrites(context.device(), *m_descriptor)
-                .uniform_buffer(i, 0, info)
+            sdvk::DescriptorWrites(m_context.device(), *m_offscreen_render_target.descriptor)
+                .uniform_buffer(i, 0, { m_uniform_camera[i]->buffer(), 0, sizeof(CameraUniformData) })
                 .commit();
         }
 
-        m_rendering.depth_buffer = std::make_unique<sdvk::DepthBuffer>(m_swapchain.extent(), vk::SampleCountFlagBits::e8, m_context);
-        m_rendering.clear_values[0].setColor(std::array<float, 4>{ 0.1f, 0.1f, 0.1f, 0.1f });
-        m_rendering.clear_values[1].setDepthStencil({ 1.0f, 0 });
-        m_rendering.multisampling_buffer = sdvk::Image::Builder()
-            .with_format(m_swapchain.format())
-            .with_extent(m_swapchain.extent())
-            .with_tiling(vk::ImageTiling::eOptimal)
-            .with_usage_flags(vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment)
-            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
-            .with_sample_count(vk::SampleCountFlagBits::e8)
-            .create(m_context);
-        m_rendering.msaa = sdvk::RenderPass::Builder()
-            .add_color_attachment(m_swapchain.format(), vk::SampleCountFlagBits::e8, vk::ImageLayout::eColorAttachmentOptimal)
-            .set_depth_attachment(m_rendering.depth_buffer->format(), vk::SampleCountFlagBits::e8)
-            .set_resolve_attachment(m_rendering.multisampling_buffer->format(), vk::ImageLayout::ePresentSrcKHR)
-            .make_subpass()
-            .with_name("MSAA RenderPass")
-            .create(m_context);
+        std::array<vk::ImageView, 3> os_attachments = {
+            m_offscreen_render_target.output->view(),
+            m_offscreen_render_target.g_buffer->view(),
+            m_offscreen_render_target.depth_image->view()
+        };
 
-        std::array<vk::ImageView, 3> attachments = { m_rendering.multisampling_buffer->view(), m_rendering.depth_buffer->view(), m_swapchain.view(0) };
-        vk::FramebufferCreateInfo create_info;
-        create_info.setRenderPass(m_rendering.msaa);
-        create_info.setAttachmentCount(attachments.size());
-        create_info.setPAttachments(attachments.data());
-        create_info.setWidth(m_swapchain.extent().width);
-        create_info.setHeight(m_swapchain.extent().height);
-        create_info.setLayers(1);
-
-        for (size_t i = 0; i < 2; i++)
-        {
-            attachments[2] = m_swapchain.view(i);
-            auto result = m_context.device().createFramebuffer(&create_info, nullptr, &m_rendering.framebuffers[i]);
-        }
+        vk::FramebufferCreateInfo fb_create_info;
+        fb_create_info.setRenderPass(m_offscreen_render_target.render_pass);
+        fb_create_info.setAttachmentCount(os_attachments.size());
+        fb_create_info.setPAttachments(os_attachments.data());
+        fb_create_info.setWidth(extent.width);
+        fb_create_info.setHeight(extent.height);
+        fb_create_info.setLayers(1);
+        auto result = m_context.device().createFramebuffer(&fb_create_info, nullptr, &m_offscreen_render_target.framebuffer);
 
         m_pipelines["default"] = sdvk::PipelineBuilder(m_context)
             .add_push_constant({ vk::ShaderStageFlagBits::eVertex, 0, sizeof(Object::PushConstantData) })
-            .add_descriptor_set_layout(m_descriptor->layout())
+            .add_descriptor_set_layout(m_offscreen_render_target.descriptor->layout())
             .create_pipeline_layout()
-            .set_sample_count(vk::SampleCountFlagBits::e8)
+            .set_sample_count(vk::SampleCountFlagBits::e1)
+            .set_attachment_count(2)
             .add_attribute_descriptions({ VertexData::attribute_descriptions() })
             .add_binding_descriptions({ VertexData::binding_description() })
             .add_shader("rq_light.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("rq_light.frag.spv", vk::ShaderStageFlagBits::eFragment)
-            .with_name("MSAA Graphics")
-            .create_graphics_pipeline(m_rendering.msaa);
+            .add_shader("rtao.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .with_name("Offscreen Graphics")
+            .create_graphics_pipeline(m_offscreen_render_target.render_pass);
+        #pragma endregion
+
+        #pragma region composite
+        m_composite_render_target.sampler = sdvk::SamplerBuilder().create(m_context.device());
+        m_composite_render_target.descriptor = sdvk::DescriptorBuilder()
+            .combined_image_sampler(0, vk::ShaderStageFlagBits::eFragment)
+            .combined_image_sampler(1, vk::ShaderStageFlagBits::eFragment)
+            .with_name("Composite")
+            .create(m_context.device(), 1);
+
+        m_composite_render_target.render_pass = sdvk::RenderPass::Builder()
+            .add_color_attachment(m_swapchain.format(), vk::SampleCountFlagBits::e1, vk::ImageLayout::ePresentSrcKHR)
+            .make_subpass()
+            .with_name("Composite RenderPass")
+            .create(m_context);
+
+        std::vector<vk::ImageView> comp_attachments = { m_swapchain.view(0) };
+        vk::FramebufferCreateInfo fb_create_info2;
+        fb_create_info2.setRenderPass(m_composite_render_target.render_pass);
+        fb_create_info2.setAttachmentCount(comp_attachments.size());
+        fb_create_info2.setPAttachments(comp_attachments.data());
+        fb_create_info2.setWidth(extent.width);
+        fb_create_info2.setHeight(extent.height);
+        fb_create_info2.setLayers(1);
+        for (int32_t i = 0; i < m_framebuffers.size(); i++)
+        {
+            comp_attachments[0] = m_swapchain.view(i);
+            auto res = m_context.device().createFramebuffer(&fb_create_info2, nullptr, &m_framebuffers[i]);
+        }
+
+        m_pipelines["composite_ao"] = sdvk::PipelineBuilder(m_context)
+            .add_push_constant({ vk::ShaderStageFlagBits::eFragment, 0, sizeof(float) })
+            .add_descriptor_set_layout(m_composite_render_target.descriptor->layout())
+            .create_pipeline_layout()
+            .set_sample_count(vk::SampleCountFlagBits::e1)
+            .add_shader("passthrough.vert.spv", vk::ShaderStageFlagBits::eVertex)
+            .add_shader("post.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .set_cull_mode(vk::CullModeFlagBits::eNone)
+            .with_name("Composite")
+            .create_graphics_pipeline(m_composite_render_target.render_pass);
+        #pragma endregion
 
         std::string cube = "cube", sphere = "sphere";
         m_meshes[cube] = std::make_shared<sdvk::Mesh>(new primitives::Cube(), m_command_buffers, m_context, cube);
         m_meshes[sphere] = std::make_shared<sdvk::Mesh>(new primitives::Sphere(1.0f, 120), m_command_buffers, m_context, sphere);
 
         load_objects_from_json("objects.json");
-        for (int32_t i = -12; i < 13; i++)
+        /*for (int32_t i = -12; i < 13; i++)
         {
             Object obj;
             obj.name = "cube" + std::to_string(i + 12);
@@ -113,7 +169,7 @@ namespace sd
                 obj2.mesh = m_meshes["cube"];
                 m_objects.push_back(obj2);
             }
-        }
+        }*/
 
         if (m_context.raytracing())
         {
@@ -121,153 +177,130 @@ namespace sd
             vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &m_tlas->tlas() };
             for (int32_t i = 0; i < m_swapchain.image_count(); i++)
             {
-                sdvk::DescriptorWrites(m_context.device(), *m_descriptor).acceleration_structure(i, 1, as_info).commit();
+                sdvk::DescriptorWrites(m_context.device(), *m_offscreen_render_target.descriptor).acceleration_structure(i, 1, as_info).commit();
             }
         }
 
-        init_rtao();
+        if (!m_context.raytracing() && m_render_settings.ambient_occlusion.mode == AmbientOcclusionMode::eRTAO)
+        {
+            throw std::runtime_error("RT Ambient Occlusion required ray tracing support.");
+        }
+
+        if (m_render_settings.ambient_occlusion.mode == AmbientOcclusionMode::eRTAO)
+        {
+            m_ambient_occlusion = RTAOKernel::Builder()
+                .with_g_buffer(m_offscreen_render_target.g_buffer)
+                .with_tlas(m_tlas)
+                .with_shader("dummy.comp.spv")
+                .create(m_command_buffers, m_context);
+        }
     }
 
-    void Scene::rasterize(uint32_t current_frame, const vk::CommandBuffer& cmd)
+    void Scene::rasterize(uint32_t current_frame, const vk::CommandBuffer& command_buffer)
     {
-        auto cud = m_camera->uniform_data();
-        m_uniform_camera[current_frame]->set_data(&cud, m_context.device());
+        #pragma region offscreen render pass
+        update_offscreen_descriptors(current_frame);
 
-        auto viewport = m_swapchain.make_viewport();
-        auto scissor = m_swapchain.make_scissor();
-        cmd.setViewport(0, 1, &viewport);
-        cmd.setScissor(0, 1, &scissor);
+        auto vp = m_swapchain.make_viewport();
+        auto sc = m_swapchain.make_scissor();
+        command_buffer.setViewport(0, 1, &vp);
+        command_buffer.setScissor(0, 1, &sc);
 
-        auto commands = [&](const vk::CommandBuffer& cmd){
+        auto offscreen_pass_cmds = [&](const vk::CommandBuffer& cmd){
             for (const auto& obj : m_objects)
             {
-                cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines[obj.pipeline].pipeline);
-                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines[obj.pipeline].pipeline_layout, 0, 1, &m_descriptor->set(current_frame), 0, nullptr);
+                const auto& pl = m_pipelines[obj.pipeline];
 
-                Object::PushConstantData obj_pcd;
-                obj_pcd.model = obj.transform.model();
-                obj_pcd.color = obj.color;
+                Object::PushConstantData pcd;
+                pcd.model = obj.transform.model();
+                pcd.color = obj.color;
 
-                cmd.pushConstants(m_pipelines[obj.pipeline].pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(Object::PushConstantData), &obj_pcd);
-
+                cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pl.pipeline);
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pl.pipeline_layout, 0, 1, &m_offscreen_render_target.descriptor->set(current_frame), 0, nullptr);
+                cmd.pushConstants(pl.pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(Object::PushConstantData), &pcd);
                 obj.mesh->draw(cmd);
             }
         };
 
         sdvk::RenderPass::Execute()
-            .with_render_pass(m_rendering.msaa)
+            .with_render_pass(m_offscreen_render_target.render_pass)
             .with_render_area({{0, 0}, m_swapchain.extent()})
-            .with_clear_values(m_rendering.clear_values)
-            .with_framebuffer(m_rendering.framebuffers[current_frame])
-            .execute(cmd, commands);
+            .with_clear_values(m_offscreen_render_target.clear_values)
+            .with_framebuffer(m_offscreen_render_target.framebuffer)
+            .execute(command_buffer, offscreen_pass_cmds);
+        #pragma endregion
 
-        auto commands2 = [&](const vk::CommandBuffer& cmd){
-            for (const auto& obj : m_objects)
+        #pragma region ambient occlusion
+        if (m_render_settings.ambient_occlusion.is_enabled())
+        {
+            m_ambient_occlusion->run(m_camera->view(), command_buffer);
+        }
+        #pragma endregion
+
+        #pragma region composite render pass
+        update_composite_descriptors();
+        auto composite_pass_cmds = [&](const vk::CommandBuffer& cmd){
+            auto aspect_ratio = m_swapchain.extent();
+
+            auto& active_pipeline = m_pipelines["composite"];
+            if (m_render_settings.ambient_occlusion.is_enabled())
             {
-                cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_rtao.pipeline.pipeline);
-                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_rtao.pipeline.pipeline_layout, 0, 1, &m_descriptor->set(current_frame), 0, nullptr);
-
-                Object::PushConstantData obj_pcd;
-                obj_pcd.model = obj.transform.model();
-                obj_pcd.color = obj.color;
-
-                cmd.pushConstants(m_rtao.pipeline.pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(Object::PushConstantData), &obj_pcd);
-
-                obj.mesh->draw(cmd);
+                active_pipeline = m_pipelines["composite_ao"];
             }
-        };
 
-        sdvk::RenderPass::Execute()
-            .with_render_pass(m_rtao.render_pass)
-            .with_render_area({{0, 0}, m_swapchain.extent()})
-            .with_clear_values(m_rtao.clear_values)
-            .with_framebuffer(m_rtao.framebuffer)
-            .execute(cmd, commands2);
+            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, active_pipeline.pipeline);
+            cmd.pushConstants(active_pipeline.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(float), &aspect_ratio);
+            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, active_pipeline.pipeline_layout, 0, 1, &m_composite_render_target.descriptor->set(0), 0, nullptr);
 
-        run_compute(cmd);
-
-        auto commands3 = [&](const vk::CommandBuffer& cmd){
-            std::vector<vk::WriteDescriptorSet> _writes;
-            vk::DescriptorImageInfo offscreen = {}, aoresult = {};
-            offscreen.setSampler(m_rtao.sampler);
-            offscreen.setImageView(m_rtao.offscreen->view());
-            offscreen.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-            aoresult.setSampler(m_rtao.sampler);
-            aoresult.setImageView(m_rtao.aobuffer->view());
-            aoresult.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-            {
-                vk::WriteDescriptorSet write;
-                write.setDstBinding(1);
-                write.setDstSet(m_post.post_desc->set(0));
-                write.setDescriptorCount(1);
-                write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-                write.setDstArrayElement(0);
-                write.setImageInfo(aoresult);
-                _writes.push_back(write);
-            }
-            {
-                vk::WriteDescriptorSet write;
-                write.setDstBinding(0);
-                write.setDstSet(m_post.post_desc->set(0));
-                write.setDescriptorCount(1);
-                write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-                write.setDstArrayElement(0);
-                write.setImageInfo(offscreen);
-                _writes.push_back(write);
-            }
-            m_context.device().updateDescriptorSets(_writes.size(),_writes.data(), 0, nullptr);
-
-            auto ar = m_swapchain.aspect_ratio();
-            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_post.post.pipeline);
-            cmd.pushConstants(m_post.post.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(float), &ar);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_post.post.pipeline_layout, 0, 1, &m_post.post_desc->set(0), 0, nullptr);
             cmd.draw(3, 1, 0, 0);
         };
 
-        vk::ImageMemoryBarrier barrier;
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-        barrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-        barrier.setImage(m_rtao.offscreen->image());
-        barrier.setOldLayout(vk::ImageLayout::eColorAttachmentOptimal);
-        barrier.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-        barrier.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
-        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eShaderWrite);
-        barrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-        barrier.setImage(m_rtao.aobuffer->image());
-        barrier.setOldLayout(vk::ImageLayout::eGeneral);
-        barrier.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-        barrier.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
-        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, &barrier);
+        vk::ImageMemoryBarrier os_barrier;
+        #pragma region offscreen image barrier
+        os_barrier.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        os_barrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+        os_barrier.setImage(m_offscreen_render_target.output->image());
+        os_barrier.setOldLayout(vk::ImageLayout::eColorAttachmentOptimal);
+        os_barrier.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+        os_barrier.setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        #pragma endregion
+        command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, &os_barrier);
 
         sdvk::RenderPass::Execute()
-            .with_render_pass(m_post.render_pass)
+            .with_render_pass(m_composite_render_target.render_pass)
             .with_render_area({{0, 0}, m_swapchain.extent()})
-            .with_clear_values(m_rendering.clear_values)
-            .with_framebuffer(m_post.framebuffer)
-            .execute(cmd, commands3);
+            .with_clear_values(m_offscreen_render_target.clear_values)
+            .with_framebuffer(m_framebuffers[current_frame])
+            .execute(command_buffer, composite_pass_cmds);
 
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eShaderRead);
-        barrier.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-        barrier.setImage(m_rtao.offscreen->image());
-        barrier.setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-        barrier.setNewLayout(vk::ImageLayout::eColorAttachmentOptimal);
-        barrier.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
-        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eShaderRead);
-        barrier.setDstAccessMask(vk::AccessFlagBits::eShaderWrite);
-        barrier.setImage(m_rtao.aobuffer->image());
-        barrier.setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-        barrier.setNewLayout(vk::ImageLayout::eGeneral);
-        barrier.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
-        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eComputeShader,{}, 0, nullptr, 0, nullptr, 1, &barrier);
+        os_barrier.setSrcAccessMask(vk::AccessFlagBits::eShaderRead);
+        os_barrier.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        os_barrier.setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+        os_barrier.setNewLayout(vk::ImageLayout::eColorAttachmentOptimal);
+        command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, 0, nullptr, 0, nullptr, 1, &os_barrier);
+        #pragma endregion
     }
 
     void Scene::register_keybinds(GLFWwindow* p_window)
     {
         m_camera->register_keys(p_window);
+    }
+
+    void Scene::update_offscreen_descriptors(uint32_t current_frame)
+    {
+        auto camera_data = m_camera->uniform_data();
+        m_uniform_camera[current_frame]->set_data(&camera_data, m_context.device());
+    }
+
+    void Scene::update_composite_descriptors()
+    {
+        vk::DescriptorImageInfo offscreen = { m_composite_render_target.sampler, m_offscreen_render_target.output->view(), vk::ImageLayout::eShaderReadOnlyOptimal };
+        vk::DescriptorImageInfo ao_buffer = { m_composite_render_target.sampler, m_ambient_occlusion->get_result().view(), vk::ImageLayout::eShaderReadOnlyOptimal };
+
+        sdvk::DescriptorWrites(m_context.device(), *m_composite_render_target.descriptor)
+            .combined_image_sampler(0, 0, offscreen)
+            .combined_image_sampler(0, 1, ao_buffer)
+            .commit();
     }
 
     void Scene::load_objects_from_json(const std::string& objects_json)
@@ -311,228 +344,4 @@ namespace sd
 
         file.close();
     }
-
-    void Scene::init_rtao()
-    {
-        m_rtao.sampler = sdvk::SamplerBuilder().create(m_context.device());
-
-        #pragma region images & depth buffer
-        m_rtao.gbuffer = sdvk::Image::Builder()
-            .with_extent(m_swapchain.extent())
-            .with_format(vk::Format::eR32G32B32A32Sfloat)
-            .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
-            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
-            .with_name("RTAO G-Buffer")
-            .create(m_context);
-
-        m_rtao.aobuffer = sdvk::Image::Builder()
-            .with_extent(m_swapchain.extent())
-            .with_format(vk::Format::eR32Sfloat)
-            .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
-            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
-            .with_name("RTAO AO-Buffer")
-            .create(m_context);
-
-        m_rtao.offscreen = sdvk::Image::Builder()
-            .with_extent(m_swapchain.extent())
-            .with_format(m_swapchain.format())
-            .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
-            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
-            .with_name("RTAO Offscreen Render")
-            .create(m_context);
-
-        m_rtao.offscreen_depth = std::make_unique<sdvk::DepthBuffer>(m_swapchain.extent(), vk::SampleCountFlagBits::e1, m_context);
-        #pragma endregion
-
-        #pragma region image layout transitions
-        m_command_buffers.execute_single_time([&](const vk::CommandBuffer& cmd){
-            m_rtao.aobuffer->transition_layout(cmd, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
-        });
-        #pragma endregion
-
-        m_rtao.clear_values[0].setColor(std::array<float, 4>{ 0.1f, 0.1f, 0.1f, 0.1f });
-        m_rtao.clear_values[1].setColor(std::array<float, 4>{ 0, 0, 0, 0 });
-        m_rtao.clear_values[2].setDepthStencil({ 1.0f, 0 });
-
-        m_rtao.render_pass = sdvk::RenderPass::Builder()
-            .add_color_attachment(m_rtao.offscreen->format())
-            .add_color_attachment(m_rtao.gbuffer->format())
-            .set_depth_attachment(m_rtao.offscreen_depth->format())
-            .make_subpass()
-            .with_name("RTAO Offscreen RenderPass")
-            .create(m_context);
-
-        #pragma region framebuffer creation
-        std::vector<vk::ImageView> attachments = { m_rtao.offscreen->view(), m_rtao.gbuffer->view(), m_rtao.offscreen_depth->view() };
-        vk::FramebufferCreateInfo create_info;
-        create_info.setRenderPass(m_rtao.render_pass);
-        create_info.setAttachmentCount(attachments.size());
-        create_info.setPAttachments(attachments.data());
-        create_info.setWidth(m_swapchain.extent().width);
-        create_info.setHeight(m_swapchain.extent().height);
-        create_info.setLayers(1);
-        auto result = m_context.device().createFramebuffer(&create_info, nullptr, &m_rtao.framebuffer);
-        #pragma endregion
-
-        m_rtao.pipeline = sdvk::PipelineBuilder(m_context)
-            .add_push_constant({ vk::ShaderStageFlagBits::eVertex, 0, sizeof(Object::PushConstantData) })
-            .add_descriptor_set_layout(m_descriptor->layout())
-            .create_pipeline_layout()
-            .set_sample_count(vk::SampleCountFlagBits::e1)
-            .set_attachment_count(2)
-            .add_attribute_descriptions({ VertexData::attribute_descriptions() })
-            .add_binding_descriptions({ VertexData::binding_description() })
-            .add_shader("rq_light.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("rtao.frag.spv", vk::ShaderStageFlagBits::eFragment)
-            .with_name("RTAO Offscreen Graphics")
-            .create_graphics_pipeline(m_rtao.render_pass);
-
-        #pragma region compute
-        m_rtao.comp_desc = sdvk::DescriptorBuilder()
-            .storage_image(0, vk::ShaderStageFlagBits::eCompute)
-            .storage_image(1, vk::ShaderStageFlagBits::eCompute)
-            .accelerator(2, vk::ShaderStageFlagBits::eCompute)
-            .create(m_context.device(), 1);
-
-        vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &m_tlas->tlas() };
-        vk::DescriptorImageInfo gbuffer = {}, aobuffer = {};
-        gbuffer.setSampler(m_rtao.sampler);
-        gbuffer.setImageView(m_rtao.gbuffer->view());
-        gbuffer.setImageLayout(vk::ImageLayout::eGeneral);
-        aobuffer.setSampler(m_rtao.sampler);
-        aobuffer.setImageView(m_rtao.aobuffer->view());
-        aobuffer.setImageLayout(vk::ImageLayout::eGeneral);
-
-        sdvk::DescriptorWrites(m_context.device(), *m_rtao.comp_desc)
-            .storage_image(0, 0, gbuffer)
-            .storage_image(0, 1, aobuffer)
-            .acceleration_structure(0, 2, as_info)
-            .commit();
-
-        m_rtao.compute = sdvk::PipelineBuilder(m_context)
-            .add_push_constant({ vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTAO::AoParams) })
-            .add_descriptor_set_layout(m_rtao.comp_desc->layout())
-            .create_pipeline_layout()
-            .add_shader("dummy.comp.spv", vk::ShaderStageFlagBits::eCompute)
-            .with_name("RTAO Compute")
-            .create_compute_pipeline();
-        #pragma endregion
-
-        #pragma region post
-        m_post.composite = sdvk::Image::Builder()
-            .with_extent(m_swapchain.extent())
-            .with_format(vk::Format::eR32G32B32A32Sfloat)
-            .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
-            .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
-            .with_name("Post Composite")
-            .create(m_context);
-
-        m_post.post_desc = sdvk::DescriptorBuilder()
-            .combined_image_sampler(0, vk::ShaderStageFlagBits::eFragment)
-            .combined_image_sampler(1, vk::ShaderStageFlagBits::eFragment)
-            .create(m_context.device(), 1);
-
-        m_post.render_pass = sdvk::RenderPass::Builder()
-            .add_color_attachment(m_post.composite->format())
-            .make_subpass()
-            .with_name("RTAO Post RenderPass")
-            .create(m_context);
-
-        std::vector<vk::ImageView> attachments2 = { m_post.composite->view() };
-        vk::FramebufferCreateInfo ci;
-        ci.setRenderPass(m_post.render_pass);
-        ci.setAttachmentCount(attachments2.size());
-        ci.setPAttachments(attachments2.data());
-        ci.setWidth(m_swapchain.extent().width);
-        ci.setHeight(m_swapchain.extent().height);
-        ci.setLayers(1);
-        result = m_context.device().createFramebuffer(&ci, nullptr, &m_post.framebuffer);
-
-        m_post.post = sdvk::PipelineBuilder(m_context)
-            .add_push_constant({ vk::ShaderStageFlagBits::eFragment, 0, sizeof(float) })
-            .add_descriptor_set_layout(m_post.post_desc->layout())
-            .create_pipeline_layout()
-            .set_sample_count(vk::SampleCountFlagBits::e1)
-            .add_shader("passthrough.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("post.frag.spv", vk::ShaderStageFlagBits::eFragment)
-            .set_cull_mode(vk::CullModeFlagBits::eNone)
-            .with_name("RTAO Post")
-            .create_graphics_pipeline(m_post.render_pass);
-
-        #pragma endregion
-    }
-
-    #define GROUP_SIZE 16
-    void Scene::run_compute(const vk::CommandBuffer& cmd)
-    {
-        vk::DescriptorImageInfo gbuffer = {}, aobuffer = {};
-        gbuffer.setSampler(m_rtao.sampler);
-        gbuffer.setImageView(m_rtao.gbuffer->view());
-        gbuffer.setImageLayout(vk::ImageLayout::eGeneral);
-        aobuffer.setSampler(m_rtao.sampler);
-        aobuffer.setImageView(m_rtao.aobuffer->view());
-        aobuffer.setImageLayout(vk::ImageLayout::eGeneral);
-
-        std::vector<vk::WriteDescriptorSet> _writes;
-        {
-            vk::WriteDescriptorSet write;
-            vk::WriteDescriptorSetAccelerationStructureKHR as_info{1, &m_tlas->tlas()};
-            write.setDstBinding(2);
-            write.setDstSet(m_rtao.comp_desc->set(0));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
-            write.setDstArrayElement(0);
-            write.setPNext(&as_info);
-            _writes.push_back(write);
-        }
-        {
-            vk::WriteDescriptorSet write;
-            write.setDstBinding(1);
-            write.setDstSet(m_rtao.comp_desc->set(0));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eStorageImage);
-            write.setDstArrayElement(0);
-            write.setImageInfo(aobuffer);
-            _writes.push_back(write);
-        }
-        {
-            vk::WriteDescriptorSet write;
-            write.setDstBinding(0);
-            write.setDstSet(m_rtao.comp_desc->set(0));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eStorageImage);
-            write.setDstArrayElement(0);
-            write.setImageInfo(gbuffer);
-            _writes.push_back(write);
-        }
-
-        m_context.device().updateDescriptorSets(_writes.size(),_writes.data(), 0, nullptr);
-
-        static glm::mat4 ref_mat = glm::mat4(1.0f);
-        auto m = m_camera->view();
-        if (m != ref_mat)
-        {
-            ref_mat = m;
-            m_rtao.frame = -1;
-        }
-        m_rtao.frame++;
-
-        vk::ImageMemoryBarrier barrier;
-        barrier.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-        barrier.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-        barrier.setImage(m_rtao.gbuffer->image());
-        barrier.setOldLayout(vk::ImageLayout::eColorAttachmentOptimal);
-        barrier.setNewLayout(vk::ImageLayout::eGeneral);
-        barrier.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
-
-        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader, vk::DependencyFlagBits::eDeviceGroup, 0, nullptr, 0, nullptr, 1, &barrier);
-        cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_rtao.compute.pipeline);
-        cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_rtao.compute.pipeline_layout, 0, 1, &m_rtao.comp_desc->set(0), 0, nullptr);
-        m_rtao.params.frame = m_rtao.frame;
-        cmd.pushConstants(m_rtao.compute.pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTAO::AoParams), &m_rtao.params);
-        auto size = m_swapchain.extent();
-        cmd.dispatch((size.width + (GROUP_SIZE - 1)) / GROUP_SIZE, (size.height + (GROUP_SIZE - 1)) / GROUP_SIZE, 1);
-
-    }
-
 }
