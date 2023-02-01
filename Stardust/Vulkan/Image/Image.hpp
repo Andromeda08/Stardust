@@ -19,8 +19,10 @@ namespace sdvk
             Builder& with_aspect_flags(vk::ImageAspectFlags aspect_flags);
             Builder& with_tiling(vk::ImageTiling tiling);
             Builder& with_memory_property_flags(vk::MemoryPropertyFlags memory_property_flags);
+            Builder& with_sample_count(vk::SampleCountFlagBits sample_count);
+            Builder& with_name(std::string const& name);
 
-            [[nodiscard]] std::unique_ptr<sdvk::Image> create(Context const& context, std::string const& name = "");
+            [[nodiscard]] std::unique_ptr<sdvk::Image> create(Context const& context);
 
         private:
             vk::Extent2D            _extent { 0, 0 };
@@ -29,6 +31,8 @@ namespace sdvk
             vk::ImageAspectFlags    _aspect { vk::ImageAspectFlagBits::eColor };
             vk::ImageTiling         _tiling { vk::ImageTiling::eOptimal };
             vk::MemoryPropertyFlags _memory_property_flags {};
+            vk::SampleCountFlagBits _sample_count { vk::SampleCountFlagBits::e1 };
+            std::string _name;
         };
 
         Image(vk::Extent2D extent,
@@ -37,14 +41,15 @@ namespace sdvk
               vk::ImageAspectFlags aspect,
               vk::ImageTiling tiling,
               vk::MemoryPropertyFlags memory_property_flags,
+              vk::SampleCountFlagBits sample_count,
               Context const& context);
 
         void transition_layout(vk::CommandBuffer const& command_buffer,
                                vk::ImageLayout old_layout,
                                vk::ImageLayout new_layout,
-                               vk::ImageSubresourceRange subresource_range = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 },
                                vk::PipelineStageFlags src_stage_mask = vk::PipelineStageFlagBits::eAllCommands,
-                               vk::PipelineStageFlags dst_stage_mask = vk::PipelineStageFlagBits::eAllCommands);
+                               vk::PipelineStageFlags dst_stage_mask = vk::PipelineStageFlagBits::eAllCommands,
+                               vk::ImageSubresourceRange subresource_range = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
         const vk::Image& image() const { return m_image; }
 

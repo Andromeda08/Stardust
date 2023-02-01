@@ -27,8 +27,6 @@ namespace sdvk
 
         uint32_t add_scissor(vk::Rect2D scissor);
 
-
-    private:
         static inline vk::PipelineRasterizationStateCreateInfo make_rasterization_state(bool wireframe = false);
 
         static inline vk::PipelineInputAssemblyStateCreateInfo make_input_assembly_state(vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList);
@@ -45,7 +43,7 @@ namespace sdvk
 
         static inline vk::PipelineVertexInputStateCreateInfo make_vertex_input_state();
 
-        static inline vk::PipelineColorBlendAttachmentState make_color_blend_attachment_state(
+        static vk::PipelineColorBlendAttachmentState make_color_blend_attachment_state(
             vk::ColorComponentFlags color_write_mask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
             vk::Bool32 blend_enable = false,
             vk::BlendFactor src_color_blend_factor = vk::BlendFactor::eOne,
@@ -66,9 +64,9 @@ namespace sdvk
         vk::PipelineColorBlendStateCreateInfo    color_blend_state;
         vk::PipelineVertexInputStateCreateInfo   vertex_input_state;
 
-    private:
         std::vector<vk::PipelineColorBlendAttachmentState> blend_attachments;
 
+    private:
         std::vector<vk::VertexInputBindingDescription>   binding_descriptions;
         std::vector<vk::VertexInputAttributeDescription> attribute_descriptions;
 

@@ -11,88 +11,11 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(ThirdParty/glfw)
 add_subdirectory(ThirdParty/glm)
-
-# Create executable
-add_executable(${PROJECT_NAME}
-        ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
-        ThirdParty/spv-reflect/spirv_reflect.cpp ThirdParty/spv-reflect/spirv_reflect.h
-
-        Old/main.cpp
-
-        Old/Utility/Macro.hpp
-        Old/Utility/Clock.hpp
-        Old/Utility/Math.hpp Old/Utility/Math.cpp
-
-        Old/Struct/ApplicationSettings.hpp
-        Old/Struct/WindowSettings.hpp
-
-        Old/Application.cpp Old/Application.hpp
-        Old/Window.cpp Old/Window.cpp
-
-        Old/vk/Buffer.hpp
-        Old/vk/Geometry.hpp
-        Old/vk/Mesh.hpp
-        Old/vk/InstancedGeometry.hpp
-
-        Old/vk/Material.hpp
-        Old/vk/InstanceData.hpp
-        Old/vk/UniformData.hpp
-        Old/vk/VertexData.hpp
-
-        Old/vk/Image.hpp Old/vk/Image.cpp
-        Old/vk/Sampler.hpp Old/vk/Sampler.cpp
-        Old/vk/Shader.hpp Old/vk/Shader.cpp
-        Old/vk/Texture.hpp Old/vk/Texture.cpp
-
-        Old/vk/Commands/CommandPool.cpp Old/vk/Commands/CommandPool.hpp
-        Old/vk/Commands/CommandBuffers.cpp Old/vk/Commands/CommandBuffers.hpp
-
-        Old/vk/Descriptors/DescriptorWrites.hpp Old/vk/Descriptors/DescriptorWrites.cpp
-        Old/vk/Descriptors/DescriptorSetLayout.hpp Old/vk/Descriptors/DescriptorSetLayout.cpp
-        Old/vk/Descriptors/DescriptorSets.cpp Old/vk/Descriptors/DescriptorSets.hpp
-
-        Old/vk/Device/DebugMessenger.hpp
-        Old/vk/Device/Instance.cpp Old/vk/Device/Instance.hpp
-        Old/vk/Device/Device.cpp Old/vk/Device/Device.hpp
-        Old/vk/Device/Surface.cpp Old/vk/Device/Surface.hpp
-
-        Old/vk/Pipelines/Pipeline.hpp
-        Old/vk/Pipelines/PipelineBuilder.cpp Old/vk/Pipelines/PipelineBuilder.hpp
-        Old/vk/Pipelines/PipelineBuilder.hpp Old/vk/Pipelines/PipelineBuilder.cpp
-        Old/vk/Pipelines/PipelineState.hpp Old/vk/Pipelines/PipelineState.cpp
-        Old/vk/Pipelines/RenderPass.cpp Old/vk/Pipelines/RenderPass.hpp
-
-        Old/vk/Presentation/Swapchain.cpp Old/vk/Presentation/Swapchain.hpp
-        Old/vk/Presentation/SwapchainCapabilities.hpp
-
-        Old/vk/Synchronization/Semaphore.cpp Old/vk/Synchronization/Semaphore.hpp
-        Old/vk/Synchronization/Fence.cpp Old/vk/Synchronization/Fence.hpp
-
-        Old/rt/AccelerationStructure.hpp Old/rt/AccelerationStructure.cpp
-        Old/rt/RtAccelerator.hpp Old/rt/RtAccelerator.cpp
-
-        Old/Scenes/SceneManager.hpp Old/Scenes/SceneManager.cpp
-        Old/Scenes/Camera.hpp Old/Scenes/Camera.cpp
-        Old/Scenes/Scene.cpp Old/Scenes/Scene.hpp
-        Old/Scenes/Voxels.hpp Old/Scenes/Voxels.cpp
-        Old/Scenes/Raytracing.cpp Old/Scenes/Raytracing.hpp)
+add_subdirectory(ThirdParty/json)
 
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
-# Link to libraries and add include directories
-target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm)
-target_include_directories(${PROJECT_NAME} PUBLIC
-        ${Vulkan_INCLUDE_DIRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/Old
-        ThirdParty/spv-reflect
-        ThirdParty/stb)
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${PYTHON} compile_shaders.py
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-
-set(V2 "Stardust2")
-add_executable(${V2}
+add_executable(${PROJECT_NAME}
         Stardust/main.cpp
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
@@ -126,7 +49,7 @@ add_executable(${V2}
         Stardust/Vulkan/Rendering/Pipeline.hpp
         Stardust/Vulkan/Rendering/PipelineBuilder.cpp Stardust/Vulkan/Rendering/PipelineBuilder.hpp
         Stardust/Vulkan/Rendering/PipelineState.cpp Stardust/Vulkan/Rendering/PipelineState.hpp
-        Stardust/Vulkan/Rendering/RenderPass.cpp Stardust/Vulkan/Rendering/RenderPass.hpp
+        Stardust/Vulkan/Rendering/RenderPass.hpp Stardust/Vulkan/Rendering/RenderPass.cpp
 
         Stardust/Vulkan/Presentation/Swapchain.cpp Stardust/Vulkan/Presentation/Swapchain.hpp
         Stardust/Vulkan/Presentation/SwapchainBuilder.hpp Stardust/Vulkan/Presentation/SwapchainBuilder.cpp
@@ -141,8 +64,21 @@ add_executable(${V2}
         Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
         Stardust/Scene/Transform.hpp
         Stardust/Scene/Object.hpp
-        Stardust/Scene/Light.hpp Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp)
+        Stardust/Scene/Light.hpp
+        Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp
 
-target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
-target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm)
-target_include_directories(${V2} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb)
+        Stardust/Rendering/RenderSettings.hpp
+        Stardust/Rendering/AmbientOcclusion.hpp Stardust/Rendering/AmbientOcclusion.cpp
+        Stardust/Rendering/RTAO/RTAOKernel.hpp Stardust/Rendering/RTAO/RTAOKernel.cpp
+        Stardust/Rendering/RTAO/RTAOParams.hpp
+        Stardust/Rendering/SSAO/SSAOKernel.cpp Stardust/Rendering/SSAO/SSAOKernel.hpp
+        Stardust/Rendering/SSAO/SSAOParams.hpp)
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG USE_NSIGHT_AFTERMATH=1)
+target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb ThirdParty/aftermath/include)
+
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${PYTHON} compile_shaders.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})

@@ -1,5 +1,7 @@
 #include "PipelineBuilder.hpp"
 
+#include <Vulkan/Utils.hpp>
+
 namespace sdvk
 {
     PipelineBuilder& PipelineBuilder::add_descriptor_set_layout(const vk::DescriptorSetLayout& dsl)
@@ -64,7 +66,7 @@ namespace sdvk
         return *this;
     }
 
-    Pipeline PipelineBuilder::create_graphics_pipeline(const RenderPass& render_pass)
+    Pipeline PipelineBuilder::create_graphics_pipeline(const vk::RenderPass& render_pass)
     {
         if (!pipeline.pipeline_layout)
         {
@@ -72,6 +74,11 @@ namespace sdvk
         }
 
         pipeline_state.update();
+
+        pipeline_state.multisample_state.setRasterizationSamples(_sample_count);
+        pipeline_state.multisample_state.setSampleShadingEnable(true);
+        pipeline_state.multisample_state.setMinSampleShading(0.2f);
+
         for (const auto& shader : shaders)
         {
             shader_stages.push_back(shader->stage_info());
@@ -92,11 +99,17 @@ namespace sdvk
         create_info.setPStages(shader_stages.data());
 
         create_info.setLayout(pipeline.pipeline_layout);
-        create_info.setRenderPass(render_pass.handle());
+        create_info.setRenderPass(render_pass);
         create_info.setPNext(nullptr);
 
         vk::Result result;
         std::tie( result, pipeline.pipeline ) = _context.device().createGraphicsPipeline(nullptr, create_info);
+
+        if (!_name.empty())
+        {
+            sdvk::util::name_vk_object(_name + " Pipeline", (uint64_t) static_cast<VkPipeline>(pipeline.pipeline), vk::ObjectType::ePipeline, _context.device());
+            sdvk::util::name_vk_object(_name + " PipelineLayout", (uint64_t) static_cast<VkPipelineLayout>(pipeline.pipeline_layout), vk::ObjectType::ePipelineLayout, _context.device());
+        }
 
         return pipeline;
     }
@@ -159,6 +172,23 @@ namespace sdvk
         create_info.setLayout(pipeline.pipeline_layout);
 
         auto result = _context.device().createRayTracingPipelinesKHR(nullptr, nullptr, 1, &create_info, nullptr, &pipeline.pipeline);
+
+        return pipeline;
+    }
+
+    Pipeline PipelineBuilder::create_compute_pipeline()
+    {
+        vk::ComputePipelineCreateInfo create_info;
+        create_info.setLayout(pipeline.pipeline_layout);
+        auto shader_stage = shaders[0]->stage_info();
+        create_info.setStage(shader_stage);
+        auto result = _context.device().createComputePipelines({}, 1, &create_info, nullptr, &pipeline.pipeline);
+
+        if (!_name.empty())
+        {
+            sdvk::util::name_vk_object(_name + " Pipeline", (uint64_t) static_cast<VkPipeline>(pipeline.pipeline), vk::ObjectType::ePipeline, _context.device());
+            sdvk::util::name_vk_object(_name + " PipelineLayout", (uint64_t) static_cast<VkPipelineLayout>(pipeline.pipeline_layout), vk::ObjectType::ePipelineLayout, _context.device());
+        }
 
         return pipeline;
     }

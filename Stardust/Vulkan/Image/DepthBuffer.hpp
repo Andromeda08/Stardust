@@ -11,7 +11,7 @@ namespace sdvk
         DepthBuffer(DepthBuffer const&) = delete;
         DepthBuffer& operator=(DepthBuffer const&) = delete;
 
-        DepthBuffer(vk::Extent2D extent, Context const& context);
+        DepthBuffer(vk::Extent2D extent, vk::SampleCountFlagBits sample_count, Context const& context);
 
     private:
         static vk::Format find_depth_format(vk::PhysicalDevice const& physical_device);

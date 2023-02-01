@@ -1,5 +1,7 @@
 #include "DescriptorBuilder.hpp"
 
+#include <Vulkan/Utils.hpp>
+
 namespace sdvk
 {
     DescriptorBuilder& DescriptorBuilder::sampled_image(uint32_t b, vk::ShaderStageFlags stage_flags)
@@ -73,7 +75,18 @@ namespace sdvk
             throw std::runtime_error("Missing DescriptorSetLayout.");
         }
 
-        return std::make_unique<Descriptor>(_bindings, _layout, device, count);
+        auto r = std::make_unique<Descriptor>(_bindings, _layout, device, count);
+
+        if (!_name.empty())
+        {
+            for (int32_t i = 0; i < count; i++)
+            {
+                std::string name = "Descriptor "  + _name + " #" + std::to_string(i);
+                sdvk::util::name_vk_object(name, (uint64_t) static_cast<VkDescriptorSet>(r->set(i)), vk::ObjectType::eDescriptorSet, device);
+            }
+        }
+
+        return r;
     }
 
 }

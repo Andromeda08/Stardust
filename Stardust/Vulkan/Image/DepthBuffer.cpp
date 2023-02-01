@@ -2,13 +2,14 @@
 
 namespace sdvk
 {
-    DepthBuffer::DepthBuffer(vk::Extent2D extent, const Context& context)
+    DepthBuffer::DepthBuffer(vk::Extent2D extent, vk::SampleCountFlagBits sample_count, const Context& context)
     : Image(extent,
             find_depth_format(context.physical_device()),
             vk::ImageUsageFlagBits::eDepthStencilAttachment,
             vk::ImageAspectFlagBits::eDepth,
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal,
+            sample_count,
             context) {}
 
     vk::Format DepthBuffer::find_depth_format(const vk::PhysicalDevice& physical_device)

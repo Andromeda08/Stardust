@@ -1,22 +1,20 @@
 #pragma once
 
-#include <array>
 #include <memory>
-#include <string>
-#include <vector>
-#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
-#include <Resources/CameraUniformData.hpp>
+#include <Rendering/AmbientOcclusion.hpp>
+#include <Rendering/RenderSettings.hpp>
 #include <Scene/Camera.hpp>
 #include <Scene/Object.hpp>
+#include <Vulkan/Buffer.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Descriptors/Descriptor.hpp>
 #include <Vulkan/Image/DepthBuffer.hpp>
+#include <Vulkan/Image/Sampler.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
 #include <Vulkan/Rendering/Mesh.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
-#include <Vulkan/Rendering/RenderPass.hpp>
 #include <Vulkan/Presentation/Swapchain.hpp>
 
 namespace sd
@@ -24,29 +22,52 @@ namespace sd
     class Scene
     {
     public:
-        Scene(sdvk::CommandBuffers const& command_buffers, sdvk::Context const& context, sdvk::Swapchain const& swapchain);
+        Scene(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context, const sdvk::Swapchain& swapchain);
 
-        void rasterize(uint32_t current_frame, vk::CommandBuffer const& cmd);
+        virtual void rasterize(uint32_t current_frame, vk::CommandBuffer const& command_buffer);
 
-        void register_keybinds(GLFWwindow* p_window);
+        virtual void register_keybinds(GLFWwindow* p_window);
+
+    private:
+        void update_offscreen_descriptors(uint32_t current_frame);
+
+        void update_composite_descriptors();
+
+        void load_objects_from_json(std::string const& objects_json);
 
     private:
         std::vector<Object> m_objects;
         std::unordered_map<std::string, std::shared_ptr<sdvk::Mesh>> m_meshes;
         std::unordered_map<std::string, sdvk::Pipeline> m_pipelines;
 
-        std::unique_ptr<sdvk::Tlas> m_tlas;
-        std::unique_ptr<sdvk::Descriptor> m_descriptor;
-
+        std::shared_ptr<sdvk::Tlas> m_tlas;
         std::unique_ptr<Camera> m_camera;
         std::vector<std::unique_ptr<sdvk::Buffer>> m_uniform_camera;
 
-        struct Rendering {
-            std::unique_ptr<sdvk::DepthBuffer> depth_buffer;
-            std::unique_ptr<sdvk::RenderPass>  render_pass;
-            std::array<vk::ClearValue,  2>     clear_values;
-            std::array<vk::Framebuffer, 2>     framebuffers;
-        } m_rendering;
+        std::array<vk::Framebuffer, 2> m_framebuffers;
+
+        RenderSettings m_render_settings = {};
+
+        struct OffscreenRenderTarget
+        {
+            std::unique_ptr<sdvk::Descriptor>  descriptor;
+            std::unique_ptr<sdvk::Image>       output;
+            std::shared_ptr<sdvk::Image>       g_buffer;
+            std::unique_ptr<sdvk::DepthBuffer> depth_image;
+            std::array<vk::ClearValue, 3>      clear_values;
+            vk::Framebuffer                    framebuffer;
+            vk::RenderPass                     render_pass;
+        } m_offscreen_render_target;
+
+        struct CompositeRenderTarget
+        {
+            std::unique_ptr<sdvk::Descriptor> descriptor;
+            std::array<vk::ClearValue, 2>     clear_values;
+            vk::RenderPass                    render_pass;
+            vk::Sampler                       sampler;
+        } m_composite_render_target;
+
+        std::unique_ptr<AmbientOcclusion> m_ambient_occlusion;
 
         const sdvk::CommandBuffers& m_command_buffers;
         const sdvk::Context&        m_context;

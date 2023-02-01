@@ -1,5 +1,7 @@
 #include "Image.hpp"
 
+#include <Vulkan/Utils.hpp>
+
 namespace sdvk
 {
 
@@ -39,16 +41,35 @@ namespace sdvk
         return *this;
     }
 
-    std::unique_ptr<sdvk::Image> Image::Builder::create(const Context& context, std::string const& name)
+    Image::Builder& Image::Builder::with_sample_count(vk::SampleCountFlagBits sample_count)
+    {
+        _sample_count = sample_count;
+        return *this;
+    }
+
+    Image::Builder& Image::Builder::with_name(const std::string& name)
+    {
+        _name = name;
+        return *this;
+    }
+
+    std::unique_ptr<sdvk::Image> Image::Builder::create(const Context& context)
     {
         if (_extent.width == 0 || _extent.height == 0)
         {
             throw std::runtime_error("Image dimensions must be greater than 0.");
         }
 
-        return std::make_unique<sdvk::Image>(_extent, _format, _usage, _aspect, _tiling, _memory_property_flags, context);
-    }
+        auto result = std::make_unique<sdvk::Image>(_extent, _format, _usage, _aspect, _tiling, _memory_property_flags, _sample_count, context);
 
+        if (!_name.empty())
+        {
+            sdvk::util::name_vk_object(_name + " Image", (uint64_t) static_cast<VkImage>(result->image()), vk::ObjectType::eImage, context.device());
+            sdvk::util::name_vk_object(_name + " ImageView", (uint64_t) static_cast<VkImageView>(result->view()), vk::ObjectType::eImageView, context.device());
+        }
+
+        return result;
+    }
 
     Image::Image(vk::Extent2D extent,
                  vk::Format format,
@@ -56,6 +77,7 @@ namespace sdvk
                  vk::ImageAspectFlags aspect,
                  vk::ImageTiling tiling,
                  vk::MemoryPropertyFlags memory_property_flags,
+                 vk::SampleCountFlagBits sample_count,
                  const Context& context)
     : m_extent(extent)
     , m_format(format)
@@ -72,6 +94,7 @@ namespace sdvk
         create_info.setInitialLayout(vk::ImageLayout::eUndefined);
         create_info.setSharingMode(vk::SharingMode::eExclusive);
         create_info.setMipLevels(1);
+        create_info.setSamples(sample_count);
         result = context.device().createImage(&create_info, nullptr, &m_image);
 
         auto memory_requirements = context.device().getImageMemoryRequirements(m_image);
@@ -90,9 +113,9 @@ namespace sdvk
     void Image::transition_layout(const vk::CommandBuffer& command_buffer,
                                   vk::ImageLayout old_layout,
                                   vk::ImageLayout new_layout,
-                                  vk::ImageSubresourceRange subresource_range,
                                   vk::PipelineStageFlags src_stage_mask,
-                                  vk::PipelineStageFlags dst_stage_mask)
+                                  vk::PipelineStageFlags dst_stage_mask,
+                                  vk::ImageSubresourceRange subresource_range)
     {
         vk::ImageMemoryBarrier barrier;
         barrier.setOldLayout(old_layout);
