@@ -128,7 +128,6 @@ add_executable(${V2}
         Stardust/Vulkan/Rendering/PipelineBuilder.cpp Stardust/Vulkan/Rendering/PipelineBuilder.hpp
         Stardust/Vulkan/Rendering/PipelineState.cpp Stardust/Vulkan/Rendering/PipelineState.hpp
         Stardust/Vulkan/Rendering/RenderPass.hpp Stardust/Vulkan/Rendering/RenderPass.cpp
-        Stardust/Vulkan/RendererOptions.hpp
 
         Stardust/Vulkan/Presentation/Swapchain.cpp Stardust/Vulkan/Presentation/Swapchain.hpp
         Stardust/Vulkan/Presentation/SwapchainBuilder.hpp Stardust/Vulkan/Presentation/SwapchainBuilder.cpp
@@ -144,7 +143,7 @@ add_executable(${V2}
         Stardust/Scene/Transform.hpp
         Stardust/Scene/Object.hpp
         Stardust/Scene/Light.hpp
-        Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp)
+        Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp Stardust/Rendering/RTAO/RtaoParams.hpp Stardust/Rendering/RTAO/RtaoKernel.hpp Stardust/Rendering/RTAO/RtaoKernel.cpp Stardust/Scene/Scene2.hpp Stardust/Rendering/AmbientOcclusion.hpp Stardust/Rendering/AmbientOcclusion.cpp)
 
 target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG USE_NSIGHT_AFTERMATH=1)
 target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)

@@ -25,6 +25,12 @@ namespace sdvk
 
         DescriptorBuilder& accelerator(uint32_t binding, vk::ShaderStageFlags shader_stage);
 
+        DescriptorBuilder& with_name(std::string const& name)
+        {
+            _name = name;
+            return *this;
+        }
+
         #pragma endregion
 
         std::unique_ptr<Descriptor> create(vk::Device const& device, uint32_t count);
@@ -34,5 +40,7 @@ namespace sdvk
 
         std::vector<vk::DescriptorSetLayoutBinding> _bindings;
         vk::DescriptorSetLayout _layout;
+
+        std::string _name;
     };
 }

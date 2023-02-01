@@ -281,6 +281,7 @@ namespace sdvk
         m_device_features.device_features.setShaderInt64(true);
         m_device_features.device_features.setFillModeNonSolid(true);
         m_device_features.device_features.setSampleRateShading(true);
+        m_device_features.device_features.setShaderStorageImageMultisample(true);
 
         vk::DeviceCreateInfo create_info;
         create_info.setEnabledLayerCount(validation_layers.size());
