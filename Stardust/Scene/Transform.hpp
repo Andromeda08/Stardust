@@ -16,8 +16,8 @@ namespace sd
         glm::mat4 model() const
         {
             auto M = glm::mat4(1.0f);
-            M = glm::toMat4(rotation) * M;
             M = glm::scale(M, scale);
+            M = glm::toMat4(rotation) * M;
             M = glm::translate(M, position);
             return M;
         }

@@ -30,8 +30,7 @@ namespace sdvk
         std::unique_ptr<Descriptor> create(vk::Device const& device, uint32_t count);
 
     private:
-        static vk::DescriptorSetLayoutBinding
-        make_binding(uint32_t b, vk::DescriptorType type, vk::ShaderStageFlags shader_stage);
+        static vk::DescriptorSetLayoutBinding make_binding(uint32_t b, vk::DescriptorType type, vk::ShaderStageFlags shader_stage);
 
         std::vector<vk::DescriptorSetLayoutBinding> _bindings;
         vk::DescriptorSetLayout _layout;

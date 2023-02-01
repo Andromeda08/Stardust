@@ -4,6 +4,7 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/glfw" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/glm" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ThirdParty/json" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/spv-reflect" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/volk" vcs="Git" />
   </component>

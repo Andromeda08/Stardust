@@ -6,7 +6,6 @@
 #include <Vulkan/Rendering/ShaderModule.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
 #include <Vulkan/Rendering/PipelineState.hpp>
-#include <Vulkan/Rendering/RenderPass.hpp>
 #include <Vulkan/Presentation/Swapchain.hpp>
 
 namespace sdvk
@@ -27,6 +26,29 @@ namespace sdvk
 
         PipelineBuilder& add_binding_descriptions(const std::vector<vk::VertexInputBindingDescription>& vibds);
 
+        PipelineBuilder& set_attachment_count(uint32_t c)
+        {
+            pipeline_state.blend_attachments.clear();
+            for (int32_t i = 0; i < c; i++)
+            {
+                auto att = PipelineState::make_color_blend_attachment_state();
+                pipeline_state.blend_attachments.push_back(att);
+            }
+            return *this;
+        }
+
+        PipelineBuilder& set_cull_mode(vk::CullModeFlagBits cull_mode)
+        {
+            pipeline_state.rasterization_state.setCullMode(cull_mode);
+            return *this;
+        }
+
+        PipelineBuilder& set_sample_count(vk::SampleCountFlagBits sample_count)
+        {
+            _sample_count = sample_count;
+            return *this;
+        }
+
         PipelineBuilder& add_viewport(const vk::Viewport& viewport);
 
         PipelineBuilder& add_scissor(const vk::Rect2D& scissor);
@@ -35,7 +57,15 @@ namespace sdvk
 
         PipelineBuilder& make_rt_shader_groups();
 
-        Pipeline create_graphics_pipeline(const RenderPass& render_pass);
+        PipelineBuilder& with_name(std::string const& name)
+        {
+            _name = name;
+            return *this;
+        }
+
+        Pipeline create_graphics_pipeline(const vk::RenderPass& render_pass);
+
+        Pipeline create_compute_pipeline();
 
         Pipeline create_ray_tracing_pipeline(int ray_recursion_depth);
 
@@ -47,8 +77,11 @@ namespace sdvk
         std::vector<std::unique_ptr<ShaderModule>> shaders;
         std::vector<vk::PipelineShaderStageCreateInfo> shader_stages;
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shader_groups;
+        vk::SampleCountFlagBits _sample_count;
 
         Pipeline pipeline;
+
+        std::string _name;
 
         const Context& _context;
     };

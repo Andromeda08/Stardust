@@ -42,6 +42,7 @@ namespace sd
 
             m_swapchain->submit_and_present(m_current_frame, acquired_frame, command_buffer);
             m_current_frame = (m_current_frame + 1) % m_swapchain->image_count();
+
             m_context->device().waitIdle();
         });
     }

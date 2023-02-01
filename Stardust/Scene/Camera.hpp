@@ -31,7 +31,7 @@ namespace sd
         float m_far;
         float m_fov;
 
-        float m_speed {0.025f};
+        float m_speed {0.05f};
         float m_sensitivity {50.0f};
 
         bool m_click {false};

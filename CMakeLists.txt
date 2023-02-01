@@ -11,6 +11,7 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(ThirdParty/glfw)
 add_subdirectory(ThirdParty/glm)
+add_subdirectory(ThirdParty/json)
 
 # Create executable
 add_executable(${PROJECT_NAME}
@@ -126,7 +127,8 @@ add_executable(${V2}
         Stardust/Vulkan/Rendering/Pipeline.hpp
         Stardust/Vulkan/Rendering/PipelineBuilder.cpp Stardust/Vulkan/Rendering/PipelineBuilder.hpp
         Stardust/Vulkan/Rendering/PipelineState.cpp Stardust/Vulkan/Rendering/PipelineState.hpp
-        Stardust/Vulkan/Rendering/RenderPass.cpp Stardust/Vulkan/Rendering/RenderPass.hpp
+        Stardust/Vulkan/Rendering/RenderPass.hpp Stardust/Vulkan/Rendering/RenderPass.cpp
+        Stardust/Vulkan/RendererOptions.hpp
 
         Stardust/Vulkan/Presentation/Swapchain.cpp Stardust/Vulkan/Presentation/Swapchain.hpp
         Stardust/Vulkan/Presentation/SwapchainBuilder.hpp Stardust/Vulkan/Presentation/SwapchainBuilder.cpp
@@ -141,8 +143,9 @@ add_executable(${V2}
         Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
         Stardust/Scene/Transform.hpp
         Stardust/Scene/Object.hpp
-        Stardust/Scene/Light.hpp Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp)
+        Stardust/Scene/Light.hpp
+        Stardust/Scene/Camera.cpp Stardust/Scene/Camera.hpp)
 
-target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
-target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm)
-target_include_directories(${V2} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb)
+target_compile_definitions(${V2} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG USE_NSIGHT_AFTERMATH=1)
+target_link_libraries(${V2} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
+target_include_directories(${V2} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb ThirdParty/aftermath/include)
