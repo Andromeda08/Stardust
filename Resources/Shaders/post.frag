@@ -20,4 +20,5 @@ void main()
     float ao    = texture(aoTxt, uv).x;
 
     fragColor = pow(color * ao, vec4(gamma));
+    //fragColor = color;
 }

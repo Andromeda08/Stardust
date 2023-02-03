@@ -23,6 +23,7 @@ namespace sd
         m_command_buffers = std::make_unique<sdvk::CommandBuffers>(8, *m_context);
 
         m_swapchain = sdvk::SwapchainBuilder(*m_window, *m_context)
+            .set_preferred_format(vk::Format::eB8G8R8Srgb)
             .with_defaults()
             .create();
 

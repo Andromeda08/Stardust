@@ -77,7 +77,7 @@ namespace sdvk
 
         for (const auto& f : result.surface_formats)
         {
-            if (f.format == preferred_format && f.colorSpace == preferred_color_space)
+            if (f.format == vk::Format::eB8G8R8A8Srgb /*&& f.colorSpace == preferred_color_space*/)
             {
                 format = f;
             }

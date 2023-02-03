@@ -11,6 +11,9 @@ namespace sd
     public:
         Geometry() = default;
 
+        Geometry(std::vector<sd::VertexData> const& vertices, std::vector<uint32_t> const& indices)
+        : m_vertices(vertices), m_indices(indices) {}
+
         const std::vector<sd::VertexData>& vertices() const { return m_vertices; }
 
         uint32_t vertex_count() const { return m_vertices.size(); }

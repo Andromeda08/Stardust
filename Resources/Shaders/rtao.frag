@@ -15,7 +15,7 @@ layout (location = 1) out vec4 outGBuffer;
 
 layout (set = 0, binding = 1) uniform accelerationStructureEXT tlas;
 
-vec3 g_light = vec3(5, 10, -10);
+vec3 g_light = vec3(-5, 10, 12);
 
 vec3 compute_diffuse(vec3 color, vec3 light_dir, vec3 normal)
 {
@@ -28,14 +28,14 @@ vec3 compute_diffuse(vec3 color, vec3 light_dir, vec3 normal)
 vec3 compute_specular(vec3 color, vec3 view_dir, vec3 light_dir, vec3 normal)
 {
     const float k_pi = 3.14159265;
-    const float k_shininess = 4.0;
+    const float k_shininess = 2.5;
 
     const float k_energy_conservation = (2.0 + k_shininess) / (2.0 * k_pi);
     vec3 V = normalize(-view_dir);
     vec3 R = reflect(-light_dir, normal);
     float specular = k_energy_conservation * pow(max(dot(V, R), 0.0), k_shininess);
 
-    return vec3(0.3 * specular);
+    return vec3(0.25 * specular);
 }
 
 #define C_Stack_Max 3.402823466e+38f

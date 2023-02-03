@@ -1,5 +1,6 @@
 #include "Scene.hpp"
 #include <fstream>
+#include <tiny_obj_loader.h>
 #include <nlohmann/json.hpp>
 #include <Rendering/RTAO/RTAOKernel.hpp>
 #include <Resources/Primitives/Cube.hpp>
@@ -31,7 +32,7 @@ namespace sd
 
         m_offscreen_render_target.output = sdvk::Image::Builder()
             .with_extent(m_swapchain.extent())
-            .with_format(m_swapchain.format())
+            .with_format(vk::Format::eR32G32B32A32Sfloat)
             .with_sample_count(vk::SampleCountFlagBits::e1)
             .with_usage_flags(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage)
             .with_memory_property_flags(vk::MemoryPropertyFlagBits::eDeviceLocal)
@@ -40,7 +41,7 @@ namespace sd
 
         m_offscreen_render_target.depth_image = std::make_unique<sdvk::DepthBuffer>(m_swapchain.extent(), vk::SampleCountFlagBits::e1, m_context);
 
-        m_offscreen_render_target.clear_values[0].setColor(std::array<float, 4>{ 0.1f, 0.1f, 0.1f, 0.1f });
+        m_offscreen_render_target.clear_values[0].setColor(std::array<float, 4>{ 0.1f, 0.1f, 0.1f, 1.0f });
         m_offscreen_render_target.clear_values[1].setColor(std::array<float, 4>{ 0, 0, 0, 0 });
         m_offscreen_render_target.clear_values[2].setDepthStencil({ 1.0f, 0 });
 
@@ -118,6 +119,8 @@ namespace sd
             .with_name("Composite RenderPass")
             .create(m_context);
 
+        m_composite_render_target.clear_values[0].color = std::array<float, 4>{ 0.05f, 0.05f, 0.05f, 0.5f };
+
         std::vector<vk::ImageView> comp_attachments = { m_swapchain.view(0) };
         vk::FramebufferCreateInfo fb_create_info2;
         fb_create_info2.setRenderPass(m_composite_render_target.render_pass);
@@ -146,30 +149,60 @@ namespace sd
 
         std::string cube = "cube", sphere = "sphere";
         m_meshes[cube] = std::make_shared<sdvk::Mesh>(new primitives::Cube(), m_command_buffers, m_context, cube);
-        m_meshes[sphere] = std::make_shared<sdvk::Mesh>(new primitives::Sphere(1.0f, 120), m_command_buffers, m_context, sphere);
+        m_meshes[sphere] = std::make_shared<sdvk::Mesh>(new primitives::Sphere(1.0f, 240), m_command_buffers, m_context, sphere);
 
-        load_objects_from_json("objects.json");
-        for (int32_t i = -12; i < 13; i++)
+        load_sponza();
+        Object sponza_obj {};
+        sponza_obj.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes["sponza"]);
+        sponza_obj.name = "sponza";
+        sponza_obj.color = { 0.7f, 0.7f, 0.7f, 1.0f };
+        sponza_obj.pipeline = "default";
+        sponza_obj.transform.scale = glm::vec3(0.5f);
+        //m_objects.push_back(sponza_obj);
+//        load_objects_from_json("objects.json");
+//        for (int32_t i = -12; i < 13; i++)
+//        {
+//            Object obj;
+//            obj.name = "cube" + std::to_string(i + 12);
+//            obj.pipeline = "default";
+//            obj.color = glm::vec4((float) (i + 12) / 12.0f);
+//            obj.transform.position = { i, 0.5, 12 };
+//            obj.mesh = m_meshes["cube"];
+//            m_objects.push_back(obj);
+//
+//            if (i != -12)
+//            {
+//                Object obj2;
+//                obj2.name = "cube" + std::to_string(i + 12 + 25);
+//                obj2.pipeline = "default";
+//                obj2.color = glm::vec4((float) (i + 12) / 12.0f);
+//                obj2.transform.position = { -12, 0.5, -i };
+//                obj2.mesh = m_meshes["cube"];
+//                m_objects.push_back(obj2);
+//            }
+//        }
+
+        srand (static_cast <unsigned> (time(0)));
+        auto randf = [](float lo, float hi){ return lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi - lo))); };
+        for (int32_t i = 0; i < 256; i++)
         {
             Object obj;
-            obj.name = "cube" + std::to_string(i + 12);
+            obj.name = "cube" + std::to_string(i);
             obj.pipeline = "default";
-            obj.color = glm::vec4((float) (i + 12) / 12.0f);
-            obj.transform.position = { i, 0.5, 12 };
+            //obj.color = glm::vec4(randf(0.0f, 1.0f), randf(0.0f, 1.0f), randf(0.0f, 1.0f), 1.0f);
+            obj.color = (rand() % 2 == 0) ? glm::vec4(1, 1, 0, 1) : glm::vec4(0, 0.8f, 1, 1);
+            obj.transform.scale = glm::vec3((float) (rand() % 3 + 1), (float) (rand() % 8 + 1), (float) (rand() % 3 + 1));
+            obj.transform.position = { (float) (rand() % 64 - 32) + randf(0.0f, 1.0f), randf(-0.05f, 0.0f), (float) (rand() % 64 - 32) + randf(0.0f, 1.0f)};
             obj.mesh = m_meshes["cube"];
             m_objects.push_back(obj);
-
-            if (i != -12)
-            {
-                Object obj2;
-                obj2.name = "cube" + std::to_string(i + 12 + 25);
-                obj2.pipeline = "default";
-                obj2.color = glm::vec4((float) (i + 12) / 12.0f);
-                obj2.transform.position = { -12, 0.5, -i };
-                obj2.mesh = m_meshes["cube"];
-                m_objects.push_back(obj2);
-            }
         }
+        Object obj;
+        obj.name = "plane";
+        obj.pipeline = "default";
+        obj.color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+        obj.transform.scale = { 64, 0.05f, 64 };
+        obj.mesh = m_meshes["cube"];
+        m_objects.push_back(obj);
 
         if (m_context.raytracing())
         {
@@ -269,7 +302,7 @@ namespace sd
         sdvk::RenderPass::Execute()
             .with_render_pass(m_composite_render_target.render_pass)
             .with_render_area({{0, 0}, m_swapchain.extent()})
-            .with_clear_values(m_offscreen_render_target.clear_values)
+            .with_clear_values(m_composite_render_target.clear_values)
             .with_framebuffer(m_framebuffers[current_frame])
             .execute(command_buffer, composite_pass_cmds);
 
@@ -343,5 +376,53 @@ namespace sd
         }
 
         file.close();
+    }
+
+    void Scene::load_sponza()
+    {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string err, path = "sponza/sponza.obj";
+
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str()))
+        {
+            throw std::runtime_error(err);
+        }
+
+        std::unordered_map<VertexData, uint32_t> unique_vertices;
+        std::vector<VertexData> vertices;
+        std::vector<uint32_t> indices;
+        for (const auto& shape : shapes)
+        {
+            for (const auto& index : shape.mesh.indices)
+            {
+                VertexData vertex {};
+                vertex.position = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2],
+                };
+                vertex.uv = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
+                };
+                vertex.normal = {
+                    attrib.normals[3 * index.vertex_index + 0],
+                    attrib.normals[3 * index.vertex_index + 1],
+                    attrib.normals[3 * index.vertex_index + 2],
+                };
+
+                if (unique_vertices.count(vertex) == 0)
+                {
+                    unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+                    vertices.push_back(vertex);
+                }
+
+                indices.push_back(unique_vertices[vertex]);
+            }
+        }
+
+        m_meshes["sponza"] = std::make_unique<sdvk::Mesh>(new Geometry(vertices, indices), m_command_buffers, m_context, "sponza");
     }
 }

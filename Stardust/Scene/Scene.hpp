@@ -35,6 +35,8 @@ namespace sd
 
         void load_objects_from_json(std::string const& objects_json);
 
+        void load_sponza();
+
     private:
         std::vector<Object> m_objects;
         std::unordered_map<std::string, std::shared_ptr<sdvk::Mesh>> m_meshes;

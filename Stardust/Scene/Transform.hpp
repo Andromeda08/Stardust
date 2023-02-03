@@ -15,11 +15,10 @@ namespace sd
 
         glm::mat4 model() const
         {
-            auto M = glm::mat4(1.0f);
-            M = glm::scale(M, scale);
-            M = glm::toMat4(rotation) * M;
-            M = glm::translate(M, position);
-            return M;
+            auto T = glm::translate(glm::mat4(1.0f), position);
+            auto S = glm::scale(glm::mat4(1.0f), scale);
+            auto R = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0));
+            return T * R * S;
         }
 
         vk::TransformMatrixKHR model3x4() const
