@@ -87,12 +87,13 @@ void main()
     float t_max = light_distance;
 
     rayQueryEXT ray_query;
-    rayQueryInitializeEXT(ray_query, tlas, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 0xFF, origin, t_min, direction, t_max);
+    rayQueryInitializeEXT(ray_query, tlas, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT, 0xFF, origin, t_min, direction, t_max);
 
+    float shadow = 0.1;
     while(rayQueryProceedEXT(ray_query)) {}
     if (rayQueryGetIntersectionTypeEXT(ray_query, true) != gl_RayQueryCommittedIntersectionNoneEXT)
     {
-        outColor *= 0.1;
+        outColor *= shadow;
     }
 
     outGBuffer = vec4(i_worldPos, uintBitsToFloat(CompressUnitVec(N)));

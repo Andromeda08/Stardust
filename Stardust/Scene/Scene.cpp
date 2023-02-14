@@ -1,4 +1,5 @@
 #include "Scene.hpp"
+#include <iostream>
 #include <fstream>
 #include <tiny_obj_loader.h>
 #include <nlohmann/json.hpp>
@@ -182,16 +183,18 @@ namespace sd
 //            }
 //        }
 
-        srand (static_cast <unsigned> (time(0)));
+        auto seed = static_cast <unsigned> (time(0));
+        srand (seed);
+        std::cout << seed << std::endl;
         auto randf = [](float lo, float hi){ return lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi - lo))); };
-        for (int32_t i = 0; i < 256; i++)
+        for (int32_t i = 0; i < 280; i++)
         {
             Object obj;
             obj.name = "cube" + std::to_string(i);
             obj.pipeline = "default";
             //obj.color = glm::vec4(randf(0.0f, 1.0f), randf(0.0f, 1.0f), randf(0.0f, 1.0f), 1.0f);
             obj.color = (rand() % 2 == 0) ? glm::vec4(1, 1, 0, 1) : glm::vec4(0, 0.8f, 1, 1);
-            obj.transform.scale = glm::vec3((float) (rand() % 3 + 1), (float) (rand() % 8 + 1), (float) (rand() % 3 + 1));
+            obj.transform.scale = glm::vec3((float) (rand() % 3 + 1), (float) (rand() % 7 + 1), (float) (rand() % 4 + 1));
             obj.transform.position = { (float) (rand() % 64 - 32) + randf(0.0f, 1.0f), randf(-0.05f, 0.0f), (float) (rand() % 64 - 32) + randf(0.0f, 1.0f)};
             obj.mesh = m_meshes["cube"];
             m_objects.push_back(obj);

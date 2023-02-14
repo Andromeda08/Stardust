@@ -151,25 +151,18 @@ float rnd(inout uint seed)
 
 float TraceRay(in rayQueryEXT rayQuery, in vec3 origin, in vec3 direction)
 {
-    uint flags = gl_RayFlagsNoneEXT;
-    //if(rtao_distance_based == 0)
-    flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT; //| gl_RayFlagsSkipClosestHitShaderEXT;
-
+    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT;
     rayQueryInitializeEXT(rayQuery, topLevelAS, flags, 0xFF, origin, 0.0f, direction, rtao_radius);
+    while(rayQueryProceedEXT(rayQuery)) {}
 
-    // Start traversal: return false if traversal is complete
-    while(rayQueryProceedEXT(rayQuery))
-    {
-    }
-
-    // Returns type of committed (true) intersection
     if(rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT)
     {
-        // Got an intersection == Shadow
         if(rtao_distance_based == 0)
-        return 1;
+        {
+            return 1;
+        }
         float length = 1 - (rayQueryGetIntersectionTEXT(rayQuery, true) / rtao_radius);
-        return length;  // * length;
+        return length;
     }
 
     return 0;
@@ -181,14 +174,11 @@ void main()
     float occlusion = 0.0;
 
     ivec2 size = imageSize(inImage);
-    // Check if not outside boundaries
-    if(gl_GlobalInvocationID.x >= size.x || gl_GlobalInvocationID.y >= size.y)
-    return;
+    if(gl_GlobalInvocationID.x >= size.x || gl_GlobalInvocationID.y >= size.y) {
+        return;
+    }
 
-    // Initialize the random number
     uint seed = tea(size.x * gl_GlobalInvocationID.y + gl_GlobalInvocationID.x, frame_number);
-
-    // Retrieving position and normal
     vec4 gBuffer = imageLoad(inImage, ivec2(gl_GlobalInvocationID.xy));
 
     // Shooting rays only if a fragment was rendered
@@ -215,9 +205,8 @@ void main()
             float phi       = 2 * M_PI * r1;
             vec3  direction = vec3(cos(phi) * sq, sin(phi) * sq, sqrt(r2));
             direction       = direction.x * tangent + direction.y * bitangent + direction.z * normal;
-            // Initializes a ray query object but does not start traversal
-            rayQueryEXT rayQuery;
 
+            rayQueryEXT rayQuery;
             occlusion += TraceRay(rayQuery, origin, direction);
         }
 
