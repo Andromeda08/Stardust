@@ -10,3 +10,6 @@
 [submodule "ThirdParty/spv-reflect"]
 	path = ThirdParty/spv-reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
+[submodule "ThirdParty/json"]
+	path = ThirdParty/json
+	url = https://github.com/nlohmann/json.git

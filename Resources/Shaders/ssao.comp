@@ -1,0 +1,55 @@
+#version 460
+
+const int GROUP_SIZE = 16;
+layout(local_size_x = GROUP_SIZE, local_size_y = GROUP_SIZE) in;
+layout(set = 0, binding = 0, rgba32f) uniform image2D in_image;
+layout(set = 0, binding = 1, r32f)    uniform image2D out_Image;
+
+layout(push_constant) uniform AoControl {
+    int   ao_kernel_size;
+    float ao_radius;
+};
+
+#define C_Stack_Max 3.402823466e+38f
+float ShortToFloatM11(const int v)  // linearly maps a short 32767-32768 to a float -1-+1 //!! opt.?
+{
+    return (v >= 0) ? (uintBitsToFloat(0x3F800000u | (uint(v) << 8)) - 1.0f) :
+    (uintBitsToFloat((0x80000000u | 0x3F800000u) | (uint(-v) << 8)) + 1.0f);
+}
+vec3 DecompressUnitVec(uint packed)
+{
+    if(packed != ~0u)  // sanity check, not needed as isvalid_unit_vec is called earlier
+    {
+        int       x     = int(packed & 0xFFFFu) - 32767;
+        int       y     = int(packed >> 16) - 32767;
+        const int maskx = x >> 31;
+        const int masky = y >> 31;
+        const int tmp0  = 32767 + maskx + masky;
+        const int ymask = y ^ masky;
+        const int tmp1  = tmp0 - (x ^ maskx);
+        const int z     = tmp1 - ymask;
+        float     zf;
+        if(z < 0)
+        {
+            x  = (tmp0 - ymask) ^ maskx;
+            y  = tmp1 ^ masky;
+            zf = uintBitsToFloat((0x80000000u | 0x3F800000u) | (uint(-z) << 8)) + 1.0f;
+        }
+        else
+        {
+            zf = uintBitsToFloat(0x3F800000u | (uint(z) << 8)) - 1.0f;
+        }
+        return normalize(vec3(ShortToFloatM11(x), ShortToFloatM11(y), zf));
+    }
+    else
+    {
+        return vec3(C_Stack_Max);
+    }
+}
+
+void main()
+{
+    vec4 g_buffer = imageLoad(in_image, ivec2(gl_GlobalInvocationID.xy));
+    vec3 position = g_buffer.xyz;
+    vec3 normal   = DecompressUnitVec(floatBitsToUint(g_buffer.w));
+}
