@@ -42,6 +42,7 @@ namespace sdvk
         vk::Extent2D extent() const { return m_extent; }
         vk::Format format() const { return m_format.format; }
         [[maybe_unused]] vk::ColorSpaceKHR color_space() const { return m_format.colorSpace; }
+        vk::SurfaceFormatKHR surface_format() const { return m_format; }
 
     private:
         void create_swapchain();

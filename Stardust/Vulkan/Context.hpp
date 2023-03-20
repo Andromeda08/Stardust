@@ -27,6 +27,8 @@ namespace sdvk
 
         const VkSurfaceKHR& surface() const { return m_surface; }
 
+        const vk::Instance& instance() const { return m_instance; }
+
         const Queue& q_compute()  const { return m_compute_queue;  }
         const Queue& q_graphics() const { return m_graphics_queue; }
         const Queue& q_present()  const { return m_present_queue;  }

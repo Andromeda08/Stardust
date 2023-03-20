@@ -152,14 +152,6 @@ namespace sd
         m_meshes[cube] = std::make_shared<sdvk::Mesh>(new primitives::Cube(), m_command_buffers, m_context, cube);
         m_meshes[sphere] = std::make_shared<sdvk::Mesh>(new primitives::Sphere(1.0f, 240), m_command_buffers, m_context, sphere);
 
-        load_sponza();
-        Object sponza_obj {};
-        sponza_obj.mesh = std::shared_ptr<sdvk::Mesh>(m_meshes["sponza"]);
-        sponza_obj.name = "sponza";
-        sponza_obj.color = { 0.7f, 0.7f, 0.7f, 1.0f };
-        sponza_obj.pipeline = "default";
-        sponza_obj.transform.scale = glm::vec3(0.5f);
-        //m_objects.push_back(sponza_obj);
 //        load_objects_from_json("objects.json");
 //        for (int32_t i = -12; i < 13; i++)
 //        {
