@@ -108,7 +108,6 @@ void main()
         occlusion = pow(clamp(occlusion, 0, 1), rtao_power);
     }
 
-
     // Writting out the AO
     if(frame_number == 0)
     {

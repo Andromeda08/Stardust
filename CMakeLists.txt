@@ -12,12 +12,20 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(ThirdParty/glfw)
 add_subdirectory(ThirdParty/glm)
 add_subdirectory(ThirdParty/json)
+
+set(IMGUI_DIR ThirdParty/imgui)
+include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
+
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_ENABLE_EXPERIMENTAL)
 
 add_executable(${PROJECT_NAME}
         Stardust/main.cpp
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h ThirdParty/tinyobj/tiny_obj_impl.cpp
+
+        ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+        ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui.h ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp
 
         Stardust/Window/Window.hpp Stardust/Window/Window.cpp Stardust/Window/WindowOptions.hpp
         Stardust/Application/Application.hpp Stardust/Application/Application.cpp Stardust/Application/ApplicationOptions.hpp
@@ -71,9 +79,16 @@ add_executable(${PROJECT_NAME}
         Stardust/Rendering/RTAO/RTAOKernel.hpp Stardust/Rendering/RTAO/RTAOKernel.cpp
         Stardust/Rendering/RTAO/RTAOParams.hpp
         Stardust/Rendering/SSAO/SSAOKernel.cpp Stardust/Rendering/SSAO/SSAOKernel.hpp
-        Stardust/Rendering/SSAO/SSAOParams.hpp)
+        Stardust/Rendering/SSAO/SSAOParams.hpp Stardust/Rendering/RenderGraph/RenderGraph.hpp
+        Stardust/Rendering/RenderGraph/Node/OffscreenRenderNode.hpp
+        Stardust/Rendering/RenderGraph/Node/DirectRenderNode.hpp
+        Stardust/Rendering/RenderGraph/Node/RTAONode.hpp
+        Stardust/Rendering/RenderGraph/Node/PostProcessingNode.hpp
+        Stardust/Rendering/RenderGraph/Node/AmbientOcclusionNode.hpp
+        Stardust/Rendering/RenderGraph/Node.hpp
+        Stardust/Rendering/RenderGraph/ObjectPushConstant.hpp Stardust/Rendering/RenderGraph/Node/SceneNode.hpp Stardust/Application/GUI.hpp)
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG)
+target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG -DImTextureID=ImU64)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb ThirdParty/tinyobj)
 

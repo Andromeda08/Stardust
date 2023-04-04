@@ -28,6 +28,12 @@ namespace sd
 
         virtual void register_keybinds(GLFWwindow* p_window);
 
+        const std::vector<Object>& objects() const { return m_objects; }
+
+        CameraUniformData camera_state() const { return m_camera->uniform_data(); }
+
+        const sdvk::Tlas& tlas() const { return *m_tlas; }
+
     private:
         void update_offscreen_descriptors(uint32_t current_frame);
 
