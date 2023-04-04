@@ -1,0 +1,8 @@
+//
+// Created by andromeda on 3/28/2023.
+//
+
+#ifndef STARDUST_CAMERARESOURCE_HPP
+#define STARDUST_CAMERARESOURCE_HPP
+
+#endif //STARDUST_CAMERARESOURCE_HPP
