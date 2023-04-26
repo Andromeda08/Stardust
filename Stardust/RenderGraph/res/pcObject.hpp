@@ -1,8 +1,11 @@
-//
-// Created by andromeda on 3/28/2023.
-//
+#pragma once
+#include <glm/glm.hpp>
 
-#ifndef STARDUST_PCOBJECT_HPP
-#define STARDUST_PCOBJECT_HPP
-
-#endif //STARDUST_PCOBJECT_HPP
+namespace sd::rg
+{
+    struct pcObject
+    {
+        glm::mat4 model_matrix {1.0f};
+        glm::vec4 color {0.5f};
+    };
+}

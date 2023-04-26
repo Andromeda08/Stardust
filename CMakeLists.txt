@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.23)
 project(Stardust)
 
 set(CMAKE_CXX_STANDARD 20)
-
 set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(PYTHON "py")
 
@@ -29,6 +28,9 @@ add_executable(${PROJECT_NAME}
 
         Stardust/Window/Window.hpp Stardust/Window/Window.cpp Stardust/Window/WindowOptions.hpp
         Stardust/Application/Application.hpp Stardust/Application/Application.cpp Stardust/Application/ApplicationOptions.hpp
+
+        Stardust/Benchmarking.hpp
+        Stardust/Application/UI.hpp
 
         Stardust/Resources/CameraUniformData.hpp
         Stardust/Resources/Geometry.hpp
@@ -79,14 +81,20 @@ add_executable(${PROJECT_NAME}
         Stardust/Rendering/RTAO/RTAOKernel.hpp Stardust/Rendering/RTAO/RTAOKernel.cpp
         Stardust/Rendering/RTAO/RTAOParams.hpp
         Stardust/Rendering/SSAO/SSAOKernel.cpp Stardust/Rendering/SSAO/SSAOKernel.hpp
-        Stardust/Rendering/SSAO/SSAOParams.hpp Stardust/Rendering/RenderGraph/RenderGraph.hpp
-        Stardust/Rendering/RenderGraph/Node/OffscreenRenderNode.hpp
-        Stardust/Rendering/RenderGraph/Node/DirectRenderNode.hpp
-        Stardust/Rendering/RenderGraph/Node/RTAONode.hpp
-        Stardust/Rendering/RenderGraph/Node/PostProcessingNode.hpp
-        Stardust/Rendering/RenderGraph/Node/AmbientOcclusionNode.hpp
-        Stardust/Rendering/RenderGraph/Node.hpp
-        Stardust/Rendering/RenderGraph/ObjectPushConstant.hpp Stardust/Rendering/RenderGraph/Node/SceneNode.hpp Stardust/Application/GUI.hpp)
+
+        Stardust/RenderGraph/RenderGraph.hpp
+        Stardust/RenderGraph/Node.hpp
+        Stardust/RenderGraph/Input.hpp
+        Stardust/RenderGraph/Output.hpp
+        Stardust/RenderGraph/res/ImageResource.hpp
+        Stardust/RenderGraph/res/AccelerationStructureResource.hpp
+        Stardust/RenderGraph/node/RTAONode.hpp Stardust/RenderGraph/node/RTAONode.cpp
+        Stardust/RenderGraph/node/OffscreenRenderNode.cpp Stardust/RenderGraph/node/OffscreenRenderNode.hpp
+        Stardust/RenderGraph/res/pcObject.hpp Stardust/RenderGraph/res/CameraResource.hpp
+        Stardust/RenderGraph/node/SceneNode.cpp Stardust/RenderGraph/node/SceneNode.hpp
+        Stardust/RenderGraph/Scene.hpp Stardust/RenderGraph/res/ObjectsResource.hpp
+        Stardust/RenderGraph/graph/RenderPath.hpp
+        Stardust/RenderGraph/node/CompositionNode.cpp Stardust/RenderGraph/node/CompositionNode.hpp Stardust/Vulkan/Barrier.hpp Stardust/Vulkan/Barrier.cpp Stardust/Vulkan/v2/Descriptor.tpp Stardust/Vulkan/v2/Descriptor.hpp)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG -DImTextureID=ImU64)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)

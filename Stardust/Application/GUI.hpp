@@ -4,7 +4,15 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <vulkan/vulkan.hpp>
+#include <Vulkan/Barrier.hpp>
 #include <Vulkan/Context.hpp>
+#include <Vulkan/Descriptors/DescriptorBuilder.hpp>
+#include <Vulkan/Descriptors/DescriptorWrites.hpp>
+#include <Vulkan/Rendering/PipelineBuilder.hpp>
+#include <Vulkan/Rendering/RenderPass.hpp>
+#include <Vulkan/Image/Image.hpp>
+#include <Vulkan/Presentation/Swapchain.hpp>
+#include <Vulkan/Presentation/SwapchainBuilder.hpp>
 #include <Window/Window.hpp>
 
 namespace sd
@@ -12,35 +20,54 @@ namespace sd
     class GUI
     {
     public:
-        GUI(sdvk::Context const& context, sdvk::Swapchain const& swapchain, sd::Window const& window)
+        struct ImGuiPushConstant {
+            glm::vec2 scale {};
+            glm::vec2 translate {};
+        } m_push_constant;
+
+        GUI(sdvk::CommandBuffers const& command_buffers, sdvk::Context const& context)
         {
             IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGui::StyleColorsDark();
 
-            m_window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+Vulkan example", nullptr, nullptr);
-            auto r = glfwCreateWindowSurface(static_cast<VkInstance>(context.instance()), m_window, nullptr, &m_surface);
+            #pragma region Window & Surface & Swapchain
+            m_window = std::make_unique<Window>(WindowOptions {
+                .resolution = { 1280, 720 },
+                .title = "ImGui Window",
+                .fullscreen = false,
+            });
 
-            vk::DescriptorPoolSize pool_sizes[] =
-            {
-                { vk::DescriptorType::eSampler, 1000 },
-                { vk::DescriptorType::eCombinedImageSampler, 1000 },
-                { vk::DescriptorType::eSampledImage, 1000 },
-                { vk::DescriptorType::eStorageImage, 1000 },
-                { vk::DescriptorType::eUniformTexelBuffer, 1000 },
-                { vk::DescriptorType::eStorageTexelBuffer, 1000 },
-                { vk::DescriptorType::eUniformBuffer, 1000 },
-                { vk::DescriptorType::eStorageBuffer, 1000 },
-                { vk::DescriptorType::eUniformBufferDynamic, 1000 },
-                { vk::DescriptorType::eStorageBufferDynamic, 1000 },
-                { vk::DescriptorType::eInputAttachment, 1000 }
-            };
+            auto surface_result = glfwCreateWindowSurface(context.instance(),
+                                                          m_window->handle(),
+                                                          nullptr,
+                                                          &m_surface);
 
-            vk::DescriptorPoolCreateInfo create_info;
-            create_info.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-            create_info.setPPoolSizes(pool_sizes);
-            create_info.setPoolSizeCount(std::size(pool_sizes));
-            create_info.setMaxSets(1000);
+            m_swapchain = sdvk::SwapchainBuilder(*m_window, context)
+                    .with_defaults()
+                    .create();
+            #pragma endregion
 
-            auto result = context.device().createDescriptorPool(&create_info, nullptr, &m_imgui_descriptor_pool);
+            VkDescriptorPoolSize pool_sizes[] =
+                    {
+                            { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+                    };
+            vk::DescriptorPoolCreateInfo ci;
+            ci.setMaxSets(1000);
+
+
+            vk::PipelineCacheCreateInfo pipeline_cache_create_info = {};
+            auto pc_result = context.device().createPipelineCache(&pipeline_cache_create_info, nullptr, &m_pipeline_cache);
 
             ImGui_ImplVulkan_InitInfo init_info = {};
             init_info.Instance        = context.instance();
@@ -48,37 +75,32 @@ namespace sd
             init_info.Device          = context.device();
             init_info.Queue           = context.q_graphics().queue;
             init_info.QueueFamily     = context.q_graphics().index;
-            init_info.PipelineCache   = nullptr;
-            init_info.DescriptorPool  = m_imgui_descriptor_pool;
+            init_info.PipelineCache   = m_pipeline_cache;
+            init_info.DescriptorPool  = m_pool;
             init_info.ImageCount      = 2;
             init_info.MinImageCount   = 2;
             init_info.MSAASamples     = VK_SAMPLE_COUNT_1_BIT;
             init_info.Allocator       = nullptr;
             init_info.CheckVkResultFn = nullptr;
-
-            ImGui_ImplVulkanH_Window* wd = &m_imgui_wd;
-            wd->Surface = m_surface;
-            wd->SurfaceFormat = swapchain.surface_format();
-            wd->PresentMode = VK_PRESENT_MODE_FIFO_KHR;
-            ImGui_ImplVulkanH_CreateOrResizeWindow(context.instance(),
-                                                   context.physical_device(),
-                                                   context.device(),
-                                                   wd,
-                                                   context.q_graphics().index,
-                                                   nullptr,
-                                                   swapchain.extent().width,
-                                                   swapchain.extent().height,
-                                                   swapchain.image_count());
-
-            ImGui::CreateContext();
-            ImGui_ImplGlfw_InitForVulkan(m_window, true);
-            ImGui_ImplVulkan_Init(&init_info, m_imgui_wd.RenderPass);
         }
 
     private:
-        GLFWwindow* m_window { nullptr };
-        VkSurfaceKHR m_surface { VK_NULL_HANDLE };
-        ImGui_ImplVulkanH_Window m_imgui_wd        {};
-        vk::DescriptorPool m_imgui_descriptor_pool { VK_NULL_HANDLE };
+        std::unique_ptr<Window> m_window;
+        VkSurfaceKHR            m_surface { VK_NULL_HANDLE };
+
+        std::unique_ptr<sdvk::Swapchain> m_swapchain;
+
+        std::unique_ptr<sdvk::Image> m_font_image;
+        vk::Sampler                  m_font_sampler;
+
+        vk::DescriptorPool m_pool;
+
+        std::unique_ptr<sdvk::Descriptor> m_descriptor;
+
+        vk::RenderPass     m_renderpass;
+        vk::Pipeline       m_pipeline;
+        vk::PipelineCache  m_pipeline_cache;
+        vk::PipelineLayout m_pipeline_layout;
+
     };
 }

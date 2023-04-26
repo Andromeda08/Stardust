@@ -6,5 +6,7 @@ namespace sd::rg
     {
     public:
         virtual void do_thing() {}
+
+        virtual ~Output() = default;
     };
 }

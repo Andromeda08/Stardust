@@ -1,8 +1,21 @@
-//
-// Created by andromeda on 3/30/2023.
-//
+#pragma once
 
-#ifndef STARDUST_BENCHMARKING_HPP
-#define STARDUST_BENCHMARKING_HPP
+#include <chrono>
+#include <functional>
 
-#endif //STARDUST_BENCHMARKING_HPP
+namespace sd::bm
+{
+    using clock = std::chrono::high_resolution_clock;
+
+    static const auto start_time = clock::now();
+
+    template <typename unit_t = std::chrono::seconds>
+    static unit_t measure(const std::function<void()>& fn)
+    {
+        const auto start = clock::now();
+        fn();
+        const auto end = clock::now();
+
+        return duration_cast<unit_t>(end - start);
+    }
+}

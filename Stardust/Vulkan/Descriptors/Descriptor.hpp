@@ -20,6 +20,8 @@ namespace sdvk
 
         const vk::DescriptorSetLayout& layout() const;
 
+        const vk::DescriptorPool& pool() const;
+
     private:
         vk::DescriptorPool m_pool;
         std::vector<vk::DescriptorSet> m_sets;

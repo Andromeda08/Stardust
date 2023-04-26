@@ -1,4 +1,6 @@
 #include "Descriptor.hpp"
+#include "Vulkan/v2/Descriptor.hpp"
+
 
 namespace sdvk
 {
@@ -51,5 +53,10 @@ namespace sdvk
     const vk::DescriptorSetLayout& Descriptor::layout() const
     {
         return m_layout;
+    }
+
+    const vk::DescriptorPool& Descriptor::pool() const
+    {
+        return m_pool;
     }
 }

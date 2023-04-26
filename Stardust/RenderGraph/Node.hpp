@@ -1,16 +1,19 @@
 #pragma once
+
 #include <memory>
 #include <vulkan/vulkan.hpp>
-#include "Input.hpp"
-#include "Output.hpp"
+#include <RenderGraph/Input.hpp>
+#include <RenderGraph/Output.hpp>
 
 namespace sd::rg
 {
-    class INode
+    class Node
     {
     public:
-        virtual void compile() {}
-        virtual void attach_input(std::shared_ptr<IOutput> const& output, std::shared_ptr<IInput> const& input) {}
-        virtual void execute(vk::CommandBuffer command_buffer) {}
+        virtual void compile() = 0;
+
+        virtual void attach_input(std::shared_ptr<Output> const& output, std::shared_ptr<Input> const& input) {}
+
+        virtual void execute(const vk::CommandBuffer& command_buffer) = 0;
     };
 }
