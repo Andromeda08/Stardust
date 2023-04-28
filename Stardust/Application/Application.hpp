@@ -21,6 +21,7 @@ namespace sd
     public:
         static constexpr uint32_t s_max_frames_in_flight {2};
         static uint32_t s_current_frame;
+        static sd::Extent s_extent;
 
     private:
         ApplicationOptions m_options;

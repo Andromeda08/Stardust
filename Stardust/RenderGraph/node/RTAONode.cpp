@@ -1,14 +1,18 @@
 #include "RTAONode.hpp"
 
-#include "glm/ext/matrix_relational.hpp"
-#include "Vulkan/Descriptors/DescriptorBuilder.hpp"
-#include "Vulkan/Rendering/PipelineBuilder.hpp"
+#include <glm/ext/matrix_relational.hpp>
+#include <Application/Application.hpp>
+#include <Vulkan/Barrier.hpp>
+#include <Vulkan/Descriptors/DescriptorBuilder.hpp>
+#include <Vulkan/Rendering/PipelineBuilder.hpp>
 
 namespace sd::rg
 {
     RTAONode::RTAONode(const sdvk::Context& context, const sdvk::CommandBuffers& command_buffers)
     : m_context(context)
     {
+        m_parameters.resolution = sd::Application::s_extent.vk_ext();
+
         _init_inputs();
         _init_outputs(command_buffers);
     }

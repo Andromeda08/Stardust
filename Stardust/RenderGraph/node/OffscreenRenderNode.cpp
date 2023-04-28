@@ -16,6 +16,8 @@ namespace sd::rg
     OffscreenRenderNode::OffscreenRenderNode(const sdvk::Context& context, const sdvk::CommandBuffers& command_buffers)
     : m_context(context)
     {
+        m_parameters.resolution = sd::Application::s_extent.vk_ext();
+
         _init_inputs();
         _init_outputs(context);
     }
@@ -27,9 +29,6 @@ namespace sd::rg
         _update_descriptors(current_frame);
         auto& objects = (dynamic_cast<ObjectsResource&>(*m_inputs[0])).get_objects();
 
-        pcNodeParams node_params(m_parameters);
-        pcObject     object_params {};
-
         auto render_commands = [&](const vk::CommandBuffer& cmd){
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
@@ -40,6 +39,7 @@ namespace sd::rg
             for (const auto& obj : objects)
             {
                 // Update per object push constant
+                pcObject object_params {};
                 object_params.model_matrix = obj.transform.model();
                 object_params.color = obj.color;
 

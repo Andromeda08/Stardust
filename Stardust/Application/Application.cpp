@@ -23,7 +23,7 @@ namespace sd
     uint32_t Application::s_current_frame = 0;
 
     Application::Application(const ApplicationOptions& options)
-            : m_options(options)
+    : m_options(options)
     {
         m_window = std::make_unique<Window>(m_options.window_options);
 

@@ -40,7 +40,7 @@ namespace sd::rg
         struct Parameters
         {
             std::array<float, 4> clear_color  { 0.3f, 0.3f, 0.3f, 1.0f };
-            vk::Extent2D         resolution   { 1280, 720 };
+            vk::Extent2D         resolution   { 1920, 1080 };
             vk::Bool32           with_shadows { true };
         } m_parameters;
 

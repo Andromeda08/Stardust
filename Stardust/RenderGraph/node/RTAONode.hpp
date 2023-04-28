@@ -33,7 +33,7 @@ namespace sd::rg {
     private:
         struct Parameters
         {
-            vk::Extent2D resolution   { 1280, 720 };
+            vk::Extent2D resolution   { 1920, 1080 };
             float        ao_radius    {3.0f};
             int32_t      ao_samples   {16};
             float        ao_power     {2.0f};
