@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
 #include <cstdint>
 #include <string>
 
@@ -9,6 +10,8 @@ namespace sd
     {
         uint32_t width { 0 };
         uint32_t height { 0 };
+
+        vk::Extent2D vk_ext() const { return {width, height}; }
     };
 
     struct WindowOptions
