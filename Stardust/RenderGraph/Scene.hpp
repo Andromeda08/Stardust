@@ -47,6 +47,46 @@ namespace sd::rg
                 m_objects.push_back(obj);
             }
 
+            auto gradient = [&](uint32_t x, uint32_t y, uint32_t z, uint32_t steps){
+                glm::vec4 color = { 0, 0, 0, 1 };
+                auto s = static_cast<float>(steps);
+                color.x = static_cast<float>(x) * (1.0f / s);
+                color.y = static_cast<float>(y) * (1.0f / s);
+                color.z = static_cast<float>(z) * (1.0f / s);
+
+                color /= 2.0f;
+                color += 0.25f;
+                color.w = 1.0f;
+
+                return color;
+            };
+
+            int32_t dim = 5;
+            for (int32_t i = 0; i < dim; i++) {
+                for (int32_t j = 0; j < dim; j++) {
+                    for (int32_t k = 0; k < dim; k++) {
+                        Object obj;
+                        obj.name = "cube" + std::to_string(i);
+                        obj.pipeline = "default";
+                        obj.mesh = m_meshes["cube"];
+
+                        glm::vec4 color { 0, 1, 1, 1 };
+                        color.x = (float) (i) / ((float) dim);
+                        color.y = 0.25f;
+                        color.z = 1.0f - (float) (k) / ((float) dim);
+
+
+                        obj.color = gradient(i, j, k, dim);
+                        obj.transform.position = {
+                                (float) i * 1.25f,
+                                (float) j * 1.25f + 0.5f,
+                                (float) k * 1.25f
+                        };
+                        //m_objects.push_back(obj);
+                    }
+                }
+            }
+
             Object obj;
             obj.name = "plane";
             obj.pipeline = "default";
