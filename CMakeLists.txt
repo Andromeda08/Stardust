@@ -94,7 +94,11 @@ add_executable(${PROJECT_NAME}
         Stardust/RenderGraph/node/SceneNode.cpp Stardust/RenderGraph/node/SceneNode.hpp
         Stardust/RenderGraph/Scene.hpp Stardust/RenderGraph/res/ObjectsResource.hpp
         Stardust/RenderGraph/graph/RenderPath.hpp
-        Stardust/RenderGraph/node/CompositionNode.cpp Stardust/RenderGraph/node/CompositionNode.hpp Stardust/Vulkan/Barrier.hpp Stardust/Vulkan/Barrier.cpp Stardust/Vulkan/v2/Descriptor.tpp Stardust/Vulkan/v2/Descriptor.hpp)
+        Stardust/RenderGraph/node/CompositionNode.cpp Stardust/RenderGraph/node/CompositionNode.hpp
+        Stardust/Vulkan/Barrier.hpp Stardust/Vulkan/Barrier.cpp
+        Stardust/Vulkan/v2/Descriptor.tpp Stardust/Vulkan/v2/Descriptor.hpp
+        Stardust/RenderGraph/node/RayTracingNode.cpp Stardust/RenderGraph/node/RayTracingNode.hpp
+        Stardust/Application/Configuration.hpp)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG -DImTextureID=ImU64)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
