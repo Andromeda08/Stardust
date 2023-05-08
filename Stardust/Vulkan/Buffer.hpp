@@ -80,6 +80,8 @@ namespace sdvk
 
         const vk::DeviceAddress& address() const { return m_address; }
 
+        const vk::DeviceMemory& memory() const { return m_memory; }
+
         static void copy_to_buffer(Buffer const& src, Buffer const& dst, CommandBuffers const& command_buffers);
 
         void copy_to_buffer(Buffer const& dst, vk::CommandBuffer const& command_buffer);
