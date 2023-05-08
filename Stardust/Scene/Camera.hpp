@@ -21,6 +21,8 @@ namespace sd
 
         void register_keys(GLFWwindow* p_window);
 
+        void register_mouse(GLFWwindow* p_window);
+
     private:
         glm::ivec2 m_size;
         glm::vec3  m_eye;

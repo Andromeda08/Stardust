@@ -7,7 +7,6 @@
 
 namespace sd
 {
-
     Camera::Camera(glm::ivec2 size, glm::vec3 eye, float h_fov, float near, float far)
     : m_size(size), m_eye(eye), m_fov(h_fov), m_near(near), m_far(far) {}
 
@@ -56,8 +55,10 @@ namespace sd
         {
             glfwSetWindowShouldClose(p_window, true);
         }
+    }
 
-
+    void Camera::register_mouse(GLFWwindow* p_window)
+    {
         if (glfwGetMouseButton(p_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
         {
             glfwSetInputMode(p_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);

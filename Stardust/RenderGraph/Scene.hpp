@@ -112,6 +112,11 @@ namespace sd::rg
             m_camera->register_keys(p_window);
         }
 
+        virtual void register_mousebinds(GLFWwindow* p_window)
+        {
+            m_camera->register_mouse(p_window);
+        }
+
     private:
 
     private:
