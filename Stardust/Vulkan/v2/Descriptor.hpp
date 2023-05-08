@@ -78,7 +78,6 @@ namespace sdvk
                     const vk::DescriptorSetLayout& layout,
                     const Context& context);
 
-    public:
         const vk::DescriptorSet& set(uint32_t id) const;
 
         const vk::DescriptorSetLayout& layout() const;
