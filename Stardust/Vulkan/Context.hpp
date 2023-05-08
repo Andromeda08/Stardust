@@ -35,6 +35,8 @@ namespace sdvk
 
         const vk::PhysicalDeviceProperties& device_properties() const { return m_physical_device_properties; }
 
+        const DeviceFeatures& device_features() const { return m_device_features; }
+
         bool is_debug() const { return m_debug_messenger; }
 
         bool raytracing() const {
