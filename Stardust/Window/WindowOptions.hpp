@@ -8,6 +8,9 @@ namespace sd
 {
     struct Extent
     {
+        Extent() = default;
+        Extent(uint32_t w, uint32_t h): width(w), height(h) {}
+
         uint32_t width { 0 };
         uint32_t height { 0 };
 
