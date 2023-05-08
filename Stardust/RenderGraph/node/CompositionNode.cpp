@@ -37,12 +37,14 @@ namespace sd::rg
 
             if (sd::Application::s_imgui_enabled)
             {
+                ImGuiIO& io = ImGui::GetIO();
+
                 ImGui_ImplVulkan_NewFrame();
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
                 {
-                    ImGui::Begin("Test");
-                    ImGui::Text("Hello world!");
+                    ImGui::Begin("ImGui test");
+                    ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
                     ImGui::End();
                 }
 
