@@ -26,11 +26,14 @@ add_executable(${PROJECT_NAME}
         ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui.h ${IMGUI_DIR}/imgui_draw.cpp
         ${IMGUI_DIR}/imgui_demo.cpp ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp
 
-        Stardust/Window/Window.hpp Stardust/Window/Window.cpp Stardust/Window/WindowOptions.hpp
-        Stardust/Application/Application.hpp Stardust/Application/Application.cpp Stardust/Application/ApplicationOptions.hpp
+        Stardust/Window/Window.hpp Stardust/Window/Window.cpp
+        Stardust/Window/WindowOptions.hpp
+
+        Stardust/Application/Application.hpp Stardust/Application/Application.cpp
+        Stardust/Application/ApplicationOptions.hpp
+        Stardust/Application/Configuration.hpp
 
         Stardust/Benchmarking.hpp
-        Stardust/Application/UI.hpp
 
         Stardust/Resources/CameraUniformData.hpp
         Stardust/Resources/Geometry.hpp
@@ -38,6 +41,7 @@ add_executable(${PROJECT_NAME}
         Stardust/Resources/Primitives/Cube.hpp
         Stardust/Resources/Primitives/Sphere.hpp
 
+        Stardust/Vulkan/Barrier.hpp Stardust/Vulkan/Barrier.cpp
         Stardust/Vulkan/Buffer.hpp Stardust/Vulkan/Buffer.cpp
         Stardust/Vulkan/Context.cpp Stardust/Vulkan/Context.hpp
         Stardust/Vulkan/ContextBuilder.cpp Stardust/Vulkan/ContextBuilder.hpp Stardust/Vulkan/ContextOptions.hpp
@@ -69,8 +73,10 @@ add_executable(${PROJECT_NAME}
 
         Stardust/Vulkan/Raytracing/Blas.cpp Stardust/Vulkan/Raytracing/Blas.hpp
         Stardust/Vulkan/Raytracing/Tlas.cpp Stardust/Vulkan/Raytracing/Tlas.hpp
+        Stardust/Vulkan/Raytracing/ShaderBindingTable.cpp Stardust/Vulkan/Raytracing/ShaderBindingTable.hpp
 
-        Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
+        Stardust/Vulkan/v2/Descriptor.tpp Stardust/Vulkan/v2/Descriptor.hpp
+
         Stardust/Scene/Transform.hpp
         Stardust/Scene/Object.hpp
         Stardust/Scene/Light.hpp
@@ -80,25 +86,26 @@ add_executable(${PROJECT_NAME}
         Stardust/Rendering/AmbientOcclusion.hpp Stardust/Rendering/AmbientOcclusion.cpp
         Stardust/Rendering/RTAO/RTAOKernel.hpp Stardust/Rendering/RTAO/RTAOKernel.cpp
         Stardust/Rendering/RTAO/RTAOParams.hpp
-        Stardust/Rendering/SSAO/SSAOKernel.cpp Stardust/Rendering/SSAO/SSAOKernel.hpp
 
         Stardust/RenderGraph/RenderGraph.hpp
         Stardust/RenderGraph/Node.hpp
         Stardust/RenderGraph/Input.hpp
         Stardust/RenderGraph/Output.hpp
-        Stardust/RenderGraph/res/ImageResource.hpp
-        Stardust/RenderGraph/res/AccelerationStructureResource.hpp
+        Stardust/RenderGraph/Scene.hpp
+
+        Stardust/RenderGraph/graph/RenderPath.hpp
+
         Stardust/RenderGraph/node/RTAONode.hpp Stardust/RenderGraph/node/RTAONode.cpp
         Stardust/RenderGraph/node/OffscreenRenderNode.cpp Stardust/RenderGraph/node/OffscreenRenderNode.hpp
-        Stardust/RenderGraph/res/pcObject.hpp Stardust/RenderGraph/res/CameraResource.hpp
         Stardust/RenderGraph/node/SceneNode.cpp Stardust/RenderGraph/node/SceneNode.hpp
-        Stardust/RenderGraph/Scene.hpp Stardust/RenderGraph/res/ObjectsResource.hpp
-        Stardust/RenderGraph/graph/RenderPath.hpp
         Stardust/RenderGraph/node/CompositionNode.cpp Stardust/RenderGraph/node/CompositionNode.hpp
-        Stardust/Vulkan/Barrier.hpp Stardust/Vulkan/Barrier.cpp
-        Stardust/Vulkan/v2/Descriptor.tpp Stardust/Vulkan/v2/Descriptor.hpp
         Stardust/RenderGraph/node/RayTracingNode.cpp Stardust/RenderGraph/node/RayTracingNode.hpp
-        Stardust/Application/Configuration.hpp)
+
+        Stardust/RenderGraph/res/AccelerationStructureResource.hpp
+        Stardust/RenderGraph/res/CameraResource.hpp
+        Stardust/RenderGraph/res/ImageResource.hpp
+        Stardust/RenderGraph/res/pcObject.hpp
+        Stardust/RenderGraph/res/ObjectsResource.hpp)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG -DImTextureID=ImU64)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
