@@ -1,5 +1,8 @@
 #include "CompositionNode.hpp"
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 #include <Vulkan/Rendering/RenderPass.hpp>
 #include <Vulkan/Descriptors/DescriptorBuilder.hpp>
 #include <Vulkan/Descriptors/DescriptorWrites.hpp>
@@ -31,6 +34,22 @@ namespace sd::rg
                                    0, nullptr);
 
             cmd.draw(3, 1, 0, 0);
+
+            if (sd::Application::s_imgui_enabled)
+            {
+                ImGui_ImplVulkan_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
+                {
+                    ImGui::Begin("Test");
+                    ImGui::Text("Hello world!");
+                    ImGui::End();
+                }
+
+                ImGui::Render();
+                ImDrawData* main_draw_data = ImGui::GetDrawData();
+                ImGui_ImplVulkan_RenderDrawData(main_draw_data, cmd);
+            }
         };
 
         auto& render_img = *dynamic_cast<ImageResource&>(*m_inputs[0]).m_resource;

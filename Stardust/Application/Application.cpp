@@ -1,16 +1,19 @@
 #include "Application.hpp"
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+
+#include <Benchmarking.hpp>
 #include <Vulkan/ContextBuilder.hpp>
 #include <Vulkan/Presentation/SwapchainBuilder.hpp>
+#include <Vulkan/Rendering/RenderPass.hpp>
 
 #include <RenderGraph/RenderGraph.hpp>
 #include <RenderGraph/node/CompositionNode.hpp>
 #include <RenderGraph/node/RTAONode.hpp>
 #include <RenderGraph/node/OffscreenRenderNode.hpp>
 #include <RenderGraph/node/SceneNode.hpp>
-#include <Application/UI.hpp>
-
-#include <Benchmarking.hpp>
 
 std::shared_ptr<sd::rg::Scene> g_rgs;
 std::unique_ptr<sd::rg::RTAONode> g_rtaonode;
@@ -49,11 +52,7 @@ namespace sd
                 .with_defaults()
                 .create();
 
-        //m_gui = std::make_unique<sd::GUI>(*m_context, *m_swapchain, *m_window);
-        //g_ui = std::make_unique<ui::UI>(*m_command_buffers, *m_context);
-
         auto scene_init = bm::measure<std::chrono::milliseconds>([&](){
-            //m_scene = std::make_unique<Scene>(*m_command_buffers, *m_context, *m_swapchain);
             g_rgs = std::make_shared<sd::rg::Scene>(*m_command_buffers, *m_context, *m_swapchain);
         });
 
@@ -108,11 +107,13 @@ namespace sd
                 << "Compile RTAO    : " << compile_t2.count() << "ms\n"
                 << "Compile Comp.   : " << compile_t3.count() << "ms\n"
                 << std::endl;
+
+        init_imgui();
     }
 
     void Application::run()
     {
-        m_window->while_open([&](){
+        auto render_command = [&](){
             g_rgs->register_keybinds(m_window->handle());
 
             auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
@@ -133,14 +134,68 @@ namespace sd
             m_swapchain->submit_and_present(s_current_frame, acquired_frame, command_buffer);
             s_current_frame = (s_current_frame + 1) % m_swapchain->image_count();
 
-            //ImGui_ImplVulkan_NewFrame();
-            //ImGui_ImplGlfw_NewFrame();
-            //ImGui::NewFrame();
-            //bool show = true;
-            //ImGui::ShowDemoWindow(&show);
-            //ImGui::Render();
-
             m_context->device().waitIdle();
+        };
+
+        m_window->while_open(render_command);
+    }
+
+    void Application::init_imgui()
+    {
+        m_renderpass = sdvk::RenderPass::Builder()
+            .add_color_attachment(m_swapchain->format(), vk::SampleCountFlagBits::e1, vk::ImageLayout::ePresentSrcKHR)
+            .make_subpass()
+            .create(*m_context);
+
+        vk::DescriptorPoolSize pool_sizes[] =
+            {
+                { vk::DescriptorType::eSampler, 1000 },
+                { vk::DescriptorType::eCombinedImageSampler, 1000 },
+                { vk::DescriptorType::eSampledImage, 1000 },
+                { vk::DescriptorType::eStorageImage, 1000 },
+                { vk::DescriptorType::eUniformTexelBuffer, 1000 },
+                { vk::DescriptorType::eStorageTexelBuffer, 1000 },
+                { vk::DescriptorType::eUniformBuffer, 1000 },
+                { vk::DescriptorType::eStorageBuffer, 1000 },
+                { vk::DescriptorType::eUniformBufferDynamic, 1000 },
+                { vk::DescriptorType::eStorageBufferDynamic, 1000 },
+                { vk::DescriptorType::eInputAttachment, 1000 }
+            };
+
+        vk::DescriptorPoolCreateInfo pool_info = {};
+        pool_info.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
+        pool_info.setMaxSets(1000 * IM_ARRAYSIZE(pool_sizes));
+        pool_info.setPPoolSizes(pool_sizes);
+        pool_info.setPoolSizeCount((uint32_t) IM_ARRAYSIZE(pool_sizes));
+
+        auto r = m_context->device().createDescriptorPool(&pool_info, nullptr, &m_pool);
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO(); (void) io;
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplGlfw_InitForVulkan(m_window->handle(), true);
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance = m_context->instance();
+        init_info.PhysicalDevice = m_context->physical_device();
+        init_info.Device = m_context->device();
+        init_info.QueueFamily = m_context->q_graphics().index;
+        init_info.Queue = m_context->q_graphics().queue;
+        init_info.PipelineCache = m_pipeline_cache;
+        init_info.DescriptorPool = m_pool;
+        init_info.Subpass = 0;
+        init_info.ImageCount = 2;
+        init_info.MinImageCount = 2;
+        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.Allocator = nullptr;
+        init_info.CheckVkResultFn = nullptr;
+        ImGui_ImplVulkan_Init(&init_info, m_renderpass);
+
+        m_command_buffers->execute_single_time([&](const auto& cmd){
+            ImGui_ImplVulkan_CreateFontsTexture(cmd);
         });
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
+
     }
 }

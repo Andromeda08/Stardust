@@ -7,7 +7,7 @@ sd::Extent sd::Application::s_extent = {};
 int main()
 {
     sd::ApplicationOptions options;
-    options.window_options.set_resolution(2560, 1440);
+    options.window_options.set_resolution(1280, 720);
 
     sd::Application::s_extent = sd::Extent(options.window_options.width(), options.window_options.height());
 

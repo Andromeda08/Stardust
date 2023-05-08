@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <map>
 #include <memory>
 #include <vector>
@@ -21,6 +22,8 @@ namespace sd::rg
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void compile() override;
+
+        const vk::Framebuffer& get_fb(uint32_t current_frame) const { return m_renderer.sc_framebuffers[current_frame]; }
 
     private:
         void _init_inputs();
