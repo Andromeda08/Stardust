@@ -30,11 +30,11 @@ namespace sd::rg
 
         virtual void draw() {}
 
-        const Input& get_input(int32_t id)
+        Input& get_input(int32_t id)
         {
             for (const auto& input : m_inputs)
             {
-                if (input->id() == id)
+                if (input->input_id() == id)
                 {
                     return *input;
                 }
@@ -43,11 +43,11 @@ namespace sd::rg
             throw std::runtime_error(std::string("[" + m_name + "] has no input with the ID " + std::to_string(id) + "."));
         }
 
-        const Output& get_output(int32_t id)
+        Output& get_output(int32_t id)
         {
             for (const auto& output : m_outputs)
             {
-                if (output->id() == id)
+                if (output->output_id() == id)
                 {
                     return *output;
                 }

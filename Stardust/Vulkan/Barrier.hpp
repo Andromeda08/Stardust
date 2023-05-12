@@ -33,7 +33,7 @@ namespace sdvk
 
         void insert(vk::PipelineStageFlagBits src_stage, vk::PipelineStageFlagBits dst_stage, const vk::CommandBuffer& command_buffer);
 
-        void undo(const vk::CommandBuffer& command_buffer);
+        void undo(vk::PipelineStageFlagBits src_stage, vk::PipelineStageFlagBits dst_stage, const vk::CommandBuffer& command_buffer);
 
         void wrap(vk::PipelineStageFlagBits src_stage, vk::PipelineStageFlagBits dst_stage, const vk::CommandBuffer& command_buffer, const std::function<void()>& fn);
 
@@ -43,5 +43,6 @@ namespace sdvk
         vk::PipelineStageFlagBits last_dst_stage {};
 
         vk::ImageMemoryBarrier m_barrier {};
+        vk::ImageMemoryBarrier m_inverse {};
     };
 }

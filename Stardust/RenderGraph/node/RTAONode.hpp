@@ -8,7 +8,7 @@
 #include <RenderGraph/Scene.hpp>
 #include <Rendering/RTAO/RTAOParams.hpp>
 #include <Vulkan/Context.hpp>
-#include <Vulkan/Descriptors/Descriptor.hpp>
+#include <Vulkan/v2/Descriptor.hpp>
 #include <Vulkan/Image/Sampler.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
 
@@ -57,12 +57,17 @@ namespace sd::rg {
 
         struct Kernel
         {
-            static constexpr int32_t          s_group_size = 16;
-            std::unique_ptr<sdvk::Descriptor> descriptor;
-            sdvk::Pipeline                    pipeline;
-            vk::Sampler                       sampler;
-            int32_t                           frame {0};
+            static constexpr int32_t              s_group_size {16};
+            std::unique_ptr<sdvk::Descriptor2<1>> descriptor;
+            sdvk::Pipeline                        pipeline;
+            vk::Sampler                           sampler;
+            int32_t                               frame {0};
         } m_kernel;
+
+        // flag used for initial image layout transitions
+        bool      m_first_execute {true};
+        // reference matrix to determine if camera is stationary or not
+        glm::mat4 m_ref_mat = glm::mat4(1.0f);
 
         const sdvk::Context& m_context;
     };

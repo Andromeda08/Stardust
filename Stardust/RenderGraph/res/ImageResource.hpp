@@ -90,11 +90,22 @@ namespace sd::rg
         : m_parameters(std::move(parameters))
         , m_ui_name(std::move(name)) {}
 
-        bool validate(const std::shared_ptr<Output>& incoming) override
+        bool validate(const Output& output) const override
         {
-            auto res = std::dynamic_pointer_cast<ImageResource>(incoming);
+            try {
+                auto res = dynamic_cast<const ImageResource&>(output);
 
-            return true;
+                return true;
+            }
+            catch (const std::bad_cast& _ignored) {
+                return false;
+            }
+        }
+
+        void link_output(Output& input) override
+        {
+            auto res = dynamic_cast<ImageResource&>(input);
+            m_resource = std::shared_ptr<sdvk::Image>(res.m_resource);
         }
 
         const std::array<int32_t, 4>& get_color() override { return m_ui_color; }
@@ -105,7 +116,7 @@ namespace sd::rg
         Parameters                   m_parameters {};
 
     private:
-        const std::array<int32_t, 4> m_ui_color { 203, 166, 247, 255 };
+        const std::array<int32_t, 4> m_ui_color { 230, 69, 83, 255 };
         const std::string m_ui_name {};
     };
 }

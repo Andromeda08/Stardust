@@ -11,10 +11,11 @@ namespace sd::rg
     class Input
     {
     public:
-        // This function should decide whether an attached output is acceptable as input.
-        virtual bool validate(std::shared_ptr<Output> const& incoming) { return false; }
+        virtual void link_output(Output& input) = 0;
 
-        // Input name for UI.
+
+        virtual bool validate(const Output& output) const { return false; }
+
         virtual const std::string& get_name() = 0;
 
         // Input color for UI with a format of RGBA (0 - 255).
@@ -29,9 +30,9 @@ namespace sd::rg
 
         virtual ~Input() = default;
 
-        int32_t id() const { return m_id; }
+        int32_t input_id() const { return m_input_id; }
 
     protected:
-        int32_t m_id { util::gen_id() };
+        int32_t m_input_id { util::gen_id() };
     };
 }

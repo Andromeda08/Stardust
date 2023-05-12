@@ -201,6 +201,22 @@ namespace sdvk
 
     template<unsigned int N>
     Descriptor2<N>::Write&
+    Descriptor2<N>::Write::acceleration_structure(uint32_t binding, const vk::WriteDescriptorSetAccelerationStructureKHR& pNext)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_id]);
+        write.setDescriptorCount(1);
+        write.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
+        write.setDstArrayElement(0);
+        write.setPNext(&pNext);
+
+        _writes.push_back(write);
+        return *this;
+    }
+
+    template<unsigned int N>
+    Descriptor2<N>::Write&
     Descriptor2<N>::Write::uniform_buffer(uint32_t binding, const vk::Buffer& buffer, uint32_t offset, uint32_t range,
                                           uint32_t count)
     {
@@ -248,6 +264,23 @@ namespace sdvk
         write.setDstSet(_descriptor[_set_id]);
         write.setDescriptorCount(count);
         write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+        write.setDstArrayElement(0);
+        write.setPImageInfo(&image_info);
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    template<unsigned int N>
+    Descriptor2<N>::Write&
+    Descriptor2<N>::Write::storage_image(uint32_t binding, const vk::DescriptorImageInfo& image_info, uint32_t count)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_id]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eStorageImage);
         write.setDstArrayElement(0);
         write.setPImageInfo(&image_info);
 

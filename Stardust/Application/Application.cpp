@@ -133,9 +133,12 @@ namespace sd
             command_buffer.setViewport(0, 1, &vp);
             command_buffer.setScissor(0, 1, &sc);
 
-            g_osrnode->execute(command_buffer);
-            g_rtaonode->execute(command_buffer);
-            g_cnode->execute(command_buffer);
+            if (!m_editor->execute(command_buffer))
+            {
+                g_osrnode->execute(command_buffer);
+                g_rtaonode->execute(command_buffer);
+                g_cnode->execute(command_buffer);
+            }
 
             command_buffer.end();
 

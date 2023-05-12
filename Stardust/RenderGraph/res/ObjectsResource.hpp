@@ -33,11 +33,22 @@ namespace sd::rg
 
         explicit ObjectsResource(std::string name): m_ui_name(std::move(name)) {}
 
-        bool validate(std::shared_ptr<Output> const& incoming) override
+        bool validate(const Output& output) const override
         {
-            auto res = std::dynamic_pointer_cast<Scene>(incoming);
+            try {
+                auto res = dynamic_cast<const ObjectsResource&>(output);
 
-            return res == nullptr;
+                return true;
+            }
+            catch (const std::bad_cast& _ignored) {
+                return false;
+            }
+        }
+
+        void link_output(Output& input) override
+        {
+            auto res = dynamic_cast<ObjectsResource&>(input);
+            m_resource = std::shared_ptr<Scene>(res.m_resource);
         }
 
         const std::vector<sd::Object>& get_objects() const { return m_resource->objects(); }
@@ -49,7 +60,7 @@ namespace sd::rg
         std::shared_ptr<Scene> m_resource;
 
     private:
-        const std::array<int32_t, 4> m_ui_color { 148, 226, 213, 255 };
+        const std::array<int32_t, 4> m_ui_color { 30, 102, 245, 255 };
         const std::string m_ui_name {};
     };
 }

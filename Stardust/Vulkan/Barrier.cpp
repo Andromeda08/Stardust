@@ -55,19 +55,23 @@ namespace sdvk
         m_barrier.setOldLayout(current);
         m_barrier.setNewLayout(target);
         m_barrier.setSubresourceRange(image_subresource_range);
+
+        m_inverse.setSrcAccessMask(dst);
+        m_inverse.setDstAccessMask(src);
+        m_inverse.setOldLayout(target);
+        m_inverse.setNewLayout(current);
+        m_inverse.setSubresourceRange(image_subresource_range);
     }
 
     void ImageMemoryBarrier::set_image(const vk::Image& image)
     {
         m_barrier.setImage(image);
+        m_inverse.setImage(image);
     }
 
     void ImageMemoryBarrier::insert(vk::PipelineStageFlagBits src_stage, vk::PipelineStageFlagBits dst_stage,
                                     const vk::CommandBuffer& command_buffer)
     {
-        last_src_stage = src_stage;
-        last_dst_stage = dst_stage;
-
         command_buffer.pipelineBarrier(src_stage, dst_stage,
                                        {},
                                        0, nullptr,
@@ -76,9 +80,15 @@ namespace sdvk
 
     }
 
-    void ImageMemoryBarrier::undo(const vk::CommandBuffer& command_buffer)
+    void ImageMemoryBarrier::undo(vk::PipelineStageFlagBits src_stage, vk::PipelineStageFlagBits dst_stage, const vk::CommandBuffer& command_buffer)
     {
-        vk::AccessFlags src { m_barrier.dstAccessMask }, dst { m_barrier.srcAccessMask };
+        command_buffer.pipelineBarrier(src_stage, dst_stage,
+                                       {},
+                                       0, nullptr,
+                                       0,nullptr,
+                                       1,&m_inverse);
+
+/*        vk::AccessFlags src { m_barrier.dstAccessMask }, dst { m_barrier.srcAccessMask };
         vk::ImageLayout from { m_barrier.newLayout }, to { m_barrier.oldLayout };
 
         m_barrier.setOldLayout(from);
@@ -95,7 +105,7 @@ namespace sdvk
         m_barrier.setOldLayout(to);
         m_barrier.setNewLayout(from);
         m_barrier.setSrcAccessMask(dst);
-        m_barrier.setDstAccessMask(src);
+        m_barrier.setDstAccessMask(src);*/
     }
 
     void ImageMemoryBarrier::wrap(vk::PipelineStageFlagBits src_stage, vk::PipelineStageFlagBits dst_stage,
@@ -103,6 +113,6 @@ namespace sdvk
     {
         insert(src_stage, dst_stage, command_buffer);
         fn();
-        undo(command_buffer);
+        undo(dst_stage, src_stage, command_buffer);
     }
 }

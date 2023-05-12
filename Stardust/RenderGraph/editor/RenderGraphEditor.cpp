@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stack>
 #include <sstream>
+#include <Benchmarking.hpp>
 #include <RenderGraph/node/CompositionNode.hpp>
 #include <RenderGraph/node/OffscreenRenderNode.hpp>
 #include <RenderGraph/node/SceneNode.hpp>
@@ -44,7 +45,7 @@ namespace sd::rg
 
         if (ImGui::Button("Compile"))
         {
-            std::cout << "Not yet" << std::endl;
+            compile();
         }
 
         for (const auto& pair : m_nodes)
@@ -70,24 +71,82 @@ namespace sd::rg
                 std::swap(start_attr, end_attr);
             }
 
-            auto id = util::gen_id();
-            m_edges.emplace_back(id, start_node, start_attr, end_node, end_attr);
-            m_in_degree[end_node]++;
-            m_adjacency_list[start_node].push_back(end_node);
+            auto& sattr = m_nodes[start_node]->get_output(start_attr);
+            auto& eattr = m_nodes[end_node]->get_input(end_attr);
 
-            const auto& sattr = m_nodes[start_node]->get_output(start_attr);
-            const auto& eattr = m_nodes[end_node]->get_input(end_attr);
+            auto is_valid_connection = eattr.validate(sattr);
 
-            #ifdef SD_DEBUG
-            std::cout
-                    << "Connected [" << sattr.id() << " of " << m_nodes[start_node]->get_name() << " (" << m_nodes[start_node]->id() << ")] to ["
-                    << eattr.id() << " of " << m_nodes[end_node]->get_name() << " (" << m_nodes[end_node]->id() << ")]"
+            if (is_valid_connection)
+            {
+                auto id = util::gen_id();
+                m_edges.emplace_back(id, start_node, start_attr, end_node, end_attr);
+                m_in_degree[end_node]++;
+                m_adjacency_list[start_node].push_back(end_node);
+
+                std::cout
+                        << "Connected ["
+                        << sattr.output_id() << " of " << m_nodes[start_node]->get_name() << " (" << m_nodes[start_node]->id()
+                        << ")] to ["
+                        << eattr.input_id() << " of " << m_nodes[end_node]->get_name() << " (" << m_nodes[end_node]->id()
+                        << ")]"
+                        << std::endl;
+            }
+            else
+            {
+                std::cout
+                    << "Invalid connection: ["
+                    << eattr.input_id() << " of " << m_nodes[end_node]->get_name() << " (" << m_nodes[end_node]->id()
+                    << ")] received unexpected resource type."
                     << std::endl;
-            #endif
+            }
         }
 
         ImGui::End();
         ImGui::PopStyleVar();
+    }
+
+    void RenderGraphEditor::compile()
+    {
+        auto compile_time = bm::measure([&](){
+            m_render_path = _topological_sort();
+
+            for (const auto& edge : m_edges)
+            {
+                auto& output = m_nodes[edge.from_node]->get_output(edge.from);
+                auto& input = m_nodes[edge.to_node]->get_input(edge.to);
+
+                input.validate(output);
+
+                input.link_output(output);
+            }
+
+            for (const auto& node_id : m_render_path)
+            {
+                m_nodes[node_id]->compile();
+            }
+        });
+
+        std::cout << "Compiled graph in " << compile_time.count() << "ms" << std::endl;
+        std::stringstream strs;
+        for (const auto& i : m_render_path)
+        {
+            strs << "[" + m_nodes[i]->get_name() + " | " + std::to_string(m_nodes[i]->id()) + "] ";
+        }
+        std::cout << "Topological Ordering:\n" << strs.str() << std::endl;
+    }
+
+    bool RenderGraphEditor::execute(const vk::CommandBuffer& command_buffer)
+    {
+        if (m_render_path.empty())
+        {
+            return false;
+        }
+
+        for (const auto& node_id : m_render_path)
+        {
+            m_nodes[node_id]->execute(command_buffer);
+        }
+        return true;
     }
 
     void RenderGraphEditor::_add_initial_nodes()

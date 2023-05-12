@@ -83,10 +83,10 @@ namespace sd::rg
         for (const auto& i : m_inputs)
         {
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
-            ImNodes::BeginInputAttribute(i->id());
+            ImNodes::BeginInputAttribute(i->input_id());
             ImGui::Text(i->get_name().c_str());
-            #ifdef SD_DEBUG
-                ImGui::Text(std::to_string(i->id()).c_str());
+            #ifdef SD_RG_DEBUG
+                ImGui::Text(std::to_string(i->input_id()).c_str());
             #endif
             ImNodes::EndInputAttribute();
             ImNodes::PopColorStyle();
@@ -95,10 +95,10 @@ namespace sd::rg
         for (const auto& o : m_outputs)
         {
             ImNodes::PushColorStyle(ImNodesCol_Pin, o->imu32());
-            ImNodes::BeginOutputAttribute(o->id());
+            ImNodes::BeginOutputAttribute(o->output_id());
             ImGui::Text(o->get_name().c_str());
-            #ifdef SD_DEBUG
-                ImGui::Text(std::to_string(o->id()).c_str());
+            #ifdef SD_RG_DEBUG
+                ImGui::Text(std::to_string(o->output_id()).c_str());
             #endif
             ImNodes::EndOutputAttribute();
             ImNodes::PopColorStyle();
@@ -135,6 +135,7 @@ namespace sd::rg
                 .with_sample_count(samples)
                 .with_usage_flags(usage)
                 .with_memory_property_flags(memory)
+                .with_name("Render Image")
                 .create(context);
         std::shared_ptr<sdvk::Image> g_buffer = sdvk::Image::Builder()
                 .with_extent(m_parameters.resolution)
@@ -142,6 +143,7 @@ namespace sd::rg
                 .with_sample_count(samples)
                 .with_usage_flags(usage)
                 .with_memory_property_flags(memory)
+                .with_name("G-Buffer")
                 .create(context);
 
         std::shared_ptr<sdvk::Image> depth_img = std::make_unique<sdvk::DepthBuffer>(m_parameters.resolution, vk::SampleCountFlagBits::e1, m_context);

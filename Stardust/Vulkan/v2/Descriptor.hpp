@@ -61,7 +61,11 @@ namespace sdvk
             Write& combined_image_sampler(uint32_t binding, const vk::Sampler& sampler, const vk::ImageView& image_view,
                                           vk::ImageLayout image_layout, uint32_t count = 1);
 
+            Write& acceleration_structure(uint32_t binding, const vk::WriteDescriptorSetAccelerationStructureKHR& pNext);
+
             Write& combined_image_sampler(uint32_t binding, const vk::DescriptorImageInfo& image_info, uint32_t count = 1);
+
+            Write& storage_image(uint32_t binding, const vk::DescriptorImageInfo& image_info, uint32_t count = 1);
 
             void commit();
 

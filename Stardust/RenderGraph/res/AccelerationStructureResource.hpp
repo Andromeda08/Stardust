@@ -33,17 +33,22 @@ namespace sd::rg
 
         explicit AccelerationStructureResource(std::string name): m_ui_name(std::move(name)) {}
 
-        bool validate(std::shared_ptr<Output> const& incoming) override
+        bool validate(const Output& output) const override
         {
-            auto res = std::dynamic_pointer_cast<AccelerationStructureResource>(incoming);
+            try {
+                auto res = dynamic_cast<const AccelerationStructureResource&>(output);
 
-            // If dynamic cast fails the resource type isn't valid.
-            if (res == nullptr)
-            {
+                return res.m_resource->tlas().objectType == vk::ObjectType::eAccelerationStructureKHR;
+            }
+            catch (const std::bad_cast& _ignored) {
                 return false;
             }
+        }
 
-            return res->m_resource->tlas().objectType == vk::ObjectType::eAccelerationStructureKHR;
+        void link_output(Output& input) override
+        {
+            auto res = dynamic_cast<const AccelerationStructureResource&>(input);
+            m_resource = std::shared_ptr<sdvk::Tlas>(res.m_resource);
         }
 
         const std::array<int32_t, 4>& get_color() override { return m_ui_color; }
@@ -53,7 +58,7 @@ namespace sd::rg
         std::shared_ptr<sdvk::Tlas> m_resource;
 
     private:
-        const std::array<int32_t, 4> m_ui_color { 166, 209, 137, 255 };
+        const std::array<int32_t, 4> m_ui_color { 64, 160, 43, 255 };
         const std::string m_ui_name {};
     };
 }

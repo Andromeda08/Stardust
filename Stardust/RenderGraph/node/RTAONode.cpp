@@ -3,7 +3,6 @@
 #include <glm/ext/matrix_relational.hpp>
 #include <Application/Application.hpp>
 #include <Vulkan/Barrier.hpp>
-#include <Vulkan/Descriptors/DescriptorBuilder.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
 #include <RenderGraph/res/ImageResource.hpp>
 #include <RenderGraph/res/AccelerationStructureResource.hpp>
@@ -24,20 +23,16 @@ namespace sd::rg
 
     void RTAONode::execute(const vk::CommandBuffer& command_buffer)
     {
-        // flag used for initial image layout transitions
-        static bool first = true;
-
         _update_descriptors();
 
         auto camera = *dynamic_cast<CameraResource&>(*m_inputs[1]).m_resource;
 
         // AO accumulation while camera is stationary.
-        static glm::mat4 ref_mat = glm::mat4(1.0f);
         auto view_mat = camera.view();
-        auto eq = glm::equal(glm::mat4(ref_mat), view_mat, 0.001f);
+        auto eq = glm::equal(glm::mat4(m_ref_mat), view_mat, 0.001f);
         if (!(eq.x && eq.y && eq.z && eq.w))
         {
-            ref_mat = view_mat;
+            m_ref_mat = view_mat;
             m_kernel.frame = -1;
         }
         m_kernel.frame++;
@@ -86,13 +81,23 @@ namespace sd::rg
         ao_buffer_barrier.setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
         #pragma endregion
 
-        if (!first)
+        if (!m_first_execute)
         {
-            command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, &ao_buffer_barrier);
+            command_buffer.pipelineBarrier(
+                    vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eComputeShader,
+                    {},
+                    0, nullptr,
+                    0,nullptr,
+                    1, &ao_buffer_barrier);
         }
-        first = false;
+        m_first_execute = false;
 
-        command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader, vk::DependencyFlagBits::eDeviceGroup, 0, nullptr, 0, nullptr, 1, &g_buffer_barrier);
+        command_buffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader,
+                vk::DependencyFlagBits::eDeviceGroup,
+                0, nullptr,
+                0,nullptr,
+                1, &g_buffer_barrier);
 
         command_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_kernel.pipeline.pipeline);
         command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_kernel.pipeline.pipeline_layout, 0, 1, &m_kernel.descriptor->set(0), 0, nullptr);
@@ -125,10 +130,10 @@ namespace sd::rg
         for (const auto& i : m_inputs)
         {
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
-            ImNodes::BeginInputAttribute(i->id());
+            ImNodes::BeginInputAttribute(i->input_id());
             ImGui::Text(i->get_name().c_str());
-            #ifdef SD_DEBUG
-                ImGui::Text(std::to_string(i->id()).c_str());
+            #ifdef SD_RG_DEBUG
+                ImGui::Text(std::to_string(i->input_id()).c_str());
             #endif
             ImNodes::EndInputAttribute();
             ImNodes::PopColorStyle();
@@ -137,10 +142,10 @@ namespace sd::rg
         for (const auto& i : m_outputs)
         {
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
-            ImNodes::BeginOutputAttribute(i->id());
+            ImNodes::BeginOutputAttribute(i->output_id());
             ImGui::Text(i->get_name().c_str());
-            #ifdef SD_DEBUG
-                ImGui::Text(std::to_string(i->id()).c_str());
+            #ifdef SD_RG_DEBUG
+                ImGui::Text(std::to_string(i->output_id()).c_str());
             #endif
             ImNodes::EndOutputAttribute();
             ImNodes::PopColorStyle();
@@ -194,12 +199,12 @@ namespace sd::rg
         auto& k = m_kernel;
 
         k.sampler = sdvk::SamplerBuilder().create(m_context.device());
-        k.descriptor = sdvk::DescriptorBuilder()
+        k.descriptor = sdvk::Descriptor2<1>::Builder()
                 .storage_image(0, vk::ShaderStageFlagBits::eCompute)
                 .storage_image(1, vk::ShaderStageFlagBits::eCompute)
-                .accelerator(2, vk::ShaderStageFlagBits::eCompute)
+                .acceleration_structure(2, vk::ShaderStageFlagBits::eCompute)
                 .with_name("RTAO Node")
-                .create(m_context.device(), 1);
+                .create(m_context);
 
         k.pipeline = sdvk::PipelineBuilder(m_context)
                 .add_push_constant({ vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTAOParams) })
@@ -215,47 +220,20 @@ namespace sd::rg
     void RTAONode::_update_descriptors()
     {
         auto& k = m_kernel;
-        std::vector<vk::WriteDescriptorSet> writes;
-        {
-            auto& tl = dynamic_cast<AccelerationStructureResource&>(*m_inputs[2]);
-            vk::WriteDescriptorSetAccelerationStructureKHR tl_info { 1, &tl.m_resource->tlas() };
 
-            vk::WriteDescriptorSet write;
-            write.setDstBinding(2);
-            write.setDstSet(k.descriptor->set(0));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
-            write.setDstArrayElement(0);
-            write.setPNext(&tl_info);
-            writes.push_back(write);
-        }
-        {
-            vk::DescriptorImageInfo ao_info = { k.sampler, resource().view(), vk::ImageLayout::eGeneral };
+        auto& tl = dynamic_cast<AccelerationStructureResource&>(*m_inputs[2]);
+        vk::WriteDescriptorSetAccelerationStructureKHR tl_info { 1, &tl.m_resource->tlas() };
 
-            vk::WriteDescriptorSet write;
-            write.setDstBinding(1);
-            write.setDstSet(k.descriptor->set(0));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eStorageImage);
-            write.setDstArrayElement(0);
-            write.setImageInfo(ao_info);
-            writes.push_back(write);
-        }
-        {
-            auto& gb = dynamic_cast<ImageResource&>(*m_inputs[0]);
-            vk::DescriptorImageInfo gb_info = { k.sampler, gb.m_resource->view(), vk::ImageLayout::eGeneral };
+        vk::DescriptorImageInfo ao_info = { k.sampler, resource().view(), vk::ImageLayout::eGeneral };
 
-            vk::WriteDescriptorSet write;
-            write.setDstBinding(0);
-            write.setDstSet(k.descriptor->set(0));
-            write.setDescriptorCount(1);
-            write.setDescriptorType(vk::DescriptorType::eStorageImage);
-            write.setDstArrayElement(0);
-            write.setImageInfo(gb_info);
-            writes.push_back(write);
-        }
+        auto& gb = dynamic_cast<ImageResource&>(*m_inputs[0]);
+        vk::DescriptorImageInfo gb_info = { k.sampler, gb.m_resource->view(), vk::ImageLayout::eGeneral };
 
-        m_context.device().updateDescriptorSets(writes.size(),writes.data(), 0, nullptr);
+        auto write = m_kernel.descriptor->begin_write(0);
+        write.storage_image(0, gb_info)
+                .storage_image(1, ao_info)
+                .acceleration_structure(2, tl_info)
+                .commit();
     }
 
     sdvk::Image& RTAONode::resource()

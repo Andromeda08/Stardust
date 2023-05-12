@@ -68,6 +68,7 @@ namespace sd::rg
         auto render_img_barrier = sdvk::ImageMemoryBarrier::Builder()
                 .layout(vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal)
                 .access_mask(vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead)
+                .with_subresource_range({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1})
                 .create();
 
         auto renderpass = sdvk::RenderPass::Execute()
@@ -77,8 +78,9 @@ namespace sd::rg
                 .with_framebuffer(m_renderer.sc_framebuffers[current_frame]);
 
         render_img_barrier.set_image(render_img.image());
-        render_img_barrier.wrap(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, command_buffer,
-                   [&](){ renderpass.execute(command_buffer, cmds); });
+
+        render_img_barrier.insert(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, command_buffer);
+        renderpass.execute(command_buffer, cmds);
     }
 
     void CompositionNode::compile()
@@ -105,9 +107,9 @@ namespace sd::rg
             for (const auto& i : m_inputs)
             {
                 ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
-                ImNodes::BeginInputAttribute(i->id());
+                ImNodes::BeginInputAttribute(i->input_id());
                 ImGui::Text(i->get_name().c_str());
-                #ifdef SD_DEBUG
+                #ifdef SD_RG_DEBUG
                     ImGui::Text(std::to_string(i->id()).c_str());
                 #endif
                 ImNodes::EndInputAttribute();

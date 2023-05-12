@@ -7,6 +7,8 @@
 
 namespace sd::rg
 {
+    class Input;
+
     class Output
     {
     public:
@@ -23,9 +25,9 @@ namespace sd::rg
 
         virtual ~Output() = default;
 
-        int32_t id() const { return m_id; }
+        int32_t output_id() const { return m_output_id; }
 
     protected:
-        int32_t m_id { util::gen_id() };
+        int32_t m_output_id { util::gen_id() };
     };
 }

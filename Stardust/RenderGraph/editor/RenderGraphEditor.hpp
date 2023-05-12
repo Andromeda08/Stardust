@@ -32,24 +32,27 @@ namespace sd::rg
 
         void draw();
 
+        void compile();
+
+        bool execute(const vk::CommandBuffer& command_buffer);
+
     private:
         std::vector<int32_t> _topological_sort();
 
         void _add_initial_nodes();
 
     private:
-        std::set<std::string> m_node_types { "OffscreenRender", "RTAO" };
-
         std::shared_ptr<Scene> m_scene;
 
-        int32_t m_current_id {0};
         std::map<int32_t, std::unique_ptr<Node>> m_nodes;
         std::map<int32_t, std::vector<int32_t>>  m_adjacency_list;
         std::map<int32_t, int32_t>               m_in_degree;
         std::vector<Edge>                        m_edges;
 
+        std::vector<int32_t>                     m_render_path;
+
         const sdvk::CommandBuffers& m_command_buffers;
-        const sdvk::Context& m_context;
-        const sdvk::Swapchain& m_swapchain;
+        const sdvk::Context&        m_context;
+        const sdvk::Swapchain&      m_swapchain;
     };
 }
