@@ -16,13 +16,11 @@ namespace sd::rg
 {
     CompositionNode::CompositionNode(const sdvk::CommandBuffers& command_buffers,
                                      const sdvk::Context& context,
-                                     const sdvk::Swapchain& swapchain,
-                                     RenderGraphEditor& rge)
+                                     const sdvk::Swapchain& swapchain)
     : Node("Composition", {210, 15, 57, 255}, {231, 130, 132, 255})
     , m_command_buffers(command_buffers)
     , m_context(context)
     , m_swapchain(swapchain)
-    , m_graph_editor(rge)
     {
         _init_inputs();
     }
@@ -31,7 +29,8 @@ namespace sd::rg
     {
         uint32_t current_frame = Application::s_current_frame;
 
-        static auto cmds = [&](const vk::CommandBuffer& cmd){
+        auto cmds = [&](const vk::CommandBuffer& cmd){
+
             float aspect_ratio = m_swapchain.aspect_ratio();
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
             cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(float), &aspect_ratio);
@@ -41,26 +40,6 @@ namespace sd::rg
                                    0, nullptr);
 
             cmd.draw(3, 1, 0, 0);
-
-            if (sd::Application::s_imgui_enabled)
-            {
-                ImGuiIO& io = ImGui::GetIO();
-
-                ImGui_ImplVulkan_NewFrame();
-                ImGui_ImplGlfw_NewFrame();
-                ImGui::NewFrame();
-                {
-                    ImGui::Begin("Metrics");
-                    ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-                    ImGui::End();
-
-                    m_graph_editor.draw();
-                }
-
-                ImGui::Render();
-                ImDrawData* main_draw_data = ImGui::GetDrawData();
-                ImGui_ImplVulkan_RenderDrawData(main_draw_data, cmd);
-            }
         };
 
         auto& render_img = *dynamic_cast<ImageResource&>(*m_inputs[0]).m_resource;
@@ -78,6 +57,8 @@ namespace sd::rg
                 .with_framebuffer(m_renderer.sc_framebuffers[current_frame]);
 
         render_img_barrier.set_image(render_img.image());
+
+        _update_descriptors(current_frame);
 
         render_img_barrier.insert(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, command_buffer);
         renderpass.execute(command_buffer, cmds);
@@ -103,6 +84,12 @@ namespace sd::rg
             ImNodes::BeginNodeTitleBar();
                 ImGui::TextUnformatted("Composition");
             ImNodes::EndNodeTitleBar();
+
+/*            ImGui::PushItemWidth(128);
+            ImGui::SliderFloat("ClearColor.x", &m_features.clear_color[0], 0.0f, 1.0f);
+            ImGui::SliderFloat("ClearColor.y", &m_features.clear_color[1], 0.0f, 1.0f);
+            ImGui::SliderFloat("ClearColor.z", &m_features.clear_color[2], 0.0f, 1.0f);
+            ImGui::PopItemWidth();*/
 
             for (const auto& i : m_inputs)
             {
@@ -150,7 +137,7 @@ namespace sd::rg
                 .with_name("Composite RenderPass")
                 .create(m_context);
 
-        m_renderer.clear_values[0].color = std::array<float, 4>{ 0.05f, 0.05f, 0.05f, 0.5f };
+        m_renderer.clear_values[0].color = m_features.clear_color;
 
         vk::FramebufferCreateInfo framebuffer_create_info;
         #pragma region framebuffer creation
@@ -200,11 +187,11 @@ namespace sd::rg
 
     void CompositionNode::_check_features()
     {
-        static auto test_ao = [&](){
+/*        static auto test_ao = [&](){
             auto resource = dynamic_cast<ImageResource&>(*m_inputs[1]);
             return resource.m_resource == nullptr;
         };
 
-        m_features.ambient_occlusion = test_ao();
+        m_features.ambient_occlusion = test_ao();*/
     }
 }

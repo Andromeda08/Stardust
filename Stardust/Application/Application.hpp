@@ -30,6 +30,7 @@ namespace sd
         vk::DescriptorPool m_pool;
         vk::PipelineCache m_pipeline_cache { nullptr };
         vk::RenderPass m_renderpass;
+        std::array<vk::Framebuffer, 2> m_fbos;
 
     private:
         ApplicationOptions m_options;

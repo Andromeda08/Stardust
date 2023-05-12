@@ -17,7 +17,8 @@ namespace sdvk
 
             Builder& add_color_attachment(vk::Format format,
                                           vk::SampleCountFlagBits sample_count = vk::SampleCountFlagBits::e1,
-                                          vk::ImageLayout final_layout = vk::ImageLayout::eColorAttachmentOptimal);
+                                          vk::ImageLayout final_layout = vk::ImageLayout::eColorAttachmentOptimal,
+                                          vk::AttachmentLoadOp load_op = vk::AttachmentLoadOp::eClear);
 
             Builder& set_depth_attachment(vk::Format format,
                                           vk::SampleCountFlagBits sample_count = vk::SampleCountFlagBits::e1);
@@ -56,6 +57,8 @@ namespace sdvk
             Execute& with_render_pass(const vk::RenderPass& render_pass);
 
             Execute& with_render_area(vk::Rect2D render_area);
+
+            Execute& with_clear_value(const std::array<vk::ClearValue, 1>& clear_value);
 
             Execute& with_clear_values(const std::array<vk::ClearValue, 2>& clear_values);
 

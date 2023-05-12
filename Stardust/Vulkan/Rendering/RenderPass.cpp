@@ -2,12 +2,12 @@
 
 namespace sdvk
 {
-    RenderPass::Builder& RenderPass::Builder::add_color_attachment(vk::Format format, vk::SampleCountFlagBits sample_count, vk::ImageLayout final_layout)
+    RenderPass::Builder& RenderPass::Builder::add_color_attachment(vk::Format format, vk::SampleCountFlagBits sample_count, vk::ImageLayout final_layout, vk::AttachmentLoadOp load_op)
     {
         vk::AttachmentDescription ad;
         ad.setFormat(format);
         ad.setSamples(sample_count);
-        ad.setLoadOp(vk::AttachmentLoadOp::eClear);
+        ad.setLoadOp(load_op);
         ad.setStoreOp(vk::AttachmentStoreOp::eStore);
         ad.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
         ad.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
@@ -149,5 +149,12 @@ namespace sdvk
         cmd.beginRenderPass(&_begin_info, vk::SubpassContents::eInline);
         fn(cmd);
         cmd.endRenderPass();
+    }
+
+    RenderPass::Execute& RenderPass::Execute::with_clear_value(const std::array<vk::ClearValue, 1>& clear_value)
+    {
+        _begin_info.setClearValueCount(clear_value.size());
+        _begin_info.setPClearValues(clear_value.data());
+        return *this;
     }
 }

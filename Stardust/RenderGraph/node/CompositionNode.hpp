@@ -27,8 +27,7 @@ namespace sd::rg
     public:
         CompositionNode(const sdvk::CommandBuffers& command_buffers,
                         const sdvk::Context&        context,
-                        const sdvk::Swapchain&      swapchain,
-                        RenderGraphEditor&          rge);
+                        const sdvk::Swapchain&      swapchain);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
@@ -53,6 +52,7 @@ namespace sd::rg
         struct Features
         {
             bool ambient_occlusion {false};
+            std::array<float, 4> clear_color = std::array<float, 4>{ 0.05f, 0.05f, 0.05f, 1.0f };
         } m_features;
 
         struct Renderer
@@ -66,8 +66,6 @@ namespace sd::rg
             vk::RenderPass                    render_pass;
             vk::Sampler                       sampler;
         } m_renderer;
-
-        RenderGraphEditor&          m_graph_editor;
 
         const sdvk::CommandBuffers& m_command_buffers;
         const sdvk::Context&        m_context;

@@ -61,15 +61,16 @@ namespace sd
             g_rgs = std::make_shared<sd::rg::Scene>(*m_command_buffers, *m_context, *m_swapchain);
         });
 
-
         m_editor = std::make_shared<rg::RenderGraphEditor>(*m_command_buffers, *m_context, *m_swapchain, g_rgs);
+
+        m_editor->_add_initial_nodes();
 
 #pragma region node testing
         auto connect_time = bm::measure<std::chrono::milliseconds>([&](){
             g_snode = std::make_unique<sd::rg::SceneNode>(g_rgs);
             g_rtaonode = std::make_unique<sd::rg::RTAONode>(*m_context, *m_command_buffers);
             g_osrnode = std::make_unique<sd::rg::OffscreenRenderNode>(*m_context, *m_command_buffers);
-            g_cnode = std::make_unique<sd::rg::CompositionNode>(*m_command_buffers, *m_context, *m_swapchain, *m_editor);
+            g_cnode = std::make_unique<sd::rg::CompositionNode>(*m_command_buffers, *m_context, *m_swapchain);
 
             auto& cam_res = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]);
             auto& tlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_snode->m_outputs[2]);
@@ -122,7 +123,7 @@ namespace sd
     void Application::run()
     {
         auto render_command = [&](){
-            //g_rgs->register_keybinds(m_window->handle());
+            g_rgs->register_keybinds(m_window->handle());
 
             auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
 
@@ -133,12 +134,43 @@ namespace sd
             command_buffer.setViewport(0, 1, &vp);
             command_buffer.setScissor(0, 1, &sc);
 
-            if (!m_editor->execute(command_buffer))
-            {
+            bool editor = m_editor->execute(command_buffer);
+
+            if (!editor) {
                 g_osrnode->execute(command_buffer);
                 g_rtaonode->execute(command_buffer);
                 g_cnode->execute(command_buffer);
             }
+
+            std::array<vk::ClearValue, 1> clear_value;
+            clear_value[0].color = std::array<float, 4>({ 0.f, 0.f, 0.f, 0.f });
+            sdvk::RenderPass::Execute()
+                .with_framebuffer(m_fbos[s_current_frame])
+                .with_render_pass(m_renderpass)
+                .with_clear_value(clear_value)
+                .with_render_area({{0, 0}, m_swapchain->extent()})
+                .execute(command_buffer, [&](const auto& cmd) {
+                    if (sd::Application::s_imgui_enabled)
+                    {
+                        ImGuiIO& io = ImGui::GetIO();
+
+                        ImGui_ImplVulkan_NewFrame();
+                        ImGui_ImplGlfw_NewFrame();
+                        ImGui::NewFrame();
+                        {
+                            ImGui::Begin("Metrics");
+                            ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
+                            ImGui::End();
+
+                            m_editor->draw();
+                        }
+                        ImGui::EndFrame();
+
+                        ImGui::Render();
+                        ImDrawData* main_draw_data = ImGui::GetDrawData();
+                        ImGui_ImplVulkan_RenderDrawData(main_draw_data, cmd);
+                    }
+                });
 
             command_buffer.end();
 
@@ -154,9 +186,28 @@ namespace sd
     void Application::init_imgui()
     {
         m_renderpass = sdvk::RenderPass::Builder()
-            .add_color_attachment(m_swapchain->format(), vk::SampleCountFlagBits::e1, vk::ImageLayout::ePresentSrcKHR)
+            .add_color_attachment(m_swapchain->format(), vk::SampleCountFlagBits::e1, vk::ImageLayout::ePresentSrcKHR, vk::AttachmentLoadOp::eLoad)
             .make_subpass()
+            .with_name("ImGui RenderPass")
             .create(*m_context);
+
+        vk::FramebufferCreateInfo framebuffer_create_info;
+        #pragma region framebuffer creation
+        vk::Extent2D extent = m_swapchain->extent();
+        std::vector<vk::ImageView> comp_attachments = { m_swapchain->view(0) };
+        framebuffer_create_info.setRenderPass(m_renderpass);
+        framebuffer_create_info.setAttachmentCount(comp_attachments.size());
+        framebuffer_create_info.setPAttachments(comp_attachments.data());
+        framebuffer_create_info.setWidth(extent.width);
+        framebuffer_create_info.setHeight(extent.height);
+        framebuffer_create_info.setLayers(1);
+        for (int32_t i = 0; i < 2; i++)
+        {
+            comp_attachments[0] = m_swapchain->view(i);
+            vk::Result result = m_context->device().createFramebuffer(&framebuffer_create_info, nullptr, &m_fbos[i]);
+        }
+        #pragma endregion
+
 
         vk::DescriptorPoolSize pool_sizes[] =
             {
