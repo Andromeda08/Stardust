@@ -49,12 +49,13 @@ namespace sd::rg
 
         static constexpr std::string_view s_vertex_shader   = "osr.vert.spv";
         static constexpr std::string_view s_fragment_shader = "osr.frag.spv";
+        static constexpr std::string_view s_shadowless_shader = "osrshlss.frag.spv";
 
         struct Parameters
         {
             std::array<float, 4> clear_color  { 0.3f, 0.3f, 0.3f, 1.0f };
             vk::Extent2D         resolution   { 1920, 1080 };
-            vk::Bool32           with_shadows { true };
+            bool                 with_shadows { true };
         } m_parameters;
 
         struct Renderer

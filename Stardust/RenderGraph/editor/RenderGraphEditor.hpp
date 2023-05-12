@@ -39,6 +39,7 @@ namespace sd::rg
     private:
         std::vector<int32_t> _topological_sort();
 
+    public:
         void _add_initial_nodes();
 
     private:

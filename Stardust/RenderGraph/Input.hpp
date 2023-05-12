@@ -13,7 +13,6 @@ namespace sd::rg
     public:
         virtual void link_output(Output& input) = 0;
 
-
         virtual bool validate(const Output& output) const { return false; }
 
         virtual const std::string& get_name() = 0;

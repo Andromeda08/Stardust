@@ -80,6 +80,8 @@ namespace sd::rg
         ImGui::Text("Offscreen Render");
         ImNodes::EndNodeTitleBar();
 
+        ImGui::Checkbox("Shadows", &m_parameters.with_shadows);
+
         for (const auto& i : m_inputs)
         {
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
@@ -159,7 +161,6 @@ namespace sd::rg
         auto& render_buffer = *(dynamic_cast<ImageResource&>(*m_outputs[0])).m_resource;
         auto& g_buffer = *(dynamic_cast<ImageResource&>(*m_outputs[1])).m_resource;
         auto& depth_buffer = *(dynamic_cast<ImageResource&>(*m_outputs[2])).m_resource;
-
         auto& r = m_renderer;
 
         r.renderpass = sdvk::RenderPass::Builder()
@@ -202,7 +203,7 @@ namespace sd::rg
                 .add_attribute_descriptions({ VertexData::attribute_descriptions() })
                 .add_binding_descriptions({ VertexData::binding_description() })
                 .add_shader(s_vertex_shader.data(), vk::ShaderStageFlagBits::eVertex)
-                .add_shader(s_fragment_shader.data(), vk::ShaderStageFlagBits::eFragment)
+                .add_shader((m_parameters.with_shadows ? s_fragment_shader.data() : s_shadowless_shader.data()), vk::ShaderStageFlagBits::eFragment)
                 .with_name("OSR Node")
                 .create_graphics_pipeline(r.renderpass);
 

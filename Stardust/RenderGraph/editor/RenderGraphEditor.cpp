@@ -20,7 +20,7 @@ namespace sd::rg
     , m_swapchain(swapchain)
     , m_scene(scene)
     {
-        _add_initial_nodes();
+       // _add_initial_nodes();
     }
 
     void RenderGraphEditor::draw()
@@ -122,7 +122,8 @@ namespace sd::rg
 
             for (const auto& node_id : m_render_path)
             {
-                m_nodes[node_id]->compile();
+                auto& node = m_nodes[node_id];
+                node->compile();
             }
         });
 
@@ -155,7 +156,7 @@ namespace sd::rg
         temp = std::make_unique<SceneNode>(m_scene);
         m_nodes[temp->id()] = std::move(temp);
 
-        temp = std::make_unique<CompositionNode>(m_command_buffers, m_context, m_swapchain, *this);
+        temp = std::make_unique<CompositionNode>(m_command_buffers, m_context, m_swapchain);
         m_nodes[temp->id()] = std::move(temp);
 
         temp = std::make_unique<OffscreenRenderNode>(m_context, m_command_buffers);
