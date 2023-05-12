@@ -32,12 +32,14 @@ namespace sd::rg
         if (ImGui::Button("Sort"))
         {
             auto order = _topological_sort();
+            #ifdef SD_DEBUG
             std::stringstream strs;
             for (const auto& i : order)
             {
                 strs << "[" + m_nodes[i]->get_name() + " | " + std::to_string(m_nodes[i]->id()) + "] ";
             }
-            std::cout << strs.str() << std::endl;
+            std::cout << "Topological Ordering:\n" << strs.str() << std::endl;
+            #endif
         }
 
         if (ImGui::Button("Compile"))
@@ -47,7 +49,7 @@ namespace sd::rg
 
         for (const auto& pair : m_nodes)
         {
-            pair.second->draw(0);
+            pair.second->draw();
         }
 
         for (const auto& edge : m_edges)
@@ -60,10 +62,28 @@ namespace sd::rg
         int32_t start_node, start_attr, end_node, end_attr;
         if (ImNodes::IsLinkCreated(&start_node, &start_attr, &end_node, &end_attr))
         {
+            try {
+                const auto& attr = m_nodes[start_node]->get_output(start_attr);
+            }
+            catch (const std::runtime_error& ex) {
+                std::swap(start_node, end_node);
+                std::swap(start_attr, end_attr);
+            }
+
             auto id = util::gen_id();
             m_edges.emplace_back(id, start_node, start_attr, end_node, end_attr);
             m_in_degree[end_node]++;
             m_adjacency_list[start_node].push_back(end_node);
+
+            const auto& sattr = m_nodes[start_node]->get_output(start_attr);
+            const auto& eattr = m_nodes[end_node]->get_input(end_attr);
+
+            #ifdef SD_DEBUG
+            std::cout
+                    << "Connected [" << sattr.id() << " of " << m_nodes[start_node]->get_name() << " (" << m_nodes[start_node]->id() << ")] to ["
+                    << eattr.id() << " of " << m_nodes[end_node]->get_name() << " (" << m_nodes[end_node]->id() << ")]"
+                    << std::endl;
+            #endif
         }
 
         ImGui::End();
