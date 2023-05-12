@@ -14,13 +14,24 @@ namespace sd::rg
     {
         struct Builder
         {
-            static std::unique_ptr<AccelerationStructureResource> create_from_scene(const std::shared_ptr<Scene>& resource)
+            Builder& with_name(std::string&& name)
             {
-                auto result = std::make_unique<AccelerationStructureResource>();
+                _name = name;
+                return *this;
+            }
+
+            std::unique_ptr<AccelerationStructureResource> create_from_scene(const std::shared_ptr<Scene>& resource)
+            {
+                auto result = std::make_unique<AccelerationStructureResource>(_name);
                 result->m_resource = resource->tlas();
                 return result;
             }
+
+        private:
+            std::string _name {};
         };
+
+        explicit AccelerationStructureResource(std::string name): m_ui_name(std::move(name)) {}
 
         bool validate(std::shared_ptr<Output> const& incoming) override
         {
@@ -35,11 +46,14 @@ namespace sd::rg
             return res->m_resource->tlas().objectType == vk::ObjectType::eAccelerationStructureKHR;
         }
 
-        const std::array<float, 4>& get_color() override { return m_ui_color; }
+        const std::array<int32_t, 4>& get_color() override { return m_ui_color; }
+
+        const std::string& get_name() override { return m_ui_name; }
 
         std::shared_ptr<sdvk::Tlas> m_resource;
 
     private:
-        const std::array<float, 4> m_ui_color { 180.f, 190.f, 254.f, 255.f };
+        const std::array<int32_t, 4> m_ui_color { 166, 209, 137, 255 };
+        const std::string m_ui_name {};
     };
 }

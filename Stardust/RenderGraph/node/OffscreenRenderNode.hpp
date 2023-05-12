@@ -4,7 +4,10 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include <Application/Application.hpp>
-#include <RenderGraph/RenderGraph.hpp>
+#include <RenderGraph/Input.hpp>
+#include <RenderGraph/Node.hpp>
+#include <RenderGraph/Output.hpp>
+#include <RenderGraph/Scene.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/v2/Descriptor.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
@@ -19,6 +22,12 @@ namespace sd::rg
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void compile() override;
+
+        void draw() override;
+
+        const Input& get_input(int32_t id) override;
+
+        const Output& get_output(int32_t id) override;
 
     private:
         void _init_inputs();
@@ -47,9 +56,8 @@ namespace sd::rg
             std::array<vk::Framebuffer,               n_frames_in_flight> framebuffers;
             std::array<std::unique_ptr<sdvk::Buffer>, n_frames_in_flight> uniform_camera;
 
-            std::unique_ptr<sdvk::Descriptor2<n_frames_in_flight>> descriptor2;
+            std::unique_ptr<sdvk::Descriptor2<n_frames_in_flight>> descriptor;
 
-            std::unique_ptr<sdvk::Descriptor> descriptor;
             std::array<vk::ClearValue, 3>     clear_values;
             vk::RenderPass                    renderpass;
             vk::Pipeline                      pipeline;

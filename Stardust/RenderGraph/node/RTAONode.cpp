@@ -5,11 +5,16 @@
 #include <Vulkan/Barrier.hpp>
 #include <Vulkan/Descriptors/DescriptorBuilder.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
+#include <RenderGraph/res/ImageResource.hpp>
+#include <RenderGraph/res/AccelerationStructureResource.hpp>
+#include <RenderGraph/res/CameraResource.hpp>
+#include <RenderGraph/res/ObjectsResource.hpp>
 
 namespace sd::rg
 {
     RTAONode::RTAONode(const sdvk::Context& context, const sdvk::CommandBuffers& command_buffers)
-    : m_context(context)
+    : Node("RTAO", {254, 100, 11, 255}, {239, 159, 118, 255})
+    , m_context(context)
     {
         m_parameters.resolution = sd::Application::s_extent.vk_ext();
 
@@ -106,20 +111,56 @@ namespace sd::rg
         _init_kernel();
     }
 
+    void RTAONode::draw()
+    {
+        ImNodes::PushColorStyle(ImNodesCol_TitleBar, get_color().operator ImU32());
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, get_hover_color().operator ImU32());
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, get_hover_color().operator ImU32());
+
+        ImNodes::BeginNode(m_id);
+        ImNodes::BeginNodeTitleBar();
+        ImGui::TextUnformatted("RTAO");
+        ImNodes::EndNodeTitleBar();
+
+        for (const auto& i : m_inputs)
+        {
+            ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
+            ImNodes::BeginInputAttribute(i->id());
+            ImGui::Text(i->get_name().c_str());
+            ImNodes::EndInputAttribute();
+            ImNodes::PopColorStyle();
+        }
+
+        for (const auto& i : m_outputs)
+        {
+            ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
+            ImNodes::BeginOutputAttribute(i->id());
+            ImGui::Text(i->get_name().c_str());
+            ImNodes::EndOutputAttribute();
+            ImNodes::PopColorStyle();
+        }
+        ImNodes::EndNode();
+
+        ImNodes::PopColorStyle();
+        ImNodes::PopColorStyle();
+        ImNodes::PopColorStyle();
+    }
+
     void RTAONode::_init_inputs()
     {
         m_inputs.resize(3);
 
         // G-Buffer
         m_inputs[0] = ImageResource::Builder()
+                .with_name("G-Buffer")
                 .accept_formats({ vk::Format::eR32G32B32A32Sfloat })
                 .create();
 
         // Camera
-        m_inputs[1] = std::make_unique<CameraResource>();
+        m_inputs[1] = std::make_unique<CameraResource>("Camera");
 
         // TLAS
-        m_inputs[2] = std::make_unique<AccelerationStructureResource>();
+        m_inputs[2] = std::make_unique<AccelerationStructureResource>("TLAS");
     }
 
     void RTAONode::_init_outputs(const sdvk::CommandBuffers& command_buffers)
@@ -139,7 +180,7 @@ namespace sd::rg
             image->transition_layout(cmd, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
         });
 
-        ao_buffer = ImageResource::Builder().create_from_resource(image);
+        ao_buffer = ImageResource::Builder().with_name("AO Buffer").create_from_resource(image);
     }
 
     void RTAONode::_init_kernel()

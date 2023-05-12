@@ -1,6 +1,8 @@
 #include "OffscreenRenderNode.hpp"
 
 #include <RenderGraph/res/pcObject.hpp>
+#include <RenderGraph/res/ImageResource.hpp>
+#include <RenderGraph/res/AccelerationStructureResource.hpp>
 #include <RenderGraph/res/CameraResource.hpp>
 #include <RenderGraph/res/ObjectsResource.hpp>
 #include <Resources/CameraUniformData.hpp>
@@ -14,7 +16,8 @@ namespace sd::rg
 {
 
     OffscreenRenderNode::OffscreenRenderNode(const sdvk::Context& context, const sdvk::CommandBuffers& command_buffers)
-    : m_context(context)
+    : Node("Offscreen Render", {114, 135, 253, 255}, {186, 187, 241, 255})
+    , m_context(context)
     {
         m_parameters.resolution = sd::Application::s_extent.vk_ext();
 
@@ -33,7 +36,7 @@ namespace sd::rg
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                    m_renderer.pipeline_layout, 0, 1,
-                                   &m_renderer.descriptor2->set(current_frame),
+                                   &m_renderer.descriptor->set(current_frame),
                                    0, nullptr);
 
             for (const auto& obj : objects)
@@ -66,13 +69,48 @@ namespace sd::rg
         }
     }
 
+    void OffscreenRenderNode::draw()
+    {
+        ImNodes::PushColorStyle(ImNodesCol_TitleBar, get_color().operator ImU32());
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, get_hover_color().operator ImU32());
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, get_hover_color().operator ImU32());
+
+        ImNodes::BeginNode(m_id);
+        ImNodes::BeginNodeTitleBar();
+        ImGui::TextUnformatted("Offscreen Render");
+        ImNodes::EndNodeTitleBar();
+
+        for (const auto& i : m_inputs)
+        {
+            ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
+            ImNodes::BeginInputAttribute(i->id());
+            ImGui::Text(i->get_name().c_str());
+            ImNodes::EndInputAttribute();
+            ImNodes::PopColorStyle();
+        }
+
+        for (const auto& i : m_outputs)
+        {
+            ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
+            ImNodes::BeginOutputAttribute(i->id());
+            ImGui::Text(i->get_name().c_str());
+            ImNodes::EndOutputAttribute();
+            ImNodes::PopColorStyle();
+        }
+        ImNodes::EndNode();
+
+        ImNodes::PopColorStyle();
+        ImNodes::PopColorStyle();
+        ImNodes::PopColorStyle();
+    }
+
     void OffscreenRenderNode::_init_inputs()
     {
         m_inputs.resize(3);
 
-        m_inputs[0] = std::make_unique<ObjectsResource>();
-        m_inputs[1] = std::make_unique<CameraResource>();
-        m_inputs[2] = std::make_unique<AccelerationStructureResource>();
+        m_inputs[0] = std::make_unique<ObjectsResource>("Scene Objects");
+        m_inputs[1] = std::make_unique<CameraResource>("Camera");
+        m_inputs[2] = std::make_unique<AccelerationStructureResource>("TLAS");
     }
 
     void OffscreenRenderNode::_init_outputs(const sdvk::Context& context)
@@ -103,9 +141,9 @@ namespace sd::rg
         std::shared_ptr<sdvk::Image> depth_img = std::make_unique<sdvk::DepthBuffer>(m_parameters.resolution, vk::SampleCountFlagBits::e1, m_context);
         #pragma endregion
 
-        m_outputs[0] = ImageResource::Builder().create_from_resource(render_img);
-        m_outputs[1] = ImageResource::Builder().create_from_resource(g_buffer);
-        m_outputs[2] = ImageResource::Builder().create_from_resource(depth_img);
+        m_outputs[0] = ImageResource::Builder().with_name("Scene Render").create_from_resource(render_img);
+        m_outputs[1] = ImageResource::Builder().with_name("G-Buffer").create_from_resource(g_buffer);
+        m_outputs[2] = ImageResource::Builder().with_name("Depth Buffer").create_from_resource(depth_img);
     }
 
     void OffscreenRenderNode::_init_renderer(const sdvk::Context& context)
@@ -141,13 +179,7 @@ namespace sd::rg
             auto result = context.device().createFramebuffer(&framebuffer_create_info, nullptr, &framebuffer);
         }
 
-        r.descriptor = sdvk::DescriptorBuilder()
-                .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-                .accelerator(1, vk::ShaderStageFlagBits::eFragment)
-                .with_name("OSR Node")
-                .create(context.device(), 2);
-
-        r.descriptor2 = sdvk::Descriptor2<n_frames_in_flight>::Builder()
+        r.descriptor = sdvk::Descriptor2<n_frames_in_flight>::Builder()
                 .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
                 .acceleration_structure(1, vk::ShaderStageFlagBits::eFragment)
                 .with_name("OSR Node v2")
@@ -155,7 +187,7 @@ namespace sd::rg
 
         auto pipeline_result = sdvk::PipelineBuilder(context)
                 .add_push_constant({ vk::ShaderStageFlagBits::eVertex, 0, sizeof(pcObject) })
-                .add_descriptor_set_layout(r.descriptor2->layout())
+                .add_descriptor_set_layout(r.descriptor->layout())
                 .create_pipeline_layout()
                 .set_sample_count(vk::SampleCountFlagBits::e1)
                 .set_attachment_count(2)
@@ -195,15 +227,9 @@ namespace sd::rg
         vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &tlas.m_resource->tlas() };
         vk::DescriptorBufferInfo un_info { m_renderer.uniform_camera[current_frame]->buffer(), 0, sizeof(CameraUniformData) };
 
-        m_renderer.descriptor2->begin_write(current_frame)
+        m_renderer.descriptor->begin_write(current_frame)
             .uniform_buffer(0, m_renderer.uniform_camera[current_frame]->buffer(), 0, sizeof(CameraUniformData))
             .acceleration_structure(1, 1, &tlas.m_resource->tlas())
             .commit();
-
-        sdvk::DescriptorWrites(m_context.device(), *m_renderer.descriptor)
-                .uniform_buffer(current_frame, 0, un_info)
-                .acceleration_structure(current_frame, 1, as_info)
-                .commit();
     }
-
 }

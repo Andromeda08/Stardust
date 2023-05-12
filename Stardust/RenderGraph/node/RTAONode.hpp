@@ -2,7 +2,10 @@
 
 #include <memory>
 #include <vector>
-#include <RenderGraph/RenderGraph.hpp>
+#include <RenderGraph/Input.hpp>
+#include <RenderGraph/Node.hpp>
+#include <RenderGraph/Output.hpp>
+#include <RenderGraph/Scene.hpp>
 #include <Rendering/RTAO/RTAOParams.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Descriptors/Descriptor.hpp>
@@ -18,6 +21,12 @@ namespace sd::rg {
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void compile() override;
+
+        void draw() override;
+
+        const Input& get_input(int32_t id) override;
+
+        const Output& get_output(int32_t id) override;
 
     private:
         void _init_inputs();

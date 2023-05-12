@@ -2,29 +2,36 @@ cmake_minimum_required(VERSION 3.23)
 project(Stardust)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_EXE_LINKER_FLAGS "-static")
+#set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(PYTHON "py")
 
 # Set up dependencies
 find_package(Vulkan REQUIRED)
 
 add_subdirectory(ThirdParty/glfw)
-add_subdirectory(ThirdParty/glm)
 add_subdirectory(ThirdParty/json)
+
+add_subdirectory(ThirdParty/glm)
+add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 set(IMGUI_DIR ThirdParty/imgui)
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
-add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_ENABLE_EXPERIMENTAL)
+set(IMNODES_DIR ThirdParty/imnodes)
+include_directories(${IMNODES_DIR})
 
 add_executable(${PROJECT_NAME}
         Stardust/main.cpp
 
-        ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h ThirdParty/tinyobj/tiny_obj_impl.cpp
+        ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
+        ThirdParty/tinyobj/tiny_obj_impl.cpp
+        ThirdParty/stduuid/uuid.h
 
         ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
         ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui.h ${IMGUI_DIR}/imgui_draw.cpp
         ${IMGUI_DIR}/imgui_demo.cpp ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp
+
+        ${IMNODES_DIR}/imnodes.cpp
 
         Stardust/Window/Window.hpp Stardust/Window/Window.cpp
         Stardust/Window/WindowOptions.hpp
@@ -73,7 +80,7 @@ add_executable(${PROJECT_NAME}
 
         Stardust/Vulkan/Raytracing/Blas.cpp Stardust/Vulkan/Raytracing/Blas.hpp
         Stardust/Vulkan/Raytracing/Tlas.cpp Stardust/Vulkan/Raytracing/Tlas.hpp
-        Stardust/Vulkan/Raytracing/ShaderBindingTable.cpp Stardust/Vulkan/Raytracing/ShaderBindingTable.hpp
+        Stardust/Vulkan/Raytracing/ShaderBindingTable.hpp
 
         Stardust/Vulkan/v2/Descriptor.tpp Stardust/Vulkan/v2/Descriptor.hpp
 
@@ -105,11 +112,24 @@ add_executable(${PROJECT_NAME}
         Stardust/RenderGraph/res/CameraResource.hpp
         Stardust/RenderGraph/res/ImageResource.hpp
         Stardust/RenderGraph/res/pcObject.hpp
-        Stardust/RenderGraph/res/ObjectsResource.hpp)
+        Stardust/RenderGraph/res/ObjectsResource.hpp
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SD_DEBUG -DImTextureID=ImU64)
+        Stardust/RenderGraph/editor/RenderGraphEditor.cpp Stardust/RenderGraph/editor/RenderGraphEditor.hpp
+        Stardust/RenderGraph/graph/Graph.cpp Stardust/RenderGraph/graph/Graph.hpp Stardust/Utility.hpp)
+
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS} Stardust ThirdParty/stb ThirdParty/tinyobj)
+target_include_directories(${PROJECT_NAME} PUBLIC
+        ${Vulkan_INCLUDE_DIRS}
+        Stardust
+        ThirdParty/stb
+        ThirdParty/tinyobj
+        ThirdParty/stduuid)
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+        IMGUI_DEFINE_MATH_OPERATORS
+        UUID_SYSTEM_GENERATOR
+        VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
+        SD_DEBUG
+        -DImTextureID=ImU64)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${PYTHON} compile_shaders.py

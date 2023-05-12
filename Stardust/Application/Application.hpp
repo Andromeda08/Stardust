@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <Application/ApplicationOptions.hpp>
+#include <RenderGraph/editor/RenderGraphEditor.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Presentation/Swapchain.hpp>
@@ -32,6 +33,8 @@ namespace sd
 
     private:
         ApplicationOptions m_options;
+
+        std::shared_ptr<rg::RenderGraphEditor> m_editor;
 
         std::unique_ptr<sd::Window> m_window;
         std::unique_ptr<sdvk::Context> m_context;

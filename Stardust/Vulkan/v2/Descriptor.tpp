@@ -240,6 +240,23 @@ namespace sdvk
     }
 
     template<unsigned int N>
+    Descriptor2<N>::Write&
+    Descriptor2<N>::Write::combined_image_sampler(uint32_t binding, const vk::DescriptorImageInfo& image_info, uint32_t count)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_id]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+        write.setDstArrayElement(0);
+        write.setPImageInfo(&image_info);
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    template<unsigned int N>
     void Descriptor2<N>::Write::commit()
     {
         if (!_writes.empty())

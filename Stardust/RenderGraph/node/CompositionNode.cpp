@@ -3,19 +3,26 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
-#include <Vulkan/Rendering/RenderPass.hpp>
-#include <Vulkan/Descriptors/DescriptorBuilder.hpp>
-#include <Vulkan/Descriptors/DescriptorWrites.hpp>
-#include <Vulkan/Rendering/PipelineBuilder.hpp>
+#include <imnodes.h>
+#include <Application/Application.hpp>
+#include <RenderGraph/editor/RenderGraphEditor.hpp>
+#include <RenderGraph/res/ImageResource.hpp>
 #include <Vulkan/Barrier.hpp>
+#include <Vulkan/Image/Sampler.hpp>
+#include <Vulkan/Rendering/RenderPass.hpp>
+#include <Vulkan/Rendering/PipelineBuilder.hpp>
 
 namespace sd::rg
 {
-    CompositionNode::CompositionNode(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context,
-                                     const sdvk::Swapchain& swapchain)
-    : m_command_buffers(command_buffers)
+    CompositionNode::CompositionNode(const sdvk::CommandBuffers& command_buffers,
+                                     const sdvk::Context& context,
+                                     const sdvk::Swapchain& swapchain,
+                                     RenderGraphEditor& rge)
+    : Node("Composition", {210, 15, 57, 255}, {231, 130, 132, 255})
+    , m_command_buffers(command_buffers)
     , m_context(context)
     , m_swapchain(swapchain)
+    , m_graph_editor(rge)
     {
         _init_inputs();
     }
@@ -46,6 +53,8 @@ namespace sd::rg
                     ImGui::Begin("ImGui test");
                     ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
                     ImGui::End();
+
+                    m_graph_editor.draw();
                 }
 
                 ImGui::Render();
@@ -82,14 +91,41 @@ namespace sd::rg
         }
     }
 
+    void CompositionNode::draw()
+    {
+        ImNodes::PushColorStyle(ImNodesCol_TitleBar, get_color().operator ImU32());
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, get_hover_color().operator ImU32());
+        ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, get_hover_color().operator ImU32());
+
+        ImNodes::BeginNode(m_id);
+            ImNodes::BeginNodeTitleBar();
+                ImGui::TextUnformatted("Composition");
+            ImNodes::EndNodeTitleBar();
+
+            for (const auto& i : m_inputs)
+            {
+                ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
+                ImNodes::BeginInputAttribute(i->id());
+                    ImGui::Text(i->get_name().c_str());
+                ImNodes::EndInputAttribute();
+                ImNodes::PopColorStyle();
+            }
+        ImNodes::EndNode();
+
+        ImNodes::PopColorStyle();
+        ImNodes::PopColorStyle();
+    }
+
     void CompositionNode::_init_inputs()
     {
         m_inputs.resize(2);
         m_inputs[0] = ImageResource::Builder()
+                .with_name("Scene Render")
                 .accept_formats({ vk::Format::eR32G32B32A32Sfloat })
                 .create();
 
         m_inputs[1] = ImageResource::Builder()
+                .with_name("AO Buffer")
                 .accept_formats({ vk::Format::eR32Sfloat })
                 .create();
     }
@@ -97,11 +133,11 @@ namespace sd::rg
     void CompositionNode::_init_resources()
     {
         m_renderer.sampler = sdvk::SamplerBuilder().create(m_context.device());
-        m_renderer.descriptor = sdvk::DescriptorBuilder()
+        m_renderer.descriptor = sdvk::Descriptor2<n_frames_in_flight>::Builder()
                 .combined_image_sampler(0, vk::ShaderStageFlagBits::eFragment)
                 .combined_image_sampler(1, vk::ShaderStageFlagBits::eFragment)
                 .with_name("Composite")
-                .create(m_context.device(), n_frames_in_flight);
+                .create(m_context);
 
         m_renderer.render_pass = sdvk::RenderPass::Builder()
                 .add_color_attachment(m_swapchain.format(), vk::SampleCountFlagBits::e1, vk::ImageLayout::ePresentSrcKHR)
@@ -148,12 +184,12 @@ namespace sd::rg
         auto& render_img = *dynamic_cast<ImageResource&>(*m_inputs[0]).m_resource;
         auto& ao_img     = *dynamic_cast<ImageResource&>(*m_inputs[1]).m_resource;
 
-        vk::DescriptorImageInfo offscreen = { m_renderer.sampler, render_img.view(), vk::ImageLayout::eShaderReadOnlyOptimal};
-        vk::DescriptorImageInfo ao_buffer = { m_renderer.sampler, ao_img.view(), vk::ImageLayout::eShaderReadOnlyOptimal};
+        vk::DescriptorImageInfo a = { m_renderer.sampler, render_img.view(), vk::ImageLayout::eShaderReadOnlyOptimal };
+        vk::DescriptorImageInfo b = { m_renderer.sampler, ao_img.view(), vk::ImageLayout::eShaderReadOnlyOptimal };
 
-        sdvk::DescriptorWrites(m_context.device(), *m_renderer.descriptor)
-            .combined_image_sampler(current_frame, 0, offscreen)
-            .combined_image_sampler(current_frame, 1, ao_buffer)
+        auto write = m_renderer.descriptor->begin_write(current_frame);
+        write.combined_image_sampler(0, a)
+            .combined_image_sampler(1, b)
             .commit();
     }
 

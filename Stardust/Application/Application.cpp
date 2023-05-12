@@ -3,17 +3,23 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#include <imgui_impl_win32.h>
+#include <imnodes.h>
 
 #include <Benchmarking.hpp>
 #include <Vulkan/ContextBuilder.hpp>
 #include <Vulkan/Presentation/SwapchainBuilder.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
 
-#include <RenderGraph/RenderGraph.hpp>
+#include <RenderGraph/Scene.hpp>
 #include <RenderGraph/node/CompositionNode.hpp>
 #include <RenderGraph/node/RTAONode.hpp>
 #include <RenderGraph/node/OffscreenRenderNode.hpp>
 #include <RenderGraph/node/SceneNode.hpp>
+#include <RenderGraph/res/ImageResource.hpp>
+#include <RenderGraph/res/AccelerationStructureResource.hpp>
+#include <RenderGraph/res/CameraResource.hpp>
+#include <RenderGraph/res/ObjectsResource.hpp>
 
 std::shared_ptr<sd::rg::Scene> g_rgs;
 std::unique_ptr<sd::rg::RTAONode> g_rtaonode;
@@ -48,7 +54,6 @@ namespace sd
         m_command_buffers = std::make_unique<sdvk::CommandBuffers>(8, *m_context);
 
         m_swapchain = sdvk::SwapchainBuilder(*m_window, *m_context)
-                .set_preferred_format(vk::Format::eB8G8R8Srgb)
                 .with_defaults()
                 .create();
 
@@ -56,21 +61,24 @@ namespace sd
             g_rgs = std::make_shared<sd::rg::Scene>(*m_command_buffers, *m_context, *m_swapchain);
         });
 
+
+        m_editor = std::make_shared<rg::RenderGraphEditor>(*m_command_buffers, *m_context, *m_swapchain, g_rgs);
+
 #pragma region node testing
         auto connect_time = bm::measure<std::chrono::milliseconds>([&](){
             g_snode = std::make_unique<sd::rg::SceneNode>(g_rgs);
             g_rtaonode = std::make_unique<sd::rg::RTAONode>(*m_context, *m_command_buffers);
             g_osrnode = std::make_unique<sd::rg::OffscreenRenderNode>(*m_context, *m_command_buffers);
-            g_cnode = std::make_unique<sd::rg::CompositionNode>(*m_command_buffers, *m_context, *m_swapchain);
+            g_cnode = std::make_unique<sd::rg::CompositionNode>(*m_command_buffers, *m_context, *m_swapchain, *m_editor);
 
-            auto& cam_res = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[0]);
+            auto& cam_res = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]);
             auto& tlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_snode->m_outputs[2]);
 
             auto& oscam_res = dynamic_cast<rg::CameraResource&>(*g_osrnode->m_inputs[1]);
-            oscam_res.m_resource = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[0]).m_resource;
+            oscam_res.m_resource = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]).m_resource;
 
             auto& osobj_res = dynamic_cast<rg::ObjectsResource&>(*g_osrnode->m_inputs[0]);
-            osobj_res.m_resource = dynamic_cast<rg::ObjectsResource&>(*g_snode->m_outputs[1]).m_resource;
+            osobj_res.m_resource = dynamic_cast<rg::ObjectsResource&>(*g_snode->m_outputs[0]).m_resource;
 
             auto& ostlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_osrnode->m_inputs[2]);
             ostlas_res.m_resource = dynamic_cast<rg::AccelerationStructureResource&>(*g_snode->m_outputs[2]).m_resource;
@@ -81,7 +89,7 @@ namespace sd
 
             // Camera into AO node
             auto& rtcam_res = dynamic_cast<rg::CameraResource&>(*g_rtaonode->m_inputs[1]);
-            rtcam_res.m_resource = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[0]).m_resource;
+            rtcam_res.m_resource = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]).m_resource;
 
             // Wire TLAS into AO node
             auto& rttlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_rtaonode->m_inputs[2]);
@@ -114,7 +122,7 @@ namespace sd
     void Application::run()
     {
         auto render_command = [&](){
-            g_rgs->register_keybinds(m_window->handle());
+            //g_rgs->register_keybinds(m_window->handle());
 
             auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
 
@@ -172,8 +180,13 @@ namespace sd
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO(); (void) io;
+        ImGuiIO& io = ImGui::GetIO();
+        //io.FontGlobalScale = 1.0f;
+        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", 13);
+
         ImGui::StyleColorsDark();
+        ImGuiStyle& style = ImGui::GetStyle();
+        //style.ScaleAllSizes(1.25f);
 
         ImGui_ImplGlfw_InitForVulkan(m_window->handle(), true);
         ImGui_ImplVulkan_InitInfo init_info = {};
@@ -197,5 +210,7 @@ namespace sd
         });
         ImGui_ImplVulkan_DestroyFontUploadObjects();
 
+        ImNodes::CreateContext();
+        ImNodes::StyleColorsDark();
     }
 }

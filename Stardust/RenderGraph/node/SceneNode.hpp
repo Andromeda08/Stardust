@@ -1,7 +1,9 @@
 #pragma once
 
-#include <RenderGraph//Scene.hpp>
-#include <RenderGraph/RenderGraph.hpp>
+#include <RenderGraph/Input.hpp>
+#include <RenderGraph/Node.hpp>
+#include <RenderGraph/Output.hpp>
+#include <RenderGraph/Scene.hpp>
 
 namespace sd::rg
 {
@@ -15,13 +17,15 @@ namespace sd::rg
 
         void compile() override { /* no-op */ }
 
+        void draw() override;
+
     public:
         // This special node has no inputs.
         std::shared_ptr<Scene> m_scene;
 
         // A SceneNode has 3 outputs:
-        // - Camera
         // - Objects
+        // - Camera
         // - Tlas
         std::vector<std::unique_ptr<Output>> m_outputs;
     };

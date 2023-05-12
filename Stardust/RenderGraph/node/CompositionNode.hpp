@@ -5,25 +5,34 @@
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <RenderGraph/RenderGraph.hpp>
+//#include <Application/Application.hpp>
+#include <RenderGraph/Input.hpp>
+#include <RenderGraph/Node.hpp>
+#include <RenderGraph/Output.hpp>
+#include <RenderGraph/Scene.hpp>
 #include <Vulkan/Context.hpp>
-#include <Vulkan/Descriptors/Descriptor.hpp>
+#include <Vulkan/v2/Descriptor.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
-#include <Application/Application.hpp>
 
 namespace sd::rg
 {
+    class RenderGraphEditor;
+
     class CompositionNode : public Node
     {
     public:
         CompositionNode(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context,
-                        const sdvk::Swapchain& swapchain);
+                        const sdvk::Swapchain& swapchain, RenderGraphEditor& rge);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void compile() override;
 
-        const vk::Framebuffer& get_fb(uint32_t current_frame) const { return m_renderer.sc_framebuffers[current_frame]; }
+        void draw() override;
+
+        const Input& get_input(int32_t id) override;
+
+        const Output& get_output(int32_t id) override;
 
     private:
         void _init_inputs();
@@ -34,7 +43,7 @@ namespace sd::rg
 
         void _check_features();
 
-        static constexpr auto& n_frames_in_flight = sd::Application::s_max_frames_in_flight;
+        static constexpr auto n_frames_in_flight = 2;
 
         static constexpr std::string_view s_vertex_shader   = "composite.vert.spv";
         static constexpr std::string_view s_fragment_shader = "composite.frag.spv";
@@ -46,9 +55,9 @@ namespace sd::rg
 
         struct Renderer
         {
-            std::array<vk::Framebuffer, n_frames_in_flight> sc_framebuffers;
+            std::array<vk::Framebuffer,       n_frames_in_flight>  sc_framebuffers;
+            std::unique_ptr<sdvk::Descriptor2<n_frames_in_flight>> descriptor;
 
-            std::unique_ptr<sdvk::Descriptor> descriptor;
             std::array<vk::ClearValue, 2>     clear_values;
             vk::Pipeline                      pipeline;
             vk::PipelineLayout                pipeline_layout;
@@ -65,6 +74,7 @@ namespace sd::rg
         // No outputs.
         std::vector<std::unique_ptr<Output>> m_outputs;
 
+        RenderGraphEditor&          m_graph_editor;
         const sdvk::CommandBuffers& m_command_buffers;
         const sdvk::Context&        m_context;
         const sdvk::Swapchain&      m_swapchain;

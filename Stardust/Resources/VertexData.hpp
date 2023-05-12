@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glm/gtx/hash.hpp>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -34,12 +33,3 @@ namespace sd
     };
 }
 
-namespace std {
-    template<> struct hash<sd::VertexData> {
-        size_t operator()(sd::VertexData const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.position)
-                 ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1)
-                 ^ (hash<glm::vec2>()(vertex.uv) << 1);
-        }
-    };
-}

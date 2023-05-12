@@ -6,6 +6,15 @@
 
 namespace sd
 {
+    enum class Resolution
+    {
+        e1280x720,
+        e1600x900,
+        e1920x1080,
+        e2560x1440,
+        e3840x2160
+    };
+
     struct Extent
     {
         Extent() = default;
@@ -26,6 +35,27 @@ namespace sd
         void set_resolution(uint32_t width, uint32_t height)
         {
             resolution = {  width, height };
+        }
+
+        void set_resolution(Resolution res)
+        {
+            switch (res) {
+                case Resolution::e1280x720:
+                    resolution = { 1280, 720 };
+                    break;
+                case Resolution::e1600x900:
+                    resolution = { 1600, 900 };
+                    break;
+                case Resolution::e1920x1080:
+                    resolution = { 1920, 1080 };
+                    break;
+                case Resolution::e2560x1440:
+                    resolution = { 2560, 1440 };
+                    break;
+                case Resolution::e3840x2160:
+                    resolution = { 3840, 2160 };
+                    break;
+            }
         }
 
         void set_title(std::string const& str) { title = str; }

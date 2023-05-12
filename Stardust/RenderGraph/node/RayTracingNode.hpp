@@ -4,7 +4,10 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include <Application/Application.hpp>
-#include <RenderGraph/RenderGraph.hpp>
+#include <RenderGraph/Input.hpp>
+#include <RenderGraph/Node.hpp>
+#include <RenderGraph/Output.hpp>
+#include <RenderGraph/Scene.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/v2/Descriptor.hpp>
 #include <Vulkan/Rendering/Pipeline.hpp>
@@ -20,6 +23,8 @@ namespace sd::rg
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void compile() override;
+
+        void draw(uint32_t id) override;
 
     private:
         void _init_inputs();

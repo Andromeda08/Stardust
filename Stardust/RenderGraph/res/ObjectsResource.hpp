@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 #include <Scene/Camera.hpp>
 #include <RenderGraph/Input.hpp>
@@ -13,13 +14,24 @@ namespace sd::rg
     {
         struct Builder
         {
-            static std::unique_ptr<ObjectsResource> create_from_scene(const std::shared_ptr<Scene>& resource)
+            Builder& with_name(std::string&& name)
             {
-                auto result = std::make_unique<ObjectsResource>();
+                _name = name;
+                return *this;
+            }
+
+            std::unique_ptr<ObjectsResource> create_from_scene(const std::shared_ptr<Scene>& resource)
+            {
+                auto result = std::make_unique<ObjectsResource>(_name);
                 result->m_resource = resource;
                 return result;
             }
+
+        private:
+            std::string _name {};
         };
+
+        explicit ObjectsResource(std::string name): m_ui_name(std::move(name)) {}
 
         bool validate(std::shared_ptr<Output> const& incoming) override
         {
@@ -30,11 +42,14 @@ namespace sd::rg
 
         const std::vector<sd::Object>& get_objects() const { return m_resource->objects(); }
 
-        const std::array<float, 4>& get_color() override { return m_ui_color; }
+        const std::array<int32_t, 4>& get_color() override { return m_ui_color; }
+
+        const std::string& get_name() override { return m_ui_name; }
 
         std::shared_ptr<Scene> m_resource;
 
     private:
-        const std::array<float, 4> m_ui_color { 180.f, 190.f, 254.f, 255.f };
+        const std::array<int32_t, 4> m_ui_color { 148, 226, 213, 255 };
+        const std::string m_ui_name {};
     };
 }
