@@ -20,6 +20,8 @@ namespace sd::rg
 
         Node(std::string&& name, ImColor color, ImColor hover_color): m_name(name), m_ui_color(color), m_ui_hover(hover_color) {}
 
+        virtual ~Node() = default;
+
         virtual void compile() = 0;
 
         virtual void attach_input(std::shared_ptr<Output> const& output, std::shared_ptr<Input> const& input) {}
@@ -28,9 +30,31 @@ namespace sd::rg
 
         virtual void draw() {}
 
-        virtual const Input& get_input(int32_t id) = 0;
+        const Input& get_input(int32_t id)
+        {
+            for (const auto& input : m_inputs)
+            {
+                if (input->id() == id)
+                {
+                    return *input;
+                }
+            }
 
-        virtual const Output& get_output(int32_t id) = 0;
+            throw std::runtime_error(std::string("[" + m_name + "] has no input with the ID " + std::to_string(id) + "."));
+        }
+
+        const Output& get_output(int32_t id)
+        {
+            for (const auto& output : m_outputs)
+            {
+                if (output->id() == id)
+                {
+                    return *output;
+                }
+            }
+
+            throw std::runtime_error(std::string("[" + m_name + "] has no output with the ID " + std::to_string(id) + "."));
+        }
 
         int32_t id() const { return m_id; }
 
@@ -40,7 +64,9 @@ namespace sd::rg
 
         const ImColor& get_hover_color() const { return m_ui_hover; };
 
-        virtual ~Node() = default;
+    public:
+        std::vector<std::unique_ptr<Input>>  m_inputs;
+        std::vector<std::unique_ptr<Output>> m_outputs;
 
     protected:
         int32_t     m_id       { util::gen_id() };
