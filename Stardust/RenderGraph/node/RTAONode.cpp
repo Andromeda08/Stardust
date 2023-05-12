@@ -127,6 +127,9 @@ namespace sd::rg
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
             ImNodes::BeginInputAttribute(i->id());
             ImGui::Text(i->get_name().c_str());
+            #ifdef SD_DEBUG
+                ImGui::Text(std::to_string(i->id()).c_str());
+            #endif
             ImNodes::EndInputAttribute();
             ImNodes::PopColorStyle();
         }
@@ -136,6 +139,9 @@ namespace sd::rg
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
             ImNodes::BeginOutputAttribute(i->id());
             ImGui::Text(i->get_name().c_str());
+            #ifdef SD_DEBUG
+                ImGui::Text(std::to_string(i->id()).c_str());
+            #endif
             ImNodes::EndOutputAttribute();
             ImNodes::PopColorStyle();
         }

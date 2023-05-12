@@ -77,7 +77,7 @@ namespace sd::rg
 
         ImNodes::BeginNode(m_id);
         ImNodes::BeginNodeTitleBar();
-        ImGui::TextUnformatted("Offscreen Render");
+        ImGui::Text("Offscreen Render");
         ImNodes::EndNodeTitleBar();
 
         for (const auto& i : m_inputs)
@@ -85,15 +85,21 @@ namespace sd::rg
             ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
             ImNodes::BeginInputAttribute(i->id());
             ImGui::Text(i->get_name().c_str());
+            #ifdef SD_DEBUG
+                ImGui::Text(std::to_string(i->id()).c_str());
+            #endif
             ImNodes::EndInputAttribute();
             ImNodes::PopColorStyle();
         }
 
-        for (const auto& i : m_outputs)
+        for (const auto& o : m_outputs)
         {
-            ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
-            ImNodes::BeginOutputAttribute(i->id());
-            ImGui::Text(i->get_name().c_str());
+            ImNodes::PushColorStyle(ImNodesCol_Pin, o->imu32());
+            ImNodes::BeginOutputAttribute(o->id());
+            ImGui::Text(o->get_name().c_str());
+            #ifdef SD_DEBUG
+                ImGui::Text(std::to_string(o->id()).c_str());
+            #endif
             ImNodes::EndOutputAttribute();
             ImNodes::PopColorStyle();
         }

@@ -13,6 +13,14 @@
 #include <Vulkan/Rendering/Pipeline.hpp>
 
 namespace sd::rg {
+
+    /* Inputs:
+     * [0] G-Buffer image
+     * [1] Camera from a Scene (Used for sample accumulation over multiple frames)
+     * [2] Top-level Acceleration Structure
+     * Outputs:
+     * [0] AO buffer image
+     */
     class RTAONode : public Node
     {
     public:
@@ -23,10 +31,6 @@ namespace sd::rg {
         void compile() override;
 
         void draw() override;
-
-        const Input& get_input(int32_t id) override;
-
-        const Output& get_output(int32_t id) override;
 
     private:
         void _init_inputs();
@@ -59,17 +63,6 @@ namespace sd::rg {
             vk::Sampler                       sampler;
             int32_t                           frame {0};
         } m_kernel;
-
-    public:
-        // An RTAO Node expects 3 inputs:
-        // [1] G-Buffer image
-        // [2] Camera from a Scene (Used for sample accumulation over multiple frames)
-        // [3] Top level acceleration structure
-        std::vector<std::unique_ptr<Input>> m_inputs;
-
-        // An RTAO Node has only one output:
-        // [1] AO buffer image
-        std::vector<std::unique_ptr<Output>> m_outputs;
 
         const sdvk::Context& m_context;
     };

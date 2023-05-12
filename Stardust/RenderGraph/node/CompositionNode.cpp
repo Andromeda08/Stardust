@@ -50,7 +50,7 @@ namespace sd::rg
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
                 {
-                    ImGui::Begin("ImGui test");
+                    ImGui::Begin("Metrics");
                     ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
                     ImGui::End();
 
@@ -106,7 +106,10 @@ namespace sd::rg
             {
                 ImNodes::PushColorStyle(ImNodesCol_Pin, i->imu32());
                 ImNodes::BeginInputAttribute(i->id());
-                    ImGui::Text(i->get_name().c_str());
+                ImGui::Text(i->get_name().c_str());
+                #ifdef SD_DEBUG
+                    ImGui::Text(std::to_string(i->id()).c_str());
+                #endif
                 ImNodes::EndInputAttribute();
                 ImNodes::PopColorStyle();
             }

@@ -14,6 +14,16 @@
 
 namespace sd::rg
 {
+
+    /* Inputs:
+     * [0] List of objects from a Scene
+     * [1] Camera from a Scene
+     * [2] Top-level Acceleration Structure
+     * Outputs:
+     * [0] Render image
+     * [1] G-Buffer image
+     * [2] Depth image
+     */
     class OffscreenRenderNode : public Node
     {
     public:
@@ -24,10 +34,6 @@ namespace sd::rg
         void compile() override;
 
         void draw() override;
-
-        const Input& get_input(int32_t id) override;
-
-        const Output& get_output(int32_t id) override;
 
     private:
         void _init_inputs();
@@ -64,26 +70,6 @@ namespace sd::rg
             vk::PipelineLayout                pipeline_layout;
 
         } m_renderer;
-
-        struct pcNodeParams
-        {
-            explicit pcNodeParams(Parameters params) : with_shadows(params.with_shadows) {}
-
-            vk::Bool32 with_shadows { true };
-        };
-
-    public:
-        // An OffscreenRenderNode expects 3 inputs
-        // [1] List of objects from a Scene
-        // [2] Camera from a Scene
-        // [3] Top level acceleration structure
-        std::vector<std::unique_ptr<Input>> m_inputs;
-
-        // An OffscreenRenderNode has 3 outputs
-        // [1] Render image
-        // [2] G-Buffer image
-        // [3] Depth image
-        std::vector<std::unique_ptr<Output>> m_outputs;
 
         const sdvk::Context& m_context;
     };

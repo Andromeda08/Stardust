@@ -7,7 +7,11 @@
 
 namespace sd::rg
 {
-    // This special node should be "auto-generated" by the system
+    /* Outputs:
+     * [0] Objects
+     * [1] Camera
+     * [2] Top-level Acceleration Structure
+     */
     class SceneNode : public Node
     {
     public:
@@ -20,13 +24,6 @@ namespace sd::rg
         void draw() override;
 
     public:
-        // This special node has no inputs.
         std::shared_ptr<Scene> m_scene;
-
-        // A SceneNode has 3 outputs:
-        // - Objects
-        // - Camera
-        // - Tlas
-        std::vector<std::unique_ptr<Output>> m_outputs;
     };
 }

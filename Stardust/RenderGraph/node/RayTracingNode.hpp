@@ -24,7 +24,7 @@ namespace sd::rg
 
         void compile() override;
 
-        void draw(uint32_t id) override;
+        void draw() override;
 
     private:
         void _init_inputs();
