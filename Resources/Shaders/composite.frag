@@ -13,11 +13,11 @@ pushc;
 
 void main()
 {
-    vec2  uv    = outUV;
+    vec2 uv = outUV;
     uv.y = -outUV.y;
-    float gamma = 1. / 2.2;
+    float gamma = 1.0 / 2.2;
     vec4  color = texture(noisyTxt, uv);
     float ao    = texture(aoTxt, uv).x;
 
-    fragColor = pow(color * ao, vec4(gamma));
+    fragColor = vec4(pow(color.rgb * ao, vec3(gamma)), 1.0);
 }
