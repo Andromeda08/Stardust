@@ -8,7 +8,7 @@
 
 namespace sd::rg
 {
-    SceneNode::SceneNode(const std::shared_ptr<Scene>& scene)
+    SceneNode::SceneNode(const std::shared_ptr<sd::Scene>& scene)
     : Node("Scene", {23, 146, 153, 255}, {129, 200, 190, 255})
     , m_scene(scene)
     {

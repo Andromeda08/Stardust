@@ -16,3 +16,7 @@ namespace sdvk::util
         #endif
     }
 }
+
+namespace Nebula::Vulkan
+{
+}

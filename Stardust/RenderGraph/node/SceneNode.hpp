@@ -3,7 +3,7 @@
 #include <RenderGraph/Input.hpp>
 #include <RenderGraph/Node.hpp>
 #include <RenderGraph/Output.hpp>
-#include <RenderGraph/Scene.hpp>
+#include <Scene/Scene.hpp>
 
 namespace sd::rg
 {
@@ -15,7 +15,7 @@ namespace sd::rg
     class SceneNode : public Node
     {
     public:
-        explicit SceneNode(const std::shared_ptr<Scene>& scene);
+        explicit SceneNode(const std::shared_ptr<sd::Scene>& scene);
 
         void execute(const vk::CommandBuffer&) override { /* no-op */ }
 
@@ -24,6 +24,6 @@ namespace sd::rg
         void draw() override;
 
     public:
-        std::shared_ptr<Scene> m_scene;
+        std::shared_ptr<sd::Scene> m_scene;
     };
 }

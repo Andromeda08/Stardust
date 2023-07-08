@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -66,8 +67,7 @@ namespace sdvk
 
             Execute& with_framebuffer(const vk::Framebuffer& framebuffer);
 
-            void execute(vk::CommandBuffer const& cmd,
-                         const std::function<void(const vk::CommandBuffer&)>& fn);
+            void execute(vk::CommandBuffer const& cmd, const std::function<void(const vk::CommandBuffer&)>& fn);
 
         private:
             vk::RenderPassBeginInfo _begin_info;

@@ -9,7 +9,7 @@ set(PYTHON "py")
 find_package(Vulkan REQUIRED)
 
 add_subdirectory(ThirdParty/glfw)
-add_subdirectory(ThirdParty/json)
+add_subdirectory(ThirdParty/VMA)
 
 add_subdirectory(ThirdParty/glm)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
@@ -25,7 +25,6 @@ add_executable(${PROJECT_NAME}
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
         ThirdParty/tinyobj/tiny_obj_impl.cpp
-        ThirdParty/stduuid/uuid.h
 
         ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
         ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui.h ${IMGUI_DIR}/imgui_draw.cpp
@@ -115,15 +114,27 @@ add_executable(${PROJECT_NAME}
         Stardust/RenderGraph/res/ObjectsResource.hpp
 
         Stardust/RenderGraph/editor/RenderGraphEditor.cpp Stardust/RenderGraph/editor/RenderGraphEditor.hpp
-        Stardust/RenderGraph/graph/Graph.cpp Stardust/RenderGraph/graph/Graph.hpp Stardust/Utility.hpp)
+        Stardust/RenderGraph/graph/Graph.cpp Stardust/RenderGraph/graph/Graph.hpp
+        Stardust/Utility.hpp
 
-target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm nlohmann_json::nlohmann_json)
+        Stardust/Rendering/ClassicRenderer.hpp
+        Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
+
+        Stardust/Nebula/Barrier.hpp Stardust/Nebula/Barrier.cpp
+        Stardust/Nebula/Image.hpp Stardust/Nebula/Image.cpp
+        Stardust/Nebula/ImageResolve.hpp
+        Stardust/Nebula/ImageBlit.hpp
+
+        Stardust/Nebula/RenderGraph/Node.hpp
+        Stardust/Nebula/RenderGraph/Resource.hpp Stardust/Nebula/RenderGraph/Attribute.hpp Stardust/Nebula/RenderGraph/Attribute.cpp)
+
+target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm VulkanMemoryAllocator)
 target_include_directories(${PROJECT_NAME} PUBLIC
         ${Vulkan_INCLUDE_DIRS}
         Stardust
         ThirdParty/stb
         ThirdParty/tinyobj
-        ThirdParty/stduuid)
+        ThirdParty/vma/include)
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         IMGUI_DEFINE_MATH_OPERATORS
         UUID_SYSTEM_GENERATOR

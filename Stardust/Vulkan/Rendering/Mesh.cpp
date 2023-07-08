@@ -17,7 +17,7 @@ namespace sdvk
             .as_index_buffer()
             .create_with_data(m_geometry->indices().data(), command_buffers, context);
 
-        if (context.raytracing())
+        if (context.is_raytracing_capable())
         {
           m_blas = Blas::Builder()
               .with_geometry(m_geometry)

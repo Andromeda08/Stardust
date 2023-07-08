@@ -1,6 +1,6 @@
 #pragma once
 
-#include <optional>
+#include <cstdint>
 #include <vulkan/vulkan.hpp>
 
 namespace sdvk

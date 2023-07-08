@@ -20,7 +20,7 @@ namespace sd::rg
                 return *this;
             }
 
-            std::unique_ptr<ObjectsResource> create_from_scene(const std::shared_ptr<Scene>& resource)
+            std::unique_ptr<ObjectsResource> create_from_scene(const std::shared_ptr<sd::Scene>& resource)
             {
                 auto result = std::make_unique<ObjectsResource>(_name);
                 result->m_resource = resource;
@@ -48,7 +48,7 @@ namespace sd::rg
         void link_output(Output& input) override
         {
             auto res = dynamic_cast<ObjectsResource&>(input);
-            m_resource = std::shared_ptr<Scene>(res.m_resource);
+            m_resource = std::shared_ptr<sd::Scene>(res.m_resource);
         }
 
         const std::vector<sd::Object>& get_objects() const { return m_resource->objects(); }
@@ -57,7 +57,7 @@ namespace sd::rg
 
         const std::string& get_name() override { return m_ui_name; }
 
-        std::shared_ptr<Scene> m_resource;
+        std::shared_ptr<sd::Scene> m_resource;
 
     private:
         const std::array<int32_t, 4> m_ui_color { 30, 102, 245, 255 };

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ThirdParty/VMA" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/glfw" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/imgui" vcs="Git" />

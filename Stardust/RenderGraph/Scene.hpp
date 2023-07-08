@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ctime>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -38,7 +39,6 @@ namespace sd::rg
             {
                 Object obj;
                 obj.name = "cube" + std::to_string(i);
-                obj.pipeline = "default";
                 //obj.color = glm::vec4(randf(0.0f, 1.0f), randf(0.0f, 1.0f), randf(0.0f, 1.0f), 1.0f);
                 obj.color = (rand() % 2 == 0) ? glm::vec4(1, 1, 0, 1) : glm::vec4(0, 0.8f, 1, 1);
                 obj.transform.scale = glm::vec3((float) (rand() % 3 + 1), (float) (rand() % 7 + 1), (float) (rand() % 4 + 1));
@@ -67,7 +67,6 @@ namespace sd::rg
                     for (int32_t k = 0; k < dim; k++) {
                         Object obj;
                         obj.name = "cube" + std::to_string(i);
-                        obj.pipeline = "default";
                         obj.mesh = m_meshes["cube"];
 
                         glm::vec4 color { 0, 1, 1, 1 };
@@ -89,7 +88,6 @@ namespace sd::rg
 
             Object obj;
             obj.name = "plane";
-            obj.pipeline = "default";
             obj.color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
             obj.transform.scale = { 64, 0.05f, 64 };
             obj.mesh = m_meshes["cube"];

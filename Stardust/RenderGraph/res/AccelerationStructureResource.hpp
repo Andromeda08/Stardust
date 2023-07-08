@@ -5,7 +5,7 @@
 #include <string>
 #include <RenderGraph/Input.hpp>
 #include <RenderGraph/Output.hpp>
-#include <RenderGraph/Scene.hpp>
+#include <Scene/Scene.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
 
 namespace sd::rg
@@ -20,10 +20,10 @@ namespace sd::rg
                 return *this;
             }
 
-            std::unique_ptr<AccelerationStructureResource> create_from_scene(const std::shared_ptr<Scene>& resource)
+            std::unique_ptr<AccelerationStructureResource> create_from_scene(const std::shared_ptr<sd::Scene>& resource)
             {
                 auto result = std::make_unique<AccelerationStructureResource>(_name);
-                result->m_resource = resource->tlas();
+                result->m_resource = resource->acceleration_structure();
                 return result;
             }
 

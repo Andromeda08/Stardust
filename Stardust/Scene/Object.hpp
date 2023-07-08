@@ -13,7 +13,6 @@ namespace sd
         Transform transform;
         std::shared_ptr<sdvk::Mesh> mesh;
         glm::vec4 color { 0.5f, 0.5f, 0.5f, 1.0f };
-        std::string pipeline = "default";
         std::string name = "object";
 
         uint32_t rt_hit_group { 0 };

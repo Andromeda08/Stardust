@@ -1,4 +1,6 @@
 #pragma once
+
+#include <functional>
 #include <memory>
 #include <vulkan/vulkan.hpp>
 #include <Vulkan/Image/Image.hpp>

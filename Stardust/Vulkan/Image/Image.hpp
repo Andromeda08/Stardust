@@ -59,6 +59,8 @@ namespace sdvk
 
         const vk::Format& format() const { return m_format; }
 
+        vk::ImageSubresourceRange image_subresource_range() const { return { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 }; }
+
     private:
         vk::Image m_image;
         vk::ImageView m_view;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vulkan/vulkan.hpp>
 #include "Context.hpp"
 

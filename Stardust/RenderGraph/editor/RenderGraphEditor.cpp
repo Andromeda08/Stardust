@@ -11,10 +11,10 @@
 
 namespace sd::rg
 {
-    RenderGraphEditor::RenderGraphEditor(const sdvk::CommandBuffers& command_buffers,
-                                         const sdvk::Context& context,
-                                         const sdvk::Swapchain& swapchain,
-                                         const std::shared_ptr<Scene>& scene)
+    RenderGraphEditor::RenderGraphEditor(const sdvk::CommandBuffers&       command_buffers,
+                                         const sdvk::Context&              context,
+                                         const sdvk::Swapchain&            swapchain,
+                                         const std::shared_ptr<sd::Scene>& scene)
     : m_command_buffers(command_buffers)
     , m_context(context)
     , m_swapchain(swapchain)

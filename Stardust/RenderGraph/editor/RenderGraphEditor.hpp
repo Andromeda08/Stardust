@@ -7,7 +7,8 @@
 #include <vector>
 #include <imnodes.h>
 #include <RenderGraph/Node.hpp>
-#include <RenderGraph/Scene.hpp>
+#include <Scene/Scene.hpp>
+#include <Vulkan/Presentation/Swapchain.hpp>
 
 namespace sd::rg
 {
@@ -28,7 +29,7 @@ namespace sd::rg
         RenderGraphEditor(const sdvk::CommandBuffers& command_buffers,
                           const sdvk::Context& context,
                           const sdvk::Swapchain& swapchain,
-                          const std::shared_ptr<Scene>& scene);
+                          const std::shared_ptr<sd::Scene>& scene);
 
         void draw();
 
@@ -43,7 +44,7 @@ namespace sd::rg
         void _add_initial_nodes();
 
     private:
-        std::shared_ptr<Scene> m_scene;
+        std::shared_ptr<sd::Scene> m_scene;
 
         std::map<int32_t, std::unique_ptr<Node>> m_nodes;
         std::map<int32_t, std::vector<int32_t>>  m_adjacency_list;

@@ -11,7 +11,8 @@
 #include <Vulkan/Presentation/SwapchainBuilder.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
 
-#include <RenderGraph/Scene.hpp>
+#include <Scene/Scene.hpp>
+
 #include <RenderGraph/node/CompositionNode.hpp>
 #include <RenderGraph/node/RTAONode.hpp>
 #include <RenderGraph/node/OffscreenRenderNode.hpp>
@@ -21,7 +22,10 @@
 #include <RenderGraph/res/CameraResource.hpp>
 #include <RenderGraph/res/ObjectsResource.hpp>
 
-std::shared_ptr<sd::rg::Scene> g_rgs;
+#include <Nebula/Image.hpp>
+#include <Nebula/ImageResolve.hpp>
+
+std::shared_ptr<sd::Scene> g_rgs;
 std::unique_ptr<sd::rg::RTAONode> g_rtaonode;
 std::unique_ptr<sd::rg::OffscreenRenderNode> g_osrnode;
 std::unique_ptr<sd::rg::SceneNode> g_snode;
@@ -44,7 +48,9 @@ namespace sd
                     .set_debug_utils(true)
                     .with_surface(m_window->handle())
                     .add_device_extensions({
-                        VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                        VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                        VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
                         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
                     })
                     .add_raytracing_extensions(true)
@@ -58,7 +64,7 @@ namespace sd
                 .create();
 
         auto scene_init = bm::measure<std::chrono::milliseconds>([&](){
-            g_rgs = std::make_shared<sd::rg::Scene>(*m_command_buffers, *m_context, *m_swapchain);
+            g_rgs = std::make_shared<sd::Scene>(*m_command_buffers, *m_context);
         });
 
         m_editor = std::make_shared<rg::RenderGraphEditor>(*m_command_buffers, *m_context, *m_swapchain, g_rgs);
@@ -118,12 +124,59 @@ namespace sd
                 << std::endl;
 
         init_imgui();
+
+
+        auto nebula_image = std::make_shared<Nebula::Image>(*m_context,
+                                                            vk::Format::eR32G32B32A32Sfloat,
+                                                            vk::Extent2D(1920, 1080),
+                                                            vk::SampleCountFlagBits::e8,
+                                                            vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled);
+        auto nebula_resolve_image = std::make_shared<Nebula::Image>(*m_context,
+                                                                    vk::Format::eR32G32B32A32Sfloat,
+                                                                    vk::Extent2D(1920, 1080),
+                                                                    vk::SampleCountFlagBits::e1,
+                                                                    vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+
+        m_command_buffers->execute_single_time([&](const auto& cmd){
+            Nebula::Sync::ImageBarrier(nebula_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal).apply(cmd);
+            Nebula::Sync::ImageBarrier(nebula_resolve_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal).apply(cmd);
+            Nebula::Sync::ImageResolve(nebula_image, nebula_resolve_image).resolve(cmd);
+        });
+
+        auto ctx2 = Nebula::Vulkan::Context::Builder()
+            .with_instance_extensions(m_window->get_vk_extensions())
+            .with_instance_extensions({ VK_KHR_SURFACE_EXTENSION_NAME })
+            .with_device_extensions({
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+                VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                VK_KHR_RAY_QUERY_EXTENSION_NAME,
+                VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME,
+                VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+            })
+            .with_surface(m_window->handle())
+            .create_context();
     }
 
     void Application::run()
     {
         auto render_command = [&](){
-            g_rgs->register_keybinds(m_window->handle());
+            ImGuiIO& io = ImGui::GetIO();
+            if (!io.WantCaptureMouse)
+            {
+                g_rgs->mouse_handler(*m_window);
+            }
+            if (!io.WantCaptureKeyboard)
+            {
+                g_rgs->key_handler(*m_window);
+            }
 
             auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
 
@@ -149,8 +202,8 @@ namespace sd
                 .with_render_pass(m_renderpass)
                 .with_clear_value(clear_value)
                 .with_render_area({{0, 0}, m_swapchain->extent()})
-                .execute(command_buffer, [&](const auto& cmd) {
-                    if (sd::Application::s_imgui_enabled)
+                .execute(command_buffer, [&](auto& cmd) {
+                    if (s_imgui_enabled)
                     {
                         ImGuiIO& io = ImGui::GetIO();
 
@@ -209,7 +262,7 @@ namespace sd
         #pragma endregion
 
 
-        vk::DescriptorPoolSize pool_sizes[] =
+        vk::DescriptorPoolSize pool_sizes[]
             {
                 { vk::DescriptorType::eSampler, 1000 },
                 { vk::DescriptorType::eCombinedImageSampler, 1000 },
@@ -236,11 +289,11 @@ namespace sd
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         //io.FontGlobalScale = 1.0f;
-        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", 13);
+        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", 14);
 
         ImGui::StyleColorsDark();
         ImGuiStyle& style = ImGui::GetStyle();
-        //style.ScaleAllSizes(1.25f);
+        style.ScaleAllSizes(1.25f);
 
         ImGui_ImplGlfw_InitForVulkan(m_window->handle(), true);
         ImGui_ImplVulkan_InitInfo init_info = {};
