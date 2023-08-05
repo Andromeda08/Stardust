@@ -8,8 +8,11 @@ set(PYTHON "py")
 # Set up dependencies
 find_package(Vulkan REQUIRED)
 
+set(BUILD_SHARED_LIBS ON FORCE)
 add_subdirectory(ThirdParty/glfw)
+
 add_subdirectory(ThirdParty/VMA)
+add_subdirectory(ThirdParty/stduuid)
 
 add_subdirectory(ThirdParty/glm)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
@@ -22,6 +25,7 @@ include_directories(${IMNODES_DIR})
 
 add_executable(${PROJECT_NAME}
         Stardust/main.cpp
+        Stardust/pch.hpp
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
         ThirdParty/tinyobj/tiny_obj_impl.cpp
@@ -125,15 +129,34 @@ add_executable(${PROJECT_NAME}
         Stardust/Nebula/ImageResolve.hpp
         Stardust/Nebula/ImageBlit.hpp
 
-        Stardust/Nebula/RenderGraph/Node.hpp
-        Stardust/Nebula/RenderGraph/Resource.hpp Stardust/Nebula/RenderGraph/Attribute.hpp Stardust/Nebula/RenderGraph/Attribute.cpp)
+        Stardust/Math/Graph/Vertex.hpp
+        Stardust/VirtualGraph/GraphEditor.hpp Stardust/VirtualGraph/GraphEditor.cpp
+        Stardust/VirtualGraph/Node.hpp Stardust/VirtualGraph/Node.cpp
+        Stardust/VirtualGraph/ResourceDescription.hpp
+        Stardust/VirtualGraph/Compile/GraphCompileStrategy.hpp
+        Stardust/VirtualGraph/Compile/CompileResult.hpp
+        Stardust/VirtualGraph/Compile/DefaultCompileStrategy.hpp Stardust/VirtualGraph/Compile/DefaultCompileStrategy.cpp
+        Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.hpp
+        Stardust/VirtualGraph/RenderGraph/RenderPath.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/Node.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/Configuration/SceneProviderNodeConfiguration.hpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRequirement.hpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
+        Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/Configuration/RenderNodeConfiguration.hpp)
 
-target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm VulkanMemoryAllocator)
+target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
+target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm VulkanMemoryAllocator stduuid)
 target_include_directories(${PROJECT_NAME} PUBLIC
         ${Vulkan_INCLUDE_DIRS}
         Stardust
         ThirdParty/stb
         ThirdParty/tinyobj
+        ThirdParty/stduuid/include
         ThirdParty/vma/include)
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         IMGUI_DEFINE_MATH_OPERATORS

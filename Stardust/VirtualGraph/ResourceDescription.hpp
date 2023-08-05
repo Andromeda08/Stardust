@@ -1,0 +1,37 @@
+#pragma once
+
+#include <string>
+#include <uuid.h>
+#include <glm/vec4.hpp>
+#include <Utility.hpp>
+#include "RenderGraph/Resources/ResourceRole.hpp"
+#include "RenderGraph/Resources/ResourceType.hpp"
+
+namespace Nebula::Editor
+{
+    using namespace Nebula::RenderGraph;
+
+    struct ResourceDescription
+    {
+        int32_t      id   = sd::util::gen_id();
+        uuids::uuid  uuid = uuids::uuid_system_generator{}();
+        std::string  name = "Unknown Resource";
+        ResourceRole role = ResourceRole::eUnknown;
+        ResourceType type = ResourceType::eUnknown;
+
+        bool input_is_connected = false;
+
+        ResourceDescription(std::string&& n, ResourceRole&& r): name(n), role(r) {}
+
+        ResourceDescription(std::string&& n, ResourceRole&& r, ResourceType&& t): name(n), role(r), type(t) {}
+
+        std::string role_str() const {
+            return get_resource_role_str(role);
+        }
+
+        glm::ivec4 pin_color() const
+        {
+            return get_resource_type_color(type);
+        }
+    };
+}
