@@ -66,7 +66,9 @@ namespace sd
     {
         static std::vector<std::pair<glm::vec4, glm::vec4>> color_pool = {
             {{1, 1, 0, 1}, {0, 0.8f, 1, 1}},
-            {{1, 0, 0.25f, 1}, {1, 0, 0.85f, 1}}
+            {{1, 0, 0.25f, 1}, {1, 0, 0.85f, 1}},
+            {{0.2f, 1, 0.2f, 1}, {0.1f, 0.8f, 0.9f, 1}},
+            {{1, 0.1f, 0.1f, 1}, {1, 0.5f, 0, 1}}
         };
 
         auto randf = [](float lo = 0.0f, float hi = 1.0f){ return lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi - lo))); };
@@ -78,14 +80,13 @@ namespace sd
         plane.transform.scale = { 192.f, 0.05f, 192.f };
         m_objects.push_back(plane);
 
-        auto color = color_pool[rand() % color_pool.size()];
-        for (uint32_t i = 0; i < 500; i++)
+        for (uint32_t i = 0; i < 612; i++)
         {
             Transform transform = {};
             transform.scale = glm::vec3(
-                    static_cast<float>(rand() % 3 + 1),
-                    static_cast<float>(rand() % 7 + 1),
-                    static_cast<float>(rand() % 4 + 1)
+                    static_cast<float>(rand() % 4 + 1),
+                    static_cast<float>(rand() % 9 + 1),
+                    static_cast<float>(rand() % 5 + 1)
                 );
             transform.position = glm::vec3(
                     static_cast<float>(rand() % 128 - 64) + randf(),
@@ -94,7 +95,8 @@ namespace sd
                 );
 
             Object obj = {};
-            obj.color = (rand() % 2 == 0) ? color.first : color.second;
+            auto idx = std::rand() % color_pool.size();
+            obj.color = (rand() % 2 == 0) ? color_pool[idx].first : color_pool[idx].second;
             obj.mesh = m_meshes["cube"];
             obj.name = "Object " + std::to_string(m_objects.size() + 1);
             obj.transform = transform;

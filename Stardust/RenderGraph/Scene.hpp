@@ -17,6 +17,10 @@ namespace sd::rg
 {
     class Scene
     {
+        std::vector<std::pair<glm::vec4, glm::vec4>> colors = {
+                {{ 1, 1, 0, 1 }, {0, 0.8f, 1, 1 }},
+
+        };
     public:
         Scene(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context, const sdvk::Swapchain& swapchain)
         : m_command_buffers(command_buffers), m_context(context), m_swapchain(swapchain)
@@ -35,12 +39,13 @@ namespace sd::rg
 
             auto randf = [](float lo, float hi){ return lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi - lo))); };
 
+            auto& color_set = colors[rand() % colors.size()];
             for (int32_t i = 0; i < 280; i++)
             {
                 Object obj;
                 obj.name = "cube" + std::to_string(i);
                 //obj.color = glm::vec4(randf(0.0f, 1.0f), randf(0.0f, 1.0f), randf(0.0f, 1.0f), 1.0f);
-                obj.color = (rand() % 2 == 0) ? glm::vec4(1, 1, 0, 1) : glm::vec4(0, 0.8f, 1, 1);
+                obj.color = (rand() % 2 == 0) ? color_set.first : color_set.second; //? glm::vec4(1, 1, 0, 1) : glm::vec4(0, 0.8f, 1, 1);
                 obj.transform.scale = glm::vec3((float) (rand() % 3 + 1), (float) (rand() % 7 + 1), (float) (rand() % 4 + 1));
                 obj.transform.position = { (float) (rand() % 64 - 32) + randf(0.0f, 1.0f), randf(-0.05f, 0.0f), (float) (rand() % 64 - 32) + randf(0.0f, 1.0f)};
                 obj.mesh = m_meshes["cube"];

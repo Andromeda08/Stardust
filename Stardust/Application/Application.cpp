@@ -61,6 +61,8 @@ namespace sd
 
         m_swapchain = sdvk::SwapchainBuilder(*m_window, *m_context)
                 .with_defaults()
+                .set_preferred_color_space(vk::ColorSpaceKHR::eSrgbNonlinear)
+                .set_preferred_format(vk::Format::eR8G8B8A8Unorm)
                 .create();
 
         auto scene_init = bm::measure<std::chrono::milliseconds>([&](){
@@ -70,6 +72,8 @@ namespace sd
         m_editor = std::make_shared<rg::RenderGraphEditor>(*m_command_buffers, *m_context, *m_swapchain, g_rgs);
 
         m_editor->_add_initial_nodes();
+
+        m_ge = std::make_shared<Nebula::Editor::GraphEditor>();
 
 #pragma region node testing
         auto connect_time = bm::measure<std::chrono::milliseconds>([&](){
@@ -142,27 +146,6 @@ namespace sd
             Nebula::Sync::ImageBarrier(nebula_resolve_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal).apply(cmd);
             Nebula::Sync::ImageResolve(nebula_image, nebula_resolve_image).resolve(cmd);
         });
-
-        auto ctx2 = Nebula::Vulkan::Context::Builder()
-            .with_instance_extensions(m_window->get_vk_extensions())
-            .with_instance_extensions({ VK_KHR_SURFACE_EXTENSION_NAME })
-            .with_device_extensions({
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-                VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-                VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                VK_KHR_RAY_QUERY_EXTENSION_NAME,
-                VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-                VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME,
-                VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-                VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-                VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-                VK_KHR_SPIRV_1_4_EXTENSION_NAME,
-                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-                VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-            })
-            .with_surface(m_window->handle())
-            .create_context();
     }
 
     void Application::run()
@@ -215,7 +198,9 @@ namespace sd
                             ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
                             ImGui::End();
 
-                            m_editor->draw();
+                            // m_editor->draw();
+
+                            m_ge->render();
                         }
                         ImGui::EndFrame();
 
@@ -288,12 +273,12 @@ namespace sd
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
-        //io.FontGlobalScale = 1.0f;
-        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", 14);
+        // io.FontGlobalScale = 1.5f;
+        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", 16);
 
         ImGui::StyleColorsDark();
         ImGuiStyle& style = ImGui::GetStyle();
-        style.ScaleAllSizes(1.25f);
+        // style.ScaleAllSizes(1.5f);
 
         ImGui_ImplGlfw_InitForVulkan(m_window->handle(), true);
         ImGui_ImplVulkan_InitInfo init_info = {};

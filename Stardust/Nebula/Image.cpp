@@ -1,5 +1,5 @@
 #include "Image.hpp"
-#include <fmt/core.h>
+#include <format>
 #include <Vulkan/Context.hpp>
 
 namespace Nebula
@@ -68,8 +68,8 @@ namespace Nebula
 
             if (!name.empty())
             {
-                image_name = fmt::format("{}: Image", name);
-                image_view_name = fmt::format("{}: ImageView", name);
+//                image_name = std::format("{}: Image", name);
+//                image_view_name = std::format("{}: ImageView", name);
             }
         }
     }
