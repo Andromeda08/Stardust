@@ -156,7 +156,7 @@ namespace Nebula::Editor
         // 6. Connect resources to nodes
 
         // 7. Finalize, pack result into a RenderPath and do final statistics
-        auto compile_time = tsort_time + resource_eval_time + create_time;
+        auto compile_time = filter_time + tsort_time + resource_eval_time + create_time;
         logs.push_back(std::format("[Info] Graph compiled in {} ms", compile_time.count()));
 
         RenderGraph::RenderPath render_path;
