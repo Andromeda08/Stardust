@@ -4,6 +4,7 @@
 #include <uuid.h>
 #include <glm/vec4.hpp>
 #include <Utility.hpp>
+#include "RenderGraph/Resources/ResourceSpecification.hpp"
 #include "RenderGraph/Resources/ResourceRole.hpp"
 #include "RenderGraph/Resources/ResourceType.hpp"
 
@@ -19,11 +20,15 @@ namespace Nebula::Editor
         ResourceRole role = ResourceRole::eUnknown;
         ResourceType type = ResourceType::eUnknown;
 
+        ResourceSpecification spec {};
+
         bool input_is_connected = false;
 
         ResourceDescription(std::string&& n, ResourceRole&& r): name(n), role(r) {}
 
         ResourceDescription(std::string&& n, ResourceRole&& r, ResourceType&& t): name(n), role(r), type(t) {}
+
+        ResourceDescription(const std::string& n, const ResourceRole& r, const ResourceType& t): name(n), role(r), type(t) {}
 
         std::string role_str() const {
             return get_resource_role_str(role);

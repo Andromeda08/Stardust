@@ -43,7 +43,7 @@ namespace sdvk
 
         const DeviceFeatures& device_features() const { return m_device_features; }
 
-        bool is_debug() const { return m_debug_messenger; }
+        bool is_debug() const { return m_debug_messenger != nullptr; }
 
         bool is_raytracing_capable() const;
 

@@ -125,6 +125,7 @@ add_executable(${PROJECT_NAME}
         Stardust/Scene/Scene.hpp Stardust/Scene/Scene.cpp
 
         Stardust/Nebula/Barrier.hpp Stardust/Nebula/Barrier.cpp
+        Stardust/Nebula/Descriptor.hpp Stardust/Nebula/Descriptor.cpp
         Stardust/Nebula/Image.hpp Stardust/Nebula/Image.cpp
         Stardust/Nebula/ImageResolve.hpp
         Stardust/Nebula/ImageBlit.hpp
@@ -133,21 +134,21 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/GraphEditor.hpp Stardust/VirtualGraph/GraphEditor.cpp
         Stardust/VirtualGraph/Node.hpp Stardust/VirtualGraph/Node.cpp
         Stardust/VirtualGraph/ResourceDescription.hpp
-        Stardust/VirtualGraph/Compile/GraphCompileStrategy.hpp
-        Stardust/VirtualGraph/Compile/CompileResult.hpp
+        Stardust/VirtualGraph/Compile/GraphCompileStrategy.hpp Stardust/VirtualGraph/Compile/GraphCompileStrategy.cpp
         Stardust/VirtualGraph/Compile/DefaultCompileStrategy.hpp Stardust/VirtualGraph/Compile/DefaultCompileStrategy.cpp
-        Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.hpp
-        Stardust/VirtualGraph/RenderGraph/RenderPath.hpp
+        Stardust/VirtualGraph/Compile/CompileResult.hpp
+        Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.hpp Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.cpp
+        Stardust/VirtualGraph/Compile/RenderPath.hpp
         Stardust/VirtualGraph/RenderGraph/Nodes/Node.hpp
         Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.cpp
-        Stardust/VirtualGraph/RenderGraph/Nodes/Configuration/SceneProviderNodeConfiguration.hpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRequirement.hpp
-        Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp
-        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp
-        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
-        Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
-        Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.cpp
-        Stardust/VirtualGraph/RenderGraph/Nodes/Configuration/RenderNodeConfiguration.hpp)
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/RenderNode.cpp Stardust/VirtualGraph/RenderGraph/Nodes/RenderNode.hpp
+        Stardust/VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp
+        Stardust/VirtualGraph/RenderGraph/Resources/Resource.hpp
+        Stardust/VirtualGraph/Compile/Algorithm/Bfs.cpp
+        Stardust/VirtualGraph/Compile/Algorithm/Bfs.hpp)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm VulkanMemoryAllocator stduuid)

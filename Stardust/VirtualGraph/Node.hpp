@@ -9,6 +9,8 @@
 #include <uuid.h>
 #include <VirtualGraph/ResourceDescription.hpp>
 #include <Math/Graph/Vertex.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/RenderNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
 namespace Nebula::Editor
 {
@@ -76,6 +78,8 @@ namespace Nebula::Editor
 
         virtual void render();
 
+        const NodeType type() const { return m_type; }
+
         ResourceDescription& get_resource(int32_t id)
         {
             for (auto& item : m_resource_descriptions)
@@ -88,6 +92,8 @@ namespace Nebula::Editor
 
             throw std::runtime_error(std::format("No resource by the id {}", id));
         }
+
+        const std::vector<ResourceDescription>& resources() { return m_resource_descriptions; }
     };
 
     class SceneProviderNode : public Node
@@ -99,19 +105,19 @@ namespace Nebula::Editor
                { 137, 220, 235, 255 },
                NodeType::eSceneProvider)
         {
-            m_resource_descriptions.emplace_back("Objects", ResourceRole::eOutput, ResourceType::eObjects);
-            m_resource_descriptions.emplace_back("Active Camera", ResourceRole::eOutput, ResourceType::eCamera);
-            m_resource_descriptions.emplace_back("Top Level AS", ResourceRole::eOutput, ResourceType::eTlas);
+            const auto& specs = RenderGraph::SceneProviderNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
         }
     };
 
     class RenderNode : public Node
     {
     private:
-        struct RenderNodeOptions
-        {
-            bool with_shadows = true;
-        } m_options;
+        struct RenderGraph::RenderNodeOptions m_options;
 
     protected:
         void render_options() override
@@ -126,13 +132,12 @@ namespace Nebula::Editor
                { 180, 190, 254, 255 },
                NodeType::eRender)
         {
-            m_resource_descriptions.emplace_back("Objects", ResourceRole::eInput, ResourceType::eObjects);
-            m_resource_descriptions.emplace_back("Active Camera", ResourceRole::eInput, ResourceType::eCamera);
-            m_resource_descriptions.emplace_back("Top Level AS", ResourceRole::eInput, ResourceType::eTlas);
-
-            m_resource_descriptions.emplace_back("Scene Render", ResourceRole::eOutput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("G-Buffer", ResourceRole::eOutput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Depth Image", ResourceRole::eOutput, ResourceType::eImage);
+            const auto& specs = RenderGraph::RenderNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
         }
     };
 
@@ -158,8 +163,8 @@ namespace Nebula::Editor
                NodeType::eAmbientOcclusion)
         {
             m_resource_descriptions.emplace_back("G-Buffer", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Active Camera", ResourceRole::eInput, ResourceType::eCamera);
-            m_resource_descriptions.emplace_back("Top Level AS", ResourceRole::eInput, ResourceType::eTlas);
+            m_resource_descriptions.emplace_back("Camera", ResourceRole::eInput, ResourceType::eCamera);
+            m_resource_descriptions.emplace_back("TLAS", ResourceRole::eInput, ResourceType::eTlas);
 
             m_resource_descriptions.emplace_back("AO Buffer", ResourceRole::eOutput, ResourceType::eImage);
         }
@@ -174,7 +179,7 @@ namespace Nebula::Editor
                { 148, 226, 213, 255 },
                NodeType::eDenoise)
         {
-            m_resource_descriptions.emplace_back("Image", ResourceRole::eInput, ResourceType::eImage);
+            m_resource_descriptions.emplace_back("Input Image", ResourceRole::eInput, ResourceType::eImage);
             m_resource_descriptions.emplace_back("De-noised Image", ResourceRole::eOutput, ResourceType::eImage);
         }
     };
@@ -207,7 +212,7 @@ namespace Nebula::Editor
         }
     };
 
-    class NodeFactory
+    class VirtualNodeFactory
     {
     public:
         Node* create(NodeType type)

@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <Vulkan/Context.hpp>
 #include "CompileResult.hpp"
 #include "GraphCompileStrategy.hpp"
 
@@ -14,13 +15,10 @@ namespace Nebula::Editor
 
     class DefaultCompileStrategy : public GraphCompileStrategy
     {
-    private:
-        std::vector<std::string> logs;
-
     public:
-        DefaultCompileStrategy() = default;
+        DefaultCompileStrategy(const sdvk::Context& context): GraphCompileStrategy(context) {}
 
-        CompileResult compile(const std::vector<std::shared_ptr<Node>>& nodes) override;
+        CompileResult compile(const std::vector<std::shared_ptr<Node>>& nodes, bool verbose = false) override;
 
         ~DefaultCompileStrategy() = default;
     };

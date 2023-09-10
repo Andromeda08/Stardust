@@ -9,10 +9,11 @@
 
 namespace Nebula::Editor
 {
-    GraphEditor::GraphEditor()
+    GraphEditor::GraphEditor(const sdvk::Context& context)
+    : m_context(context)
     {
-        m_factory = std::make_unique<NodeFactory>();
-        m_compiler = std::make_unique<DefaultCompileStrategy>();
+        m_factory = std::make_unique<VirtualNodeFactory>();
+        m_compiler = std::make_unique<DefaultCompileStrategy>(m_context);
 
         std::vector<NodeType> to_create = { NodeType::eAmbientOcclusion, NodeType::eCombine, NodeType::eDenoise,
                                             NodeType::ePresent, NodeType::eRender, NodeType::eSceneProvider };
@@ -51,7 +52,8 @@ namespace Nebula::Editor
                     ImGui::EndMenu();
                 }
 
-                if (ImGui::BeginMenu("Select Scene"))
+                auto select_scene_text = std::format("Select Scene (Current: \"{}\")", m_selected_scene->name());
+                if (ImGui::BeginMenu(select_scene_text.c_str()))
                 {
                     if (ImGui::MenuItem("Default")) {}
                     ImGui::EndMenu();
@@ -98,7 +100,7 @@ namespace Nebula::Editor
             nodes_vector.push_back(v);
         }
 
-        auto result = m_compiler->compile(nodes_vector);
+        auto result = m_compiler->compile(nodes_vector, true);
         for (const auto& msg : result.logs)
         {
             std::cout << msg << std::endl;

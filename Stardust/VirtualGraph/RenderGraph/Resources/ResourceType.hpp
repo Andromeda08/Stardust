@@ -8,6 +8,7 @@ namespace Nebula::RenderGraph
     {
         eBuffer,
         eCamera,
+        eDepthImage,
         eImage,
         eObjects,
         eTlas,

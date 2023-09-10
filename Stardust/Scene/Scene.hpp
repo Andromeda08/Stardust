@@ -41,6 +41,8 @@ namespace sd
 
         const std::shared_ptr<sdvk::Tlas>& acceleration_structure() const { return m_acceleration_structure; }
 
+        const std::string& name() const { return m_name; }
+
     private:
         void add_defaults();
 
@@ -56,6 +58,7 @@ namespace sd
         std::map<std::string, std::shared_ptr<sdvk::Mesh>> m_meshes;
         std::shared_ptr<sdvk::Tlas> m_acceleration_structure;
 
+        const std::string m_name = "Unnamed Scene";
         const sdvk::CommandBuffers& m_command_buffers;
         const sdvk::Context& m_context;
     };

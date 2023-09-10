@@ -6,7 +6,8 @@
 #include <Utility.hpp>
 #include <VirtualGraph/Node.hpp>
 #include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
-#include <Math/Graph/Graph.hpp>
+#include <Vulkan/Context.hpp>
+#include <Scene/Scene.hpp>
 
 namespace Nebula::Editor
 {
@@ -15,6 +16,7 @@ namespace Nebula::Editor
     private:
         using id_t = int32_t;
         using node_ptr_t = std::shared_ptr<Node>;
+        using Scene_t = sd::Scene;
         struct UiEdge
         {
             id_t id = sd::util::gen_id();
@@ -32,13 +34,23 @@ namespace Nebula::Editor
         std::vector<UiEdge>        m_edges;
 
         std::vector<std::string>              m_messages;
-        std::unique_ptr<NodeFactory>          m_factory;
+        std::unique_ptr<VirtualNodeFactory>   m_factory;
         std::unique_ptr<GraphCompileStrategy> m_compiler;
 
+        // TODO: Should replace Scene with a new representation
+        std::shared_ptr<Scene_t> m_selected_scene;
+
+        const sdvk::Context& m_context;
+
     public:
-        GraphEditor();
+        explicit GraphEditor(const sdvk::Context& context);
 
         void render();
+
+        void set_scene(const std::shared_ptr<Scene_t>& scene)
+        {
+            m_selected_scene = std::shared_ptr<Scene_t>(scene);
+        }
 
     private:
         void _handle_compile();

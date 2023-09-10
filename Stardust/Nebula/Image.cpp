@@ -1,5 +1,6 @@
 #include "Image.hpp"
 #include <format>
+#include <Vulkan/Utils.hpp>
 #include <Vulkan/Context.hpp>
 
 namespace Nebula
@@ -71,6 +72,16 @@ namespace Nebula
 //                image_name = std::format("{}: Image", name);
 //                image_view_name = std::format("{}: ImageView", name);
             }
+
+            sdvk::util::name_vk_object(image_name,
+                                       (uint64_t) static_cast<VkImage>(m_image),
+                                       vk::ObjectType::eImage,
+                                       context.device());
+
+            sdvk::util::name_vk_object(image_view_name,
+                                       (uint64_t) static_cast<VkImageView>(m_image_view),
+                                       vk::ObjectType::eImageView,
+                                       context.device());
         }
     }
 }

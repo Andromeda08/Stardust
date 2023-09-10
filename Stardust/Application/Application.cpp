@@ -62,7 +62,7 @@ namespace sd
         m_swapchain = sdvk::SwapchainBuilder(*m_window, *m_context)
                 .with_defaults()
                 .set_preferred_color_space(vk::ColorSpaceKHR::eSrgbNonlinear)
-                .set_preferred_format(vk::Format::eR8G8B8A8Unorm)
+                .set_preferred_format(vk::Format::eR8G8B8A8Srgb)
                 .create();
 
         auto scene_init = bm::measure<std::chrono::milliseconds>([&](){
@@ -73,7 +73,7 @@ namespace sd
 
         m_editor->_add_initial_nodes();
 
-        m_ge = std::make_shared<Nebula::Editor::GraphEditor>();
+        m_ge = std::make_shared<Nebula::Editor::GraphEditor>(*m_context);
 
 #pragma region node testing
         auto connect_time = bm::measure<std::chrono::milliseconds>([&](){
@@ -117,6 +117,8 @@ namespace sd
         auto compile_t2 = bm::measure<std::chrono::milliseconds>([&](){ g_rtaonode->compile(); });
         auto compile_t3 = bm::measure<std::chrono::milliseconds>([&](){ g_cnode->compile(); });
 #pragma endregion
+
+        m_ge->set_scene(g_rgs);
 
         std::cout
                 << "Ctx init time   : " << ctx_init.count() << "ms\n"

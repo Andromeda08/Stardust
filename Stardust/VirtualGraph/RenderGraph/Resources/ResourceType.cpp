@@ -1,5 +1,6 @@
 #include "ResourceType.hpp"
 
+#include <set>
 #include <glm/vec4.hpp>
 
 namespace Nebula::RenderGraph
@@ -12,6 +13,8 @@ namespace Nebula::RenderGraph
                 return { 210, 15, 57, 255 };
             case ResourceType::eCamera:
                 return { 234, 118, 203, 255 };
+            case ResourceType::eDepthImage:
+                return { 210, 15, 57, 255 };
             case ResourceType::eImage:
                 return { 30, 102, 245, 255 };
             case ResourceType::eObjects:
