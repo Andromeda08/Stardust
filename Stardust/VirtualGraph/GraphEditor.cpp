@@ -9,6 +9,8 @@
 
 namespace Nebula::Editor
 {
+    std::shared_ptr<sd::Scene> GraphEditor::s_selected_scene = nullptr;
+
     GraphEditor::GraphEditor(const sdvk::Context& context)
     : m_context(context)
     {
@@ -52,7 +54,7 @@ namespace Nebula::Editor
                     ImGui::EndMenu();
                 }
 
-                auto select_scene_text = std::format("Select Scene (Current: \"{}\")", m_selected_scene->name());
+                auto select_scene_text = std::format("Select Scene (Current: \"{}\")", s_selected_scene->name());
                 if (ImGui::BeginMenu(select_scene_text.c_str()))
                 {
                     if (ImGui::MenuItem("Default")) {}

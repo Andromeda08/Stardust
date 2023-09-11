@@ -37,19 +37,20 @@ namespace Nebula::Editor
         std::unique_ptr<VirtualNodeFactory>   m_factory;
         std::unique_ptr<GraphCompileStrategy> m_compiler;
 
-        // TODO: Should replace Scene with a new representation
-        std::shared_ptr<Scene_t> m_selected_scene;
-
         const sdvk::Context& m_context;
+
+    public:
+        // TODO: Should replace Scene with a new representation
+        static std::shared_ptr<Scene_t> s_selected_scene;
 
     public:
         explicit GraphEditor(const sdvk::Context& context);
 
         void render();
 
-        void set_scene(const std::shared_ptr<Scene_t>& scene)
+        static void set_scene(const std::shared_ptr<Scene_t>& scene)
         {
-            m_selected_scene = std::shared_ptr<Scene_t>(scene);
+            s_selected_scene = std::shared_ptr<Scene_t>(scene);
         }
 
     private:

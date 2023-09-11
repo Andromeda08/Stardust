@@ -5,6 +5,7 @@
 #include <memory>
 #include <string_view>
 #include <vulkan/vulkan.hpp>
+#include <Vulkan/Buffer.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Context.hpp>
 #include <Nebula/Descriptor.hpp>
@@ -32,13 +33,15 @@ namespace Nebula::RenderGraph
         std::array<float, 4> clear_color { 0.3f, 0.3f, 0.3f, 1.0f };
 
         std::array<vk::ClearValue, 3> clear_values;
-        std::unique_ptr<Descriptor> descriptor;
+        std::shared_ptr<Descriptor> descriptor;
+        std::vector<vk::Framebuffer> framebuffers;
         vk::Pipeline pipeline;
         vk::PipelineLayout pipeline_layout;
         vk::RenderPass renderpass;
         vk::Extent2D render_resolution { 1920, 1080 };
+        uint32_t frames_in_flight {2};
 
-        void initialize(const sdvk::Context& context);
+        std::vector<std::unique_ptr<sdvk::Buffer>> ub_camera;
     };
 
     // PushConstant block used while rendering, also contains options.
@@ -52,7 +55,17 @@ namespace Nebula::RenderGraph
     public:
         explicit RenderNode(const sdvk::Context& context);
 
+        void execute(const vk::CommandBuffer& command_buffer) override;
+
         ~RenderNode() override = default;
+
+    protected:
+        bool _validate_resource(const std::string& key, const std::shared_ptr<Resource>& resource) override;
+
+    private:
+        void _initialize_renderer();
+
+        void _update_descriptors(uint32_t current_frame);
 
     public:
         static std::vector<ResourceSpecification> s_resource_specs;

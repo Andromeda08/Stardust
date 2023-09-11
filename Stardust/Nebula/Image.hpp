@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vulkan/vulkan.hpp>
 
@@ -48,6 +49,8 @@ namespace Nebula
         const ImageState& state() { return m_state; }
 
         void update_state(ImageState state) { m_state = state; }
+
+        static std::shared_ptr<Image> make_depth_image(const sdvk::Context& context);
 
     private:
         vk::Image        m_image;

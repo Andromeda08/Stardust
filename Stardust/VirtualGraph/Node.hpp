@@ -7,25 +7,14 @@
 #include <glm/vec4.hpp>
 #include <imgui.h>
 #include <uuid.h>
-#include <VirtualGraph/ResourceDescription.hpp>
 #include <Math/Graph/Vertex.hpp>
+#include <VirtualGraph/ResourceDescription.hpp>
+#include <VirtualGraph/Common/NodeType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RenderNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
 namespace Nebula::Editor
 {
-    enum class NodeType
-    {
-        eSceneProvider,
-        eRender,
-        eAmbientOcclusion,
-        eDenoise,
-        eCombine,
-        ePresent,
-        eRayTracer,
-        eUnknown
-    };
-
     class Node : public Nebula::Graph::Vertex
     {
     private:

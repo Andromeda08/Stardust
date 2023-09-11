@@ -18,7 +18,7 @@ namespace Nebula::Editor
     public:
         DefaultCompileStrategy(const sdvk::Context& context): GraphCompileStrategy(context) {}
 
-        CompileResult compile(const std::vector<std::shared_ptr<Node>>& nodes, bool verbose = false) override;
+        CompileResult compile(const std::vector<std::shared_ptr<Node>>& nodes, bool verbose) override;
 
         ~DefaultCompileStrategy() = default;
     };

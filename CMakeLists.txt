@@ -25,7 +25,7 @@ include_directories(${IMNODES_DIR})
 
 add_executable(${PROJECT_NAME}
         Stardust/main.cpp
-        Stardust/pch.hpp
+        # Stardust/pch.hpp
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
         ThirdParty/tinyobj/tiny_obj_impl.cpp
@@ -148,9 +148,12 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp
         Stardust/VirtualGraph/RenderGraph/Resources/Resource.hpp
         Stardust/VirtualGraph/Compile/Algorithm/Bfs.cpp
-        Stardust/VirtualGraph/Compile/Algorithm/Bfs.hpp)
+        Stardust/VirtualGraph/Compile/Algorithm/Bfs.hpp
+        Stardust/VirtualGraph/Compile/NodeFactory.hpp
+        Stardust/VirtualGraph/Common/NodeType.hpp
+        Stardust/VirtualGraph/Compile/NodeFactory.cpp)
 
-target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
+# target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm VulkanMemoryAllocator stduuid)
 target_include_directories(${PROJECT_NAME} PUBLIC
         ${Vulkan_INCLUDE_DIRS}
