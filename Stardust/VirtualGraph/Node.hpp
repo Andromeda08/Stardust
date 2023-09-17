@@ -10,6 +10,8 @@
 #include <Math/Graph/Vertex.hpp>
 #include <VirtualGraph/ResourceDescription.hpp>
 #include <VirtualGraph/Common/NodeType.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RenderNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
@@ -85,51 +87,6 @@ namespace Nebula::Editor
         const std::vector<ResourceDescription>& resources() { return m_resource_descriptions; }
     };
 
-    class SceneProviderNode : public Node
-    {
-    public:
-        SceneProviderNode()
-        : Node("Scene Provider",
-               { 4, 165, 229, 255 },
-               { 137, 220, 235, 255 },
-               NodeType::eSceneProvider)
-        {
-            const auto& specs = RenderGraph::SceneProviderNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
-    };
-
-    class RenderNode : public Node
-    {
-    private:
-        struct RenderGraph::RenderNodeOptions m_options;
-
-    protected:
-        void render_options() override
-        {
-            ImGui::Checkbox("Shadows", &m_options.with_shadows);
-        }
-
-    public:
-        RenderNode()
-        : Node("Render Node",
-               { 114, 135, 253, 255 },
-               { 180, 190, 254, 255 },
-               NodeType::eRender)
-        {
-            const auto& specs = RenderGraph::RenderNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
-    };
-
     class AmbientOcclusionNode : public Node
     {
     private:
@@ -159,32 +116,75 @@ namespace Nebula::Editor
         }
     };
 
+    class AntiAliasingNode : public Node {
+    public:
+        AntiAliasingNode()
+        : Node("Anti-Aliasing",
+               { 254, 100, 11, 255 },
+               { 250, 179, 135, 255 },
+               NodeType::eAntiAliasing)
+        {
+        }
+    };
+
+    class DeferredPassNode : public Node {
+    public:
+        DeferredPassNode()
+        : Node("Deferred Pass",
+               { 230, 69, 83, 255 },
+               { 235, 160, 172, 255 },
+               NodeType::eDeferredRender)
+        {
+            const auto& specs = RenderGraph::DeferredRender::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
+        }
+    };
+
+    class LightingPassNode : public Node {
+    public:
+        LightingPassNode()
+        : Node("Lighting Pass",
+               { 23, 146, 153, 255 },
+               { 148, 226, 213, 255 },
+               NodeType::eLightingPass)
+        {
+            const auto& specs = RenderGraph::LightingPass::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
+
+            m_shadow_modes.push_back(to_string(LightingPassShadowMode::eNone));
+            m_shadow_modes.push_back(to_string(LightingPassShadowMode::eShadowMaps));
+            m_shadow_modes.push_back(to_string(LightingPassShadowMode::eRayQuery));
+        }
+
+    protected:
+        void render_options() override
+        {
+        }
+
+    private:
+        std::vector<std::string> m_shadow_modes;
+        RenderGraph::LightingPassOptions m_options;
+    };
+
     class DenoiseNode : public Node
     {
     public:
         DenoiseNode()
-        : Node("Denoiser",
-               { 23, 146, 153, 255 },
-               { 148, 226, 213, 255 },
-               NodeType::eDenoise)
+            : Node("Denoiser",
+                   { 23, 146, 153, 255 },
+                   { 148, 226, 213, 255 },
+                   NodeType::eDenoise)
         {
             m_resource_descriptions.emplace_back("Input Image", ResourceRole::eInput, ResourceType::eImage);
             m_resource_descriptions.emplace_back("De-noised Image", ResourceRole::eOutput, ResourceType::eImage);
-        }
-    };
-
-    class CombineNode : public Node
-    {
-    public:
-        CombineNode()
-        : Node("Image Combine",
-               { 32, 159, 181, 255 },
-               { 116, 199, 236, 255 },
-               NodeType::eCombine)
-        {
-            m_resource_descriptions.emplace_back("Image A", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Image B", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Result", ResourceRole::eOutput, ResourceType::eImage);
         }
     };
 
@@ -201,19 +201,87 @@ namespace Nebula::Editor
         }
     };
 
+    class SceneProviderNode : public Node
+    {
+    public:
+        SceneProviderNode()
+            : Node("Scene Provider",
+                   { 4, 165, 229, 255 },
+                   { 137, 220, 235, 255 },
+                   NodeType::eSceneProvider)
+        {
+            const auto& specs = RenderGraph::SceneProviderNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
+        }
+    };
+
+    #pragma region deprecated node types
+    class CombineNode : public Node
+    {
+    public:
+        CombineNode()
+            : Node("Image Combine",
+                   { 32, 159, 181, 255 },
+                   { 116, 199, 236, 255 },
+                   NodeType::eCombine)
+        {
+            m_resource_descriptions.emplace_back("Image A", ResourceRole::eInput, ResourceType::eImage);
+            m_resource_descriptions.emplace_back("Image B", ResourceRole::eInput, ResourceType::eImage);
+            m_resource_descriptions.emplace_back("Result", ResourceRole::eOutput, ResourceType::eImage);
+        }
+    };
+
+    class RenderNode : public Node
+    {
+    private:
+        struct RenderGraph::RenderNodeOptions m_options;
+
+    protected:
+        void render_options() override
+        {
+            ImGui::Checkbox("Shadows", &m_options.with_shadows);
+        }
+
+    public:
+        RenderNode()
+            : Node("Render Node",
+                   { 114, 135, 253, 255 },
+                   { 180, 190, 254, 255 },
+                   NodeType::eRender)
+        {
+            const auto& specs = RenderGraph::RenderNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
+        }
+    };
+    #pragma endregion
+
     class VirtualNodeFactory
     {
     public:
-        Node* create(NodeType type)
+        static Node* create(NodeType type)
         {
             switch (type)
             {
                 case NodeType::eAmbientOcclusion:
                     return new AmbientOcclusionNode();
+                case NodeType::eAntiAliasing:
+                    return new AntiAliasingNode();
                 case NodeType::eCombine:
                     return new CombineNode();
+                case NodeType::eDeferredRender:
+                    return new DeferredPassNode();
                 case NodeType::eDenoise:
                     return new DenoiseNode();
+                case NodeType::eLightingPass:
+                    return new LightingPassNode();
                 case NodeType::ePresent:
                     return new PresentNode();
                 case NodeType::eRender:
