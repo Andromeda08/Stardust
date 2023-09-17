@@ -4,13 +4,21 @@ namespace Nebula
 {
     enum class NodeType
     {
-        eSceneProvider,
-        eRender,
         eAmbientOcclusion,
+        eAntiAliasing,
+        eDeferredRender,
         eDenoise,
-        eCombine,
+        eGaussianBlur,
+        eLightingPass,
+        eRayTracing,
+
+        // Special Types
         ePresent,
-        eRayTracer,
-        eUnknown
+        eSceneProvider,
+        eUnknown,
+
+        // TODO: Combine and Render should be deprecated after implementing proper deferred shading
+        eCombine,
+        eRender,
     };
 }
