@@ -14,6 +14,8 @@ namespace Nebula::RenderGraph
 
         virtual void execute(const vk::CommandBuffer& command_buffer) { /* default: no-op */ }
 
+        virtual void initialize() { /* default: no-op */ }
+
         virtual bool set_resource(const std::string& key, const std::shared_ptr<Resource>& resource)
         {
             if (!_validate_resource(key, resource))
