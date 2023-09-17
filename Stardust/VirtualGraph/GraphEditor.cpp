@@ -17,11 +17,24 @@ namespace Nebula::Editor
         m_factory = std::make_unique<VirtualNodeFactory>();
         m_compiler = std::make_unique<DefaultCompileStrategy>(m_context);
 
-        std::vector<NodeType> to_create = { NodeType::eAmbientOcclusion, NodeType::eCombine, NodeType::eDenoise,
-                                            NodeType::ePresent, NodeType::eRender, NodeType::eSceneProvider };
+        std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent,
+                                            /* NodeType::eAmbientOcclusion, NodeType::eCombine,
+                                            NodeType::eDenoise,NodeType::eRender */ };
 
         for (auto t : to_create)
         {
+            switch (t)
+            {
+                case NodeType::eSceneProvider:
+                    m_has_scene_provider = true;
+                    break;
+                case NodeType::ePresent:
+                    m_has_presenter = true;
+                    break;
+                default:
+                    break;
+            }
+
             auto node = m_factory->create(t);
             m_nodes.insert(std::pair<id_t, node_ptr_t>{
                     node->id(),
@@ -39,17 +52,55 @@ namespace Nebula::Editor
             {
                 if (ImGui::BeginMenu("Add Node"))
                 {
-                    if (ImGui::MenuItem("Ambient Occlusion")) {}
-                    if (ImGui::MenuItem("Image Combiner")) {}
-                    if (ImGui::MenuItem("Denoiser")) {}
+                    if (ImGui::MenuItem("Ambient Occlusion"))
+                    {
+                        _handle_add_node(NodeType::eAmbientOcclusion);
+                    }
+                    if (ImGui::MenuItem("Anti-Aliasing"))
+                    {
+                        _handle_add_node(NodeType::eAntiAliasing);
+                    }
+                    if (ImGui::MenuItem("Blur"))
+                    {
+                        _handle_add_node(NodeType::eGaussianBlur);
+                    }
+                    if (ImGui::MenuItem("Deferred Pass"))
+                    {
+                        _handle_add_node(NodeType::eDeferredRender);
+                    }
+                    if (ImGui::MenuItem("Denoiser"))
+                    {
+                        _handle_add_node(NodeType::eDenoise);
+                    }
+                    if (ImGui::MenuItem("Lighting Pass"))
+                    {
+                        _handle_add_node(NodeType::eLightingPass);
+                    }
                     if (ImGui::MenuItem("Present"))
                     {
-                        // TODO: Only allow one of these to exist
+                        if (m_has_presenter)
+                        {
+                            auto msg = std::format(R"([Warning] Only one instance of Present node is allowed.)");
+                            m_messages.push_back(msg);
+                            std::cout << msg << std::endl;
+                        }
+                        else
+                        {
+                            _handle_add_node(NodeType::ePresent);
+                        }
                     }
-                    if (ImGui::MenuItem("Render")) {}
                     if (ImGui::MenuItem("Scene Provider"))
                     {
-                        // TODO: Only allow one of these to exist
+                        if (m_has_presenter)
+                        {
+                            auto msg = std::format(R"([Warning] Only one instance of Scene Provider node is allowed.)");
+                            m_messages.push_back(msg);
+                            std::cout << msg << std::endl;
+                        }
+                        else
+                        {
+                            _handle_add_node(NodeType::eSceneProvider);
+                        }
                     }
                     ImGui::EndMenu();
                 }
@@ -136,7 +187,7 @@ namespace Nebula::Editor
             std::string message;
             if (e_attr.input_is_connected)
             {
-                message = std::format("[Error] The attribute \"{}\" of \"{}\" already has an input attached.", e_attr.name, e_node->name());
+                message = std::format(R"([Error] The attribute "{}" of "{}" already has an input attached.)", e_attr.name, e_node->name());
                 m_messages.push_back(message);
                 std::cout << message << std::endl;
                 return false;
@@ -144,7 +195,7 @@ namespace Nebula::Editor
 
             if (edge_exists)
             {
-                message = std::format("[Error] The attributes \"{}\" and \"{}\" are already connected.", s_attr.name, e_attr.name);
+                message = std::format(R"([Error] The attributes "{}" and "{}" are already connected.)", s_attr.name, e_attr.name);
                 m_messages.push_back(message);
                 std::cout << message << std::endl;
                 return false;
@@ -152,7 +203,7 @@ namespace Nebula::Editor
 
             if (s_attr.type != e_attr.type)
             {
-                message = std::format("[Error] Type of attribute \"{}\" is not compatible with \"{}\".", s_attr.name, e_attr.name);
+                message = std::format(R"([Error] Type of attribute "{}" is not compatible with "{}".)", s_attr.name, e_attr.name);
                 m_messages.push_back(message);
                 std::cout << message << std::endl;
                 return false;
@@ -163,7 +214,7 @@ namespace Nebula::Editor
             e_attr.input_is_connected = true;
 
             message = std::format(
-                    "[Info] Connecting: \"{}\" (\"{}\") --> \"{}\" (\"{}\")",
+                    R"([Info] Connecting: "{}" ("{}") --> "{}" ("{}"))",
                     s_node->name(), s_attr.name,
                     e_node->name(), e_attr.name
             );
@@ -199,12 +250,18 @@ namespace Nebula::Editor
 
             std::cout
                 << std::format(
-                        "[Info] (Will) Deleting link: \"{}\" (\"{}\") --> \"{}\" (\"{}\")",
+                        R"([Info] (Will) Deleting link: "{}" ("{}") --> "{}" ("{}"))",
                         s_node->name(), s_attr.name,
                         e_node->name(), e_attr.name)
                 << std::endl;
         }
 
         std::cout << "[Warning] What the fuck" << std::endl;
+    }
+
+    void GraphEditor::_handle_add_node(NodeType type)
+    {
+        auto node = m_factory->create(type);
+        m_nodes.insert({ node->id(), std::shared_ptr<Node>(node) });
     }
 }

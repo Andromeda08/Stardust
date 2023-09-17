@@ -17,6 +17,7 @@ namespace Nebula::Editor
         using id_t = int32_t;
         using node_ptr_t = std::shared_ptr<Node>;
         using Scene_t = sd::Scene;
+
         struct UiEdge
         {
             id_t id = sd::util::gen_id();
@@ -36,6 +37,10 @@ namespace Nebula::Editor
         std::vector<std::string>              m_messages;
         std::unique_ptr<VirtualNodeFactory>   m_factory;
         std::unique_ptr<GraphCompileStrategy> m_compiler;
+
+        // Flags for root and sink nodes
+        bool m_has_scene_provider { false };
+        bool m_has_presenter { false };
 
         const sdvk::Context& m_context;
 
@@ -61,5 +66,7 @@ namespace Nebula::Editor
         void _handle_link_delete();
 
         void _erase_edge(id_t edge_id);
+
+        void _handle_add_node(NodeType type);
     };
 }
