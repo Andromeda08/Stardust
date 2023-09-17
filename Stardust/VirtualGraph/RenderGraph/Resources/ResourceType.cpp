@@ -17,6 +17,8 @@ namespace Nebula::RenderGraph
                 return { 210, 15, 57, 255 };
             case ResourceType::eImage:
                 return { 30, 102, 245, 255 };
+            case ResourceType::eImageArray:
+                return { 136, 57, 239, 255 };
             case ResourceType::eObjects:
                 return { 223, 142, 29, 255 };
             case ResourceType::eTlas:

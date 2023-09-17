@@ -10,6 +10,7 @@ namespace Nebula::RenderGraph
         eCamera,
         eDepthImage,
         eImage,
+        eImageArray,
         eObjects,
         eTlas,
         eUnknown,
