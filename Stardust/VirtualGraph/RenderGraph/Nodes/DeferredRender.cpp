@@ -91,9 +91,8 @@ namespace Nebula::RenderGraph
     {
         uint32_t current_frame = sd::Application::s_current_frame;
 
-        // TODO: Update descriptors
-
-        auto& objects = (dynamic_cast<ObjectsResource&>(*m_resources["Objects"])).objects;
+        _update_descriptor(current_frame);
+        auto& objects = (dynamic_cast<ObjectsResource&>(*m_resources["Objects"])).m_objects;
 
         auto render_commands = [&](const vk::CommandBuffer& cmd){
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
@@ -124,5 +123,22 @@ namespace Nebula::RenderGraph
             .with_render_area({{ 0, 0 }, m_renderer.render_resolution})
             .with_render_pass(m_renderer.render_pass)
             .execute(command_buffer, render_commands);
+    }
+
+    void DeferredRender::_update_descriptor(uint32_t current_frame)
+    {
+        auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).m_camera);
+        auto camera_data = camera.uniform_data();
+        m_renderer.uniform[current_frame]->set_data(&camera_data, m_context.device());
+
+        auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).m_tlas;
+
+        vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &tlas->tlas() };
+        vk::DescriptorBufferInfo un_info { m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData) };
+
+        m_renderer.descriptor->begin_write(current_frame)
+            .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData))
+            .acceleration_structure(1, 1, &tlas->tlas())
+            .commit();
     }
 }

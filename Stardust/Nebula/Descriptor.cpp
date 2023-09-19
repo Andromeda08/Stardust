@@ -131,6 +131,114 @@ namespace Nebula
     : _context(context), _descriptor(descriptor), _set_index(set_index)
     {
     }
+    
+    Descriptor::Write& Descriptor::Write::acceleration_structure(uint32_t binding,
+                                                                 uint32_t acceleration_structure_count,
+                                                                 const vk::AccelerationStructureKHR* p_acceleration_structures,
+                                                                 uint32_t count)
+    {
+        _as_infos.emplace_back(acceleration_structure_count, p_acceleration_structures);
+
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
+        write.setDstArrayElement(0);
+        write.setPNext(&_as_infos.back());
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+    
+    Descriptor::Write& Descriptor::Write::uniform_buffer(uint32_t binding,
+                                                         const vk::Buffer& buffer,
+                                                         uint32_t offset,
+                                                         uint32_t range,
+                                                         uint32_t count)
+    {
+        _buffer_infos.emplace_back(buffer, offset, range);
+
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+        write.setDstArrayElement(0);
+        write.setPBufferInfo(&_buffer_infos.back());
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+
+    Descriptor::Write& Descriptor::Write::combined_image_sampler(uint32_t binding,
+                                                                 const vk::Sampler& sampler,
+                                                                 const vk::ImageView& image_view,
+                                                                 vk::ImageLayout image_layout,
+                                                                 uint32_t count)
+    {
+        _image_infos.emplace_back(sampler, image_view, image_layout);
+
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+        write.setDstArrayElement(0);
+        write.setPImageInfo(&_image_infos.back());
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    
+    Descriptor::Write& Descriptor::Write::combined_image_sampler(uint32_t binding,
+                                                                 const vk::DescriptorImageInfo& image_info,
+                                                                 uint32_t count)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+        write.setDstArrayElement(0);
+        write.setPImageInfo(&image_info);
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    
+    Descriptor::Write& Descriptor::Write::storage_image(uint32_t binding,
+                                                        const vk::DescriptorImageInfo& image_info,
+                                                        uint32_t count)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eStorageImage);
+        write.setDstArrayElement(0);
+        write.setPImageInfo(&image_info);
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    
+    void Descriptor::Write::commit()
+    {
+        if (!_writes.empty())
+        {
+            _context.device().updateDescriptorSets(_writes.size(), _writes.data(), 0, nullptr);
+        }
+    }
 
     // Builder
 

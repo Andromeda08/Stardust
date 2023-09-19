@@ -38,6 +38,8 @@ namespace Nebula::RenderGraph
         ~DeferredRender() override = default;
 
     private:
+        void _update_descriptor(uint32_t current_frame);
+
         struct Renderer
         {
             std::shared_ptr<Descriptor> descriptor;
