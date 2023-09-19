@@ -65,6 +65,11 @@ namespace sdvk
 
             Execute& with_clear_values(const std::array<vk::ClearValue, 3>& clear_values);
 
+            Execute& with_clear_values(const std::array<vk::ClearValue, 4>& clear_values);
+
+            template <unsigned int N>
+            Execute& with_clear_values(const std::array<vk::ClearValue, N>& clear_values);
+
             Execute& with_framebuffer(const vk::Framebuffer& framebuffer);
 
             void execute(vk::CommandBuffer const& cmd, const std::function<void(const vk::CommandBuffer&)>& fn);
@@ -73,4 +78,12 @@ namespace sdvk
             vk::RenderPassBeginInfo _begin_info;
         };
     };
+
+    template<unsigned int N>
+    RenderPass::Execute& RenderPass::Execute::with_clear_values(const std::array<vk::ClearValue, N>& clear_values)
+    {
+        _begin_info.setClearValueCount(clear_values.size());
+        _begin_info.setPClearValues(clear_values.data());
+        return *this;
+    }
 }

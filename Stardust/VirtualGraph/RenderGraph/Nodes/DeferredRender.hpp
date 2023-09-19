@@ -45,7 +45,7 @@ namespace Nebula::RenderGraph
             vk::PipelineLayout pipeline_layout;
             vk::RenderPass render_pass;
 
-            std::array<vk::ClearValue, 3> clear_values;
+            std::array<vk::ClearValue, 4> clear_values;
             uint32_t frames_in_flight;
             vk::Extent2D render_resolution;
             std::vector<std::unique_ptr<sdvk::Buffer>> uniform;

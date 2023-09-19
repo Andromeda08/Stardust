@@ -35,8 +35,11 @@ namespace Nebula::RenderGraph
 
     struct LightingPassUniform
     {
-        glm::vec4 light_pos { -5, 10, 12, 0 };
-        sd::CameraUniformData camera_data;
+        glm::mat4 view;
+        glm::mat4 proj;
+        glm::mat4 view_inverse;
+        glm::mat4 proj_inverse;
+        glm::vec4 eye;
     };
 
     struct LightingPassPushConstant
@@ -50,6 +53,7 @@ namespace Nebula::RenderGraph
          * [0]: Enable RayQuery shadows
          */
         glm::ivec4 flags_a;
+        glm::vec4  light_pos;
     };
 
     class LightingPass : public Node

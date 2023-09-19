@@ -137,6 +137,13 @@ namespace sdvk
         return *this;
     }
 
+    RenderPass::Execute& RenderPass::Execute::with_clear_values(const std::array<vk::ClearValue, 4>& clear_values)
+    {
+        _begin_info.setClearValueCount(clear_values.size());
+        _begin_info.setPClearValues(clear_values.data());
+        return *this;
+    }
+
     RenderPass::Execute& RenderPass::Execute::with_framebuffer(const vk::Framebuffer& framebuffer)
     {
         _begin_info.setFramebuffer(framebuffer);

@@ -10,7 +10,8 @@ namespace Nebula::RenderGraph
 {
     #pragma region Resource Specifications
     const std::vector<ResourceSpecification> LightingPass::s_resource_specs = {
-        { "G-Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
+        { "Position Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
+        { "Normal Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Albedo Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "AO Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32Sfloat },
         { "AA Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR16G16B16A16Sfloat },
@@ -50,6 +51,7 @@ namespace Nebula::RenderGraph
 
         auto render_commands = [&](const vk::CommandBuffer& cmd){
             LightingPassPushConstant push_constant(m_options);
+            push_constant.light_pos = { -12, 10, 5, 1 };
 
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
             cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(LightingPassPushConstant), &push_constant);
@@ -61,11 +63,13 @@ namespace Nebula::RenderGraph
             cmd.draw(3, 1, 0, 0);
         };
 
-        auto gbuffer = dynamic_cast<ImageResource&>(*m_resources["G-Buffer"]).get_image();
+        auto position = dynamic_cast<ImageResource&>(*m_resources["Position Buffer"]).get_image();
+        auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
         auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
 
-        Nebula::Sync::ImageBarrier(gbuffer, gbuffer->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
 
@@ -79,7 +83,8 @@ namespace Nebula::RenderGraph
             .with_render_pass(m_renderer.render_pass)
             .execute(command_buffer, render_commands);
 
-        Nebula::Sync::ImageBarrier(gbuffer, gbuffer->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
@@ -112,7 +117,8 @@ namespace Nebula::RenderGraph
             .combined_image_sampler(1, vk::ShaderStageFlagBits::eFragment)
             .combined_image_sampler(2, vk::ShaderStageFlagBits::eFragment)
             .combined_image_sampler(3, vk::ShaderStageFlagBits::eFragment)
-            .acceleration_structure(4, vk::ShaderStageFlagBits::eFragment)
+            .combined_image_sampler(4, vk::ShaderStageFlagBits::eFragment)
+            .acceleration_structure(5, vk::ShaderStageFlagBits::eFragment)
             .create(m_renderer.frames_in_flight, m_context);
 
         auto pipeline = sdvk::PipelineBuilder(m_context)
@@ -139,7 +145,7 @@ namespace Nebula::RenderGraph
                 .create(m_context);
         }
 
-        m_renderer.samplers.resize(3);
+        m_renderer.samplers.resize(4);
         for (vk::Sampler& sampler : m_renderer.samplers)
         {
             sampler = sdvk::SamplerBuilder().create(m_context.device());
@@ -148,7 +154,8 @@ namespace Nebula::RenderGraph
 
     void LightingPass::_update_descriptor(uint32_t current_frame)
     {
-        auto gbuffer = dynamic_cast<ImageResource&>(*m_resources["G-Buffer"]).get_image();
+        auto position = dynamic_cast<ImageResource&>(*m_resources["Position Buffer"]).get_image();
+        auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
         auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
 
@@ -158,21 +165,27 @@ namespace Nebula::RenderGraph
 
         auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).get_tlas();
 
-        LightingPassUniform uniform_data {};
-        uniform_data.camera_data = camera_data;
+        LightingPassUniform uniform_data;
+        uniform_data.view = camera_data.view;
+        uniform_data.proj = camera_data.proj;
+        uniform_data.view_inverse = camera_data.view_inverse;
+        uniform_data.proj_inverse = camera_data.proj_inverse;
+        uniform_data.eye = camera_data.eye;
 
         vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &tlas->tlas() };
-        vk::DescriptorImageInfo gbuffer_info { m_renderer.samplers[0],gbuffer->image_view(),gbuffer->state().layout };
-        vk::DescriptorImageInfo albedo_info { m_renderer.samplers[0], albedo->image_view(), albedo->state().layout };
-        vk::DescriptorImageInfo depth_info { m_renderer.samplers[0], depth->image_view(), depth->state().layout };
+        vk::DescriptorImageInfo position_info { m_renderer.samplers[0],position->image_view(),position->state().layout };
+        vk::DescriptorImageInfo normal_info { m_renderer.samplers[1],normal->image_view(),normal->state().layout };
+        vk::DescriptorImageInfo albedo_info { m_renderer.samplers[2], albedo->image_view(), albedo->state().layout };
+        vk::DescriptorImageInfo depth_info { m_renderer.samplers[3], depth->image_view(), depth->state().layout };
         vk::DescriptorBufferInfo un_info { m_renderer.uniform[current_frame]->buffer(), 0, sizeof(LightingPassUniform) };
 
         m_renderer.descriptor->begin_write(current_frame)
             .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(LightingPassUniform))
-            .combined_image_sampler(1, gbuffer_info)
-            .combined_image_sampler(2, albedo_info)
-            .combined_image_sampler(3, depth_info)
-            .acceleration_structure(4, 1, &tlas->tlas())
+            .combined_image_sampler(1, position_info)
+            .combined_image_sampler(2, normal_info)
+            .combined_image_sampler(3, albedo_info)
+            .combined_image_sampler(4, depth_info)
+            .acceleration_structure(5, 1, &tlas->tlas())
             .commit();
     }
 }

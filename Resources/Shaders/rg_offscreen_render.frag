@@ -15,7 +15,7 @@ layout (location = 1) out vec4 outGBuffer;
 
 layout (set = 0, binding = 1) uniform accelerationStructureEXT tlas;
 
-vec3 g_light = vec3(-5, 10, 12);
+vec3 g_light = vec3(-12, 10, 5);
 
 vec3 compute_diffuse(vec3 color, vec3 light_dir, vec3 normal)
 {
