@@ -4,14 +4,12 @@
 #include <uuid.h>
 #include <glm/vec4.hpp>
 #include <Utility.hpp>
-#include "RenderGraph/Resources/ResourceSpecification.hpp"
-#include "RenderGraph/Resources/ResourceRole.hpp"
-#include "RenderGraph/Resources/ResourceType.hpp"
+#include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
+#include <VirtualGraph/RenderGraph/Resources/ResourceRole.hpp>
+#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Editor
 {
-    using namespace Nebula::RenderGraph;
-
     struct ResourceDescription
     {
         int32_t      id   = sd::util::gen_id();

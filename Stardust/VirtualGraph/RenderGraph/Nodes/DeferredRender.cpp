@@ -1,5 +1,6 @@
 #include "DeferredRender.hpp"
 #include <Application/Application.hpp>
+#include <Nebula/Barrier.hpp>
 #include <Nebula/Image.hpp>
 #include <Resources/CameraUniformData.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
@@ -37,7 +38,7 @@ namespace Nebula::RenderGraph
         m_renderer.render_resolution = sd::Application::s_extent.vk_ext();
         m_renderer.frames_in_flight = sd::Application::s_max_frames_in_flight;
 
-        m_renderer.clear_values[0].setColor(std::array<float, 4>{ 0.3f, 0.3f, 0.3f, 1.0f });
+        m_renderer.clear_values[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
         m_renderer.clear_values[1].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
         m_renderer.clear_values[2].setDepthStencil({ 1.0f, 0 });
 
@@ -55,6 +56,7 @@ namespace Nebula::RenderGraph
             .set_render_pass(m_renderer.render_pass)
             .set_size(m_renderer.render_resolution)
             .set_count(m_renderer.frames_in_flight)
+            .set_name("DeferredPass Framebuffer")
             .create(m_context);
 
         m_renderer.descriptor = Descriptor::Builder()
@@ -118,6 +120,15 @@ namespace Nebula::RenderGraph
             }
         };
 
+
+        auto gbuffer = dynamic_cast<ImageResource&>(*m_resources["G-Buffer"]).get_image();
+        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
+        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
+
+        Nebula::Sync::ImageBarrier(gbuffer, vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(albedo, vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(depth, vk::ImageLayout::eGeneral, vk::ImageLayout::eDepthAttachmentOptimal).apply(command_buffer);
+
         auto framebuffer = m_renderer.framebuffers->get(current_frame);
         sdvk::RenderPass::Execute()
             .with_clear_values(m_renderer.clear_values)
@@ -125,6 +136,10 @@ namespace Nebula::RenderGraph
             .with_render_area({{ 0, 0 }, m_renderer.render_resolution})
             .with_render_pass(m_renderer.render_pass)
             .execute(command_buffer, render_commands);
+
+        Nebula::Sync::ImageBarrier(gbuffer, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(albedo, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(depth, vk::ImageLayout::eDepthAttachmentOptimal, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
 
     void DeferredRender::_update_descriptor(uint32_t current_frame)

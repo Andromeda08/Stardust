@@ -8,28 +8,17 @@
 #include <imgui.h>
 #include <uuid.h>
 #include <Math/Graph/Vertex.hpp>
-#include <VirtualGraph/ResourceDescription.hpp>
+#include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Common/NodeType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/RenderNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Editor
 {
     class Node : public Nebula::Graph::Vertex
     {
-    private:
-        glm::ivec4 m_color { 128, 128, 128, 255 };
-        glm::ivec4 m_hover { 200, 200, 200, 255 };
-        NodeType m_type = NodeType::eUnknown;
-
-    protected:
-        std::vector<ResourceDescription> m_resource_descriptions;
-
-        virtual void render_options() {}
-
     public:
         struct Builder
         {
@@ -70,7 +59,10 @@ namespace Nebula::Editor
 
         virtual void render();
 
-        const NodeType type() const { return m_type; }
+        NodeType type() const
+        {
+            return m_type;
+        }
 
         ResourceDescription& get_resource(int32_t id)
         {
@@ -85,23 +77,24 @@ namespace Nebula::Editor
             throw std::runtime_error(std::format("No resource by the id {}", id));
         }
 
-        const std::vector<ResourceDescription>& resources() { return m_resource_descriptions; }
+        const std::vector<ResourceDescription>& resources()
+        {
+            return m_resource_descriptions;
+        }
+
+    protected:
+        std::vector<ResourceDescription> m_resource_descriptions;
+
+        virtual void render_options() {}
+
+    private:
+        glm::ivec4 m_color { 128, 128, 128, 255 };
+        glm::ivec4 m_hover { 200, 200, 200, 255 };
+        NodeType   m_type = NodeType::eUnknown;
     };
 
     class AmbientOcclusionNode : public Node
     {
-    private:
-        struct AmbientOcclusionNodeOptions
-        {
-            bool rtao = true;
-        } m_options;
-
-    protected:
-        void render_options() override
-        {
-            ImGui::Checkbox("Ray Traced", &m_options.rtao);
-        }
-
     public:
         AmbientOcclusionNode()
         : Node("Ambient Occlusion",
@@ -159,20 +152,18 @@ namespace Nebula::Editor
                 m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
                 m_resource_descriptions.back().spec = spec;
             }
-
-            m_shadow_modes.push_back(to_string(LightingPassShadowMode::eNone));
-            m_shadow_modes.push_back(to_string(LightingPassShadowMode::eShadowMaps));
-            m_shadow_modes.push_back(to_string(LightingPassShadowMode::eRayQuery));
         }
 
     protected:
         void render_options() override
         {
+            ImGui::Checkbox("With Ambient Occlusion", &m_options.include_ao);
+            ImGui::Checkbox("With Anti-Aliasing", &m_options.include_aa);
+            ImGui::Checkbox("With Shadows", &m_options.with_shadows);
         }
 
     private:
-        std::vector<std::string> m_shadow_modes;
-        RenderGraph::LightingPassOptions m_options;
+        LightingPassOptions m_options;
     };
 
     class DenoiseNode : public Node
@@ -226,50 +217,6 @@ namespace Nebula::Editor
         }
     };
 
-    #pragma region deprecated node types
-    class CombineNode : public Node
-    {
-    public:
-        CombineNode()
-            : Node("Image Combine",
-                   { 32, 159, 181, 255 },
-                   { 116, 199, 236, 255 },
-                   NodeType::eCombine)
-        {
-            m_resource_descriptions.emplace_back("Image A", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Image B", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Result", ResourceRole::eOutput, ResourceType::eImage);
-        }
-    };
-
-    class RenderNode : public Node
-    {
-    private:
-        struct RenderGraph::RenderNodeOptions m_options;
-
-    protected:
-        void render_options() override
-        {
-            ImGui::Checkbox("Shadows", &m_options.with_shadows);
-        }
-
-    public:
-        RenderNode()
-            : Node("Render Node",
-                   { 114, 135, 253, 255 },
-                   { 180, 190, 254, 255 },
-                   NodeType::eRender)
-        {
-            const auto& specs = RenderGraph::RenderNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
-    };
-    #pragma endregion
-
     class VirtualNodeFactory
     {
     public:
@@ -281,8 +228,6 @@ namespace Nebula::Editor
                     return new AmbientOcclusionNode();
                 case NodeType::eAntiAliasing:
                     return new AntiAliasingNode();
-                case NodeType::eCombine:
-                    return new CombineNode();
                 case NodeType::eDeferredRender:
                     return new DeferredPassNode();
                 case NodeType::eDenoise:
@@ -291,8 +236,6 @@ namespace Nebula::Editor
                     return new LightingPassNode();
                 case NodeType::ePresent:
                     return new PresentNode();
-                case NodeType::eRender:
-                    return new RenderNode();
                 case NodeType::eSceneProvider:
                     return new SceneProviderNode();
                 default:

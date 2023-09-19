@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "RenderPath.hpp"
+#include <VirtualGraph/Common/RenderPath.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Compiler
 {
     struct CompileResult
     {
@@ -15,6 +15,6 @@ namespace Nebula::Editor
         bool success = false;
         std::chrono::milliseconds compile_time;
 
-        std::shared_ptr<RenderGraph::RenderPath> render_path;
+        std::shared_ptr<RenderPath> render_path;
     };
 }

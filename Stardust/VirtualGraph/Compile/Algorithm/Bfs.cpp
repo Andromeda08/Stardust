@@ -3,9 +3,9 @@
 #include <queue>
 #include <Math/Graph/Vertex.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Algorithm
 {
-    std::set<int32_t> Bfs::execute(const node_ptr& root)
+    std::set<int32_t> Bfs::execute(const std::shared_ptr<Editor::Node>& root)
     {
         std::set<int32_t> visited;
         std::queue<std::shared_ptr<Graph::Vertex>> Q;

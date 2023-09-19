@@ -6,19 +6,22 @@
 #include <string>
 #include <vector>
 #include <Vulkan/Context.hpp>
-#include "CompileResult.hpp"
-#include "GraphCompileStrategy.hpp"
+#include <VirtualGraph/Compile/CompileResult.hpp>
+#include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Editor
 {
     class Node;
+}
 
+namespace Nebula::RenderGraph::Compiler
+{
     class DefaultCompileStrategy : public GraphCompileStrategy
     {
     public:
         DefaultCompileStrategy(const RenderGraphContext& context): GraphCompileStrategy(context) {}
 
-        CompileResult compile(const std::vector<std::shared_ptr<Node>>& nodes, bool verbose = false) override;
+        CompileResult compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes, bool verbose) override;
 
         ~DefaultCompileStrategy() = default;
     };

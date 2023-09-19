@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <Nebula/Barrier.hpp>
 #include <Nebula/Image.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
 #include <VirtualGraph/RenderGraph/Resources/Resource.hpp>
@@ -15,7 +16,6 @@ namespace Nebula::RenderGraph
 {
     struct RenderPath
     {
-        // Nodes in execution order
         std::vector<std::shared_ptr<Node>> nodes;
 
         // Image resources
@@ -25,6 +25,15 @@ namespace Nebula::RenderGraph
         {
             if (!m_is_initialized)
             {
+                for (const auto& [id, resource] : resources)
+                {
+                    if (resource->type() == ResourceType::eImage)
+                    {
+                        auto image = dynamic_cast<ImageResource&>(*resource).get_image();
+                        Nebula::Sync::ImageBarrier(image, image->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+                    }
+                }
+
                 for (const auto& node : nodes)
                 {
                     node->initialize();

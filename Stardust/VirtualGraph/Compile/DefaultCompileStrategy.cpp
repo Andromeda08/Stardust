@@ -5,16 +5,15 @@
 #include <sstream>
 #include <Benchmarking.hpp>
 #include <Nebula/Image.hpp>
-#include <VirtualGraph/Node.hpp>
-#include <VirtualGraph/GraphEditor.hpp>
-#include <VirtualGraph/ResourceDescription.hpp>
+#include <VirtualGraph/Editor/Node.hpp>
+#include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Compile/NodeFactory.hpp>
 #include <VirtualGraph/Compile/Algorithm/Bfs.hpp>
 #include <VirtualGraph/Compile/Algorithm/TopologicalSort.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Compiler
 {
     std::string res_to_string(RenderGraph::ResourceType type)
     {
@@ -41,7 +40,7 @@ namespace Nebula::Editor
         }
     }
 
-    CompileResult DefaultCompileStrategy::compile(const std::vector<std::shared_ptr<Node>>& nodes, bool verbose)
+    CompileResult DefaultCompileStrategy::compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes, bool verbose)
     {
         CompileResult result = {};
 
@@ -60,11 +59,12 @@ namespace Nebula::Editor
         }
 
         // 1. Find unreachable nodes (BFS Traversal)
-        #pragma region Filter out unreachable nodes by BFS Traversal of RG
-        std::chrono::milliseconds filter_time;
-        std::vector<std::shared_ptr<Node>> connected_nodes;
+        #pragma region Filter out unreachable nodes by BFS Traversal of RenderGraph
 
-        std::shared_ptr<Node> root_node;
+        std::chrono::milliseconds filter_time;
+        std::vector<std::shared_ptr<Editor::Node>> connected_nodes;
+
+        std::shared_ptr<Editor::Node> root_node;
         for (const auto& node : nodes)
         {
             if (node->type() == NodeType::eSceneProvider)
@@ -82,7 +82,7 @@ namespace Nebula::Editor
         }
 
         filter_time = sd::bm::measure([&](){
-            auto bfs = std::make_unique<Bfs>(nodes);
+            auto bfs = std::make_unique<Algorithm::Bfs>(nodes);
             auto reachable_node_ids = bfs->execute(root_node);
             for (const auto& node : nodes)
             {
@@ -95,13 +95,15 @@ namespace Nebula::Editor
         logs.push_back(std::format("[Info] Found {} unreachable node(s). ({}ms)",
                                    std::to_string(nodes.size() - connected_nodes.size()),
                                    filter_time.count()));
+
         #pragma endregion
 
         // 2. To determine execution order of nodes run Topological Sort based on Logical Nodes and Connections.
         #pragma region Topological Sort on reachable nodes
+
         std::chrono::milliseconds tsort_time;
-        auto topological_sort = std::make_unique<TopologicalSort>(connected_nodes);
-        std::vector<std::shared_ptr<Node>> topological_ordering;
+        auto topological_sort = std::make_unique<Algorithm::TopologicalSort>(connected_nodes);
+        std::vector<std::shared_ptr<Editor::Node>> topological_ordering;
         try
         {
             tsort_time = sd::bm::measure<std::chrono::milliseconds>([&](){
@@ -124,12 +126,14 @@ namespace Nebula::Editor
             tsort_log << std::format(" [{}]", node->name());
         }
         logs.push_back(tsort_log.str());
+
         #pragma endregion
 
         // 3. Evaluate required resources
         #pragma region Evaluate required resources
+
         std::chrono::milliseconds resource_eval_time;
-        std::map<int32_t, ResourceDescription> required_resources;
+        std::map<int32_t, Editor::ResourceDescription> required_resources;
         resource_eval_time = sd::bm::measure<std::chrono::milliseconds>([&]() {
             for (const auto& node: topological_ordering) {
                 const auto& resources = node->resources();
@@ -148,10 +152,12 @@ namespace Nebula::Editor
             }
         });
         logs.push_back(std::format("[Info] Required resource count: {} ({}ms)", std::to_string(required_resources.size()), resource_eval_time.count()));
+
         #pragma endregion
 
-        // 4. Create GPU resources
-        #pragma region Create GPU resources
+        // 4. Create resources
+        #pragma region Create resources
+
         std::chrono::milliseconds create_time;
         std::map<std::string, std::shared_ptr<Resource>> created_resources;
 
@@ -180,14 +186,14 @@ namespace Nebula::Editor
                                                                      res_spec.tiling,
                                                                      res_spec.memory_flags,
                                                                      resource_name);
-                        new_res = std::make_shared<ImageResource>(image);
+                        new_res = std::make_shared<ImageResource>(image, resource_name);
                     }
                     else if (resource.type == ResourceType::eDepthImage)
                     {
                         auto image = Nebula::Image::make_depth_image(m_context.render_resolution(),
                                                                      m_context.context(),
                                                                      resource_name);
-                        new_res = std::make_shared<DepthImageResource>(image);
+                        new_res = std::make_shared<DepthImageResource>(image, resource_name);
                     }
                     else
                     {
@@ -204,17 +210,17 @@ namespace Nebula::Editor
                     if (resource.type == ResourceType::eCamera)
                     {
                         const auto& camera = m_context.scene()->camera();
-                        new_res = std::make_shared<CameraResource>(camera);
+                        new_res = std::make_shared<CameraResource>(camera, resource_name);
                     }
                     else if (resource.type == ResourceType::eObjects)
                     {
                         const auto& objects = m_context.scene()->objects();
-                        new_res = std::make_shared<ObjectsResource>(objects);
+                        new_res = std::make_shared<ObjectsResource>(objects, resource_name);
                     }
                     else if (resource.type == ResourceType::eTlas)
                     {
                         const auto& tlas = m_context.scene()->acceleration_structure();
-                        new_res = std::make_shared<TlasResource>(tlas);
+                        new_res = std::make_shared<TlasResource>(tlas, resource_name);
                     }
                     else
                     {
@@ -231,39 +237,49 @@ namespace Nebula::Editor
             }
         });
         logs.push_back(std::format("[Info] Created {} resource(s) ({}ms)", std::to_string(created_resources.size()), create_time.count()));
+
         #pragma endregion
 
         // 5. Create real nodes
         #pragma region Create real nodes
+
         auto node_factory = std::make_shared<NodeFactory>(m_context);
         std::vector<std::shared_ptr<RenderGraph::Node>> real_nodes;
-        for (const auto& node : connected_nodes)
-        {
-            auto n = node_factory->create(node->type());
-            if (n != nullptr)
+        auto node_creation_time = sd::bm::measure<std::chrono::milliseconds>([&](){
+            for (const auto& node : topological_ordering)
             {
-                real_nodes.push_back(n);
+                auto n = node_factory->create(node->type());
+                if (n != nullptr)
+                {
+                    real_nodes.push_back(n);
+                }
             }
-        }
+        });
+
         #pragma endregion
 
         // 6. Connect resources to nodes
         #pragma region Connect resources to nodes
-        for (const auto& node : real_nodes)
-        {
-            for (const auto& [name, img] : created_resources)
+
+        auto resource_connection_time = sd::bm::measure<std::chrono::milliseconds>([&](){
+            for (const auto& node : real_nodes)
             {
-                node->set_resource(name, img);
+                for (const auto& [name, res] : created_resources)
+                {
+                    node->set_resource(name, res);
+                }
             }
-        }
+        });
+
         #pragma endregion
 
         // 7. Finalize, pack result into a RenderPath and do final statistics
         #pragma region Finalize
-        auto compile_time = filter_time + tsort_time + resource_eval_time + create_time;
+
+        auto compile_time = filter_time + tsort_time + resource_eval_time + create_time + node_creation_time + resource_connection_time;
         logs.push_back(std::format("[Info] Graph compiled in {} ms", compile_time.count()));
 
-        auto render_path = std::make_shared<RenderGraph::RenderPath>();
+        auto render_path = std::make_shared<RenderPath>();
         render_path->resources = created_resources;
         render_path->nodes = real_nodes;
 
@@ -271,6 +287,7 @@ namespace Nebula::Editor
         result.logs = logs;
         result.success = true;
         result.render_path = render_path;
+
         #pragma endregion
 
         // 8. Write logs to file

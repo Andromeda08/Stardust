@@ -94,7 +94,7 @@ namespace Nebula
                                        format,
                                        extent,
                                        vk::SampleCountFlagBits::e1,
-                                       vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                                       vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
                                        vk::ImageAspectFlagBits::eDepth,
                                        vk::ImageTiling::eOptimal,
                                        vk::MemoryPropertyFlagBits::eDeviceLocal,
@@ -103,7 +103,9 @@ namespace Nebula
 
     vk::Format Image::find_depth_format(const vk::PhysicalDevice& physical_device)
     {
-        static const std::vector<vk::Format> candidates = { vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint };
+        return vk::Format::eD32Sfloat;
+
+        static const std::vector<vk::Format> candidates = { vk::Format::eD32SfloatS8Uint , vk::Format::eD24UnormS8Uint };
         for (auto format : candidates)
         {
             auto format_props = physical_device.getFormatProperties(format);

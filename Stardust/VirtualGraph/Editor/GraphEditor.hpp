@@ -4,12 +4,12 @@
 #include <memory>
 #include <vector>
 #include <Utility.hpp>
-#include <VirtualGraph/Node.hpp>
+#include <VirtualGraph/Editor/Node.hpp>
 #include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
 #include <VirtualGraph/Common/GraphContext.hpp>
 #include <Scene/Scene.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Editor
 {
     class GraphEditor
     {
@@ -36,7 +36,7 @@ namespace Nebula::Editor
 
         std::vector<std::string>              m_messages;
         std::unique_ptr<VirtualNodeFactory>   m_factory;
-        std::unique_ptr<GraphCompileStrategy> m_compiler;
+        std::unique_ptr<Compiler::GraphCompileStrategy> m_compiler;
 
         // Flags for root and sink nodes
         bool m_has_scene_provider { false };

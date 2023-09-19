@@ -18,7 +18,10 @@ namespace sdvk
 namespace Nebula::RenderGraph
 {
     class Node;
+}
 
+namespace Nebula::RenderGraph::Compiler
+{
     class NodeFactory
     {
     public:

@@ -25,11 +25,14 @@ namespace Nebula
 
             Builder& set_count(uint32_t count);
 
+            Builder& set_name(const std::string& name);
+
             std::shared_ptr<Framebuffer> create(const sdvk::Context& ctx);
 
         private:
             uint32_t _count {2};
             std::vector<vk::ImageView> _attachments;
+            std::string _name;
             vk::RenderPass _render_pass;
             vk::Extent2D _size;
         };

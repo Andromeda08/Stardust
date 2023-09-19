@@ -73,9 +73,8 @@ namespace sd
 
         m_editor->_add_initial_nodes();
 
-
-        m_rgctx = std::make_shared<Nebula::RenderGraphContext>(*m_context, *m_swapchain);
-        m_ge = std::make_shared<Nebula::Editor::GraphEditor>(*m_rgctx);
+        m_rgctx = std::make_shared<Nebula::RenderGraph::RenderGraphContext>(*m_command_buffers, *m_context, *m_swapchain);
+        m_ge = std::make_shared<Nebula::RenderGraph::Editor::GraphEditor>(*m_rgctx);
 
 #pragma region node testing
         auto connect_time = bm::measure<std::chrono::milliseconds>([&](){

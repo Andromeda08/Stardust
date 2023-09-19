@@ -30,9 +30,15 @@ namespace Nebula
         return *this;
     }
 
+    Framebuffer::Builder& Framebuffer::Builder::set_name(const std::string& name)
+    {
+        _name = name;
+        return *this;
+    }
+
     std::shared_ptr<Framebuffer> Framebuffer::Builder::create(const sdvk::Context& ctx)
     {
-        return std::make_shared<Framebuffer>(_attachments, _render_pass, _size, _count, ctx);
+        return std::make_shared<Framebuffer>(_attachments, _render_pass, _size, _count, ctx, _name);
     }
 
     Framebuffer::Framebuffer(const std::vector<vk::ImageView>& attachments,

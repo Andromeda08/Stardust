@@ -3,11 +3,10 @@
 #include <map>
 #include <stdexcept>
 #include <queue>
-#include <VirtualGraph/Node.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Algorithm
 {
-    std::vector<TopologicalSort::node_ptr> TopologicalSort::execute()
+    std::vector<std::shared_ptr<Editor::Node>> TopologicalSort::execute()
     {
         std::map<int32_t, int32_t> in_degrees;
         for (const auto& node : m_nodes)
@@ -15,8 +14,8 @@ namespace Nebula::Editor
             in_degrees.emplace(node->id(), node->in_degree());
         }
 
-        std::vector<node_ptr> T;
-        std::queue<node_ptr>  Q;
+        std::vector<std::shared_ptr<Editor::Node>> T;
+        std::queue<std::shared_ptr<Editor::Node>>  Q;
 
         for (const auto& node : m_nodes)
         {

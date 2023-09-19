@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <imnodes.h>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Editor
 {
     Node::Node(const std::string& name, const glm::ivec4& color, const glm::ivec4& hover, NodeType type)
     : Nebula::Graph::Vertex(name)

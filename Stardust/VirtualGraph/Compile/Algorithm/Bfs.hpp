@@ -3,22 +3,21 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include <VirtualGraph/Node.hpp>
+#include <VirtualGraph/Editor/Node.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Algorithm
 {
     class Bfs
     {
     private:
-        using node_ptr = std::shared_ptr<Node>;
-        const std::vector<node_ptr>& m_nodes;
+        const std::vector<std::shared_ptr<Editor::Node>>& m_nodes;
 
     public:
-        Bfs(const std::vector<node_ptr>& nodes): m_nodes(nodes) {}
+        Bfs(const std::vector<std::shared_ptr<Editor::Node>>& nodes): m_nodes(nodes) {}
 
         /**
          * @return Set of node IDs which were visited during execution.
          */
-        std::set<int32_t> execute(const node_ptr& root);
+        std::set<int32_t> execute(const std::shared_ptr<Editor::Node>& root);
     };
 }

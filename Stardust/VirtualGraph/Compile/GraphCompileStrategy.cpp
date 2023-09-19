@@ -1,18 +1,16 @@
 #include "GraphCompileStrategy.hpp"
-#include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
-
 #include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <format>
-#include <map>
 #include <string>
 #include <VirtualGraph/Common/NodeType.hpp>
+#include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Compiler
 {
-    std::string to_string(RenderGraph::ResourceType type)
+    std::string to_string(ResourceType type)
     {
         switch (type)
         {
@@ -68,7 +66,7 @@ namespace Nebula::Editor
 
     void GraphCompileStrategy::write_logs_to_file(const std::string& file_name)
     {
-        auto path = std::format("{}.txt", file_name);
+        auto path = std::format("logs/{}.txt", file_name);
         std::fstream fs(path);
         fs.open(path, std::ios_base::out);
         std::ostream_iterator<std::string> os_it(fs, "\n");
@@ -76,8 +74,7 @@ namespace Nebula::Editor
         fs.close();
     }
 
-    void GraphCompileStrategy::write_graph_state_dump(const RenderGraph::RenderPath& render_path,
-                                                      const std::string& file_name)
+    void GraphCompileStrategy::write_graph_state_dump(const RenderPath& render_path, const std::string& file_name)
     {
         std::vector<std::string> dump;
         dump.emplace_back("[=====[Begin Resources]=====]");
@@ -99,7 +96,7 @@ namespace Nebula::Editor
             dump.emplace_back("\tResources:");
 
             auto& resources = node->resources();
-            for (const RenderGraph::ResourceSpecification& rspec : node->get_resource_specs())
+            for (const ResourceSpecification& rspec : node->get_resource_specs())
             {
                 const bool is_connected = resources.contains(rspec.name);
                 dump.push_back(
@@ -111,7 +108,7 @@ namespace Nebula::Editor
         }
         dump.emplace_back("[=====[End Nodes]=====]");
 
-        auto path = std::format("{}.txt", file_name);
+        auto path = std::format("logs/{}.txt", file_name);
         std::fstream fs(path);
         fs.open(path, std::ios_base::out);
         std::ostream_iterator<std::string> os_it(fs, "\n");

@@ -166,7 +166,7 @@ namespace Nebula::RenderGraph
 
         bool is_valid() override
         {
-            return m_objects.empty();
+            return !m_objects.empty();
         }
 
         const ObjectArray_t& get_objects() const

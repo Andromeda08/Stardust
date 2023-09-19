@@ -1,6 +1,8 @@
 #pragma once
 
-namespace Nebula
+#include <string>
+
+namespace Nebula::RenderGraph
 {
     enum class NodeType
     {
@@ -16,9 +18,5 @@ namespace Nebula
         ePresent,
         eSceneProvider,
         eUnknown,
-
-        // TODO: Combine and Render should be deprecated after implementing proper deferred shading
-        eCombine,
-        eRender,
     };
 }

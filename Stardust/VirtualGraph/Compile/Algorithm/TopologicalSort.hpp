@@ -2,20 +2,20 @@
 
 #include <memory>
 #include <vector>
+#include <VirtualGraph/Editor/Node.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Algorithm
 {
     class Node;
 
     class TopologicalSort
     {
-    private:
-        using node_ptr = std::shared_ptr<Node>;
-        const std::vector<node_ptr>& m_nodes;
-
     public:
-        TopologicalSort(const std::vector<node_ptr>& nodes): m_nodes(nodes) {}
+        TopologicalSort(const std::vector<std::shared_ptr<Editor::Node>>& nodes): m_nodes(nodes) {}
 
-        std::vector<node_ptr> execute();
+        std::vector<std::shared_ptr<Editor::Node>> execute();
+
+    private:
+        const std::vector<std::shared_ptr<Editor::Node>>& m_nodes;
     };
 }

@@ -26,11 +26,6 @@ namespace Nebula::RenderGraph
     class DeferredRender : public Node
     {
     public:
-        static const std::vector<ResourceSpecification> s_resource_specs;
-
-        const std::vector<ResourceSpecification>& get_resource_specs() const override { return s_resource_specs; }
-
-    public:
         explicit DeferredRender(const sdvk::Context& context);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
@@ -57,5 +52,13 @@ namespace Nebula::RenderGraph
         } m_renderer;
 
         const sdvk::Context& m_context;
+
+    public:
+        const std::vector<ResourceSpecification>& get_resource_specs() const override
+        {
+            return s_resource_specs;
+        }
+
+        static const std::vector<ResourceSpecification> s_resource_specs;
     };
 }

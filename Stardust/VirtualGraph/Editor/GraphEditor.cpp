@@ -7,7 +7,7 @@
 #include <imnodes.h>
 #include <VirtualGraph/Compile/DefaultCompileStrategy.hpp>
 
-namespace Nebula::Editor
+namespace Nebula::RenderGraph::Editor
 {
     std::shared_ptr<sd::Scene> GraphEditor::s_selected_scene = nullptr;
 
@@ -15,7 +15,7 @@ namespace Nebula::Editor
     : m_context(context)
     {
         m_factory = std::make_unique<VirtualNodeFactory>();
-        m_compiler = std::make_unique<DefaultCompileStrategy>(m_context);
+        m_compiler = std::make_unique<Compiler::DefaultCompileStrategy>(m_context);
 
         std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent,
                                             /* NodeType::eAmbientOcclusion, NodeType::eCombine,
