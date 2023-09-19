@@ -1,63 +1,205 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-pass-by-value"
 #pragma once
 
 #include <memory>
+#include <string>
 #include <Nebula/Image.hpp>
 #include <Scene/Camera.hpp>
 #include <Scene/Object.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
+#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 
+/**
+ * This file contains all resource type definitions.
+ * All resource types inherit the "Resource" class.
+ */
 namespace Nebula::RenderGraph
 {
-    struct Resource
+    using Camera_t = sd::Camera;
+    using Camera_ptr = std::shared_ptr<Camera_t>;
+
+    using Image_t = Nebula::Image;
+    using Image_ptr = std::shared_ptr<Image_t>;
+    using ImageArray_t = std::vector<Image_ptr>;
+
+    using Object_t = sd::Object;
+    using ObjectArray_t = std::vector<Object_t>;
+
+    using Tlas_t = sdvk::Tlas;
+    using Tlas_ptr = std::shared_ptr<Tlas_t>;
+
+    class Resource
     {
+    public:
+        Resource(const std::string& name, ResourceType type)
+        : m_name(name)
+        , m_type(type)
+        {
+        }
+
+        /**
+         * Allows for custom "validation" logic for specific Resource Types.
+         * The most basic example: Is the resource a nullptr or not?
+         */
+        virtual bool is_valid() = 0;
+
         virtual ~Resource() = default;
+
+        const std::string& name() const
+        {
+            return m_name;
+        }
+
+        ResourceType type() const
+        {
+            return m_type;
+        }
+
+    private:
+        std::string  m_name = "Unknown Resource";
+        ResourceType m_type = ResourceType::eUnknown;
     };
 
-    struct CameraResource : public Resource
+    class CameraResource : public Resource
     {
-        explicit CameraResource(const std::shared_ptr<sd::Camera>& camera)
-        : Resource(), m_camera(camera) {}
+    public:
+        explicit CameraResource(const Camera_ptr& camera, const std::string& name = "Camera Resource")
+        : Resource(name, ResourceType::eCamera)
+        , m_camera(camera)
+        {
+        }
 
-        std::shared_ptr<sd::Camera> m_camera;
+        bool is_valid() override
+        {
+            return m_camera != nullptr;
+        }
+
+        const Camera_ptr& get_camera() const
+        {
+            return m_camera;
+        }
+
+    private:
+         Camera_ptr m_camera;
     };
 
-    struct DepthImageResource : public Resource
+    class DepthImageResource : public Resource
     {
-        explicit DepthImageResource(const std::shared_ptr<Nebula::Image>& depth_image)
-        : Resource(), resource(depth_image) {}
+    public:
+        explicit DepthImageResource(const Image_ptr& depth_image, const std::string& name = "Depth Image Resource")
+        : Resource(name, ResourceType::eDepthImage)
+        , m_depth_image(depth_image)
+        {
+        }
 
-        std::shared_ptr<Nebula::Image> resource;
+        bool is_valid() override
+        {
+            return m_depth_image != nullptr;
+        }
+
+        const Image_ptr& get_depth_image() const
+        {
+            return m_depth_image;
+        }
+
+    private:
+        Image_ptr m_depth_image;
     };
 
-    struct ImageResource : public Resource
+    class ImageResource : public Resource
     {
-        explicit ImageResource(const std::shared_ptr<Nebula::Image>& image)
-        : Resource(), resource(image) {}
+        using Image_t = Nebula::Image;
+        using Image_ptr = std::shared_ptr<Image_t>;
+    public:
+        explicit ImageResource(const Image_ptr& image, const std::string& name = "Image Resource")
+        : Resource(name, ResourceType::eImage)
+        , m_image(image)
+        {
+        }
 
-        std::shared_ptr<Nebula::Image> resource;
+        bool is_valid() override
+        {
+            return m_image != nullptr;
+        }
+
+        const Image_ptr& get_image() const
+        {
+            return m_image;
+        }
+
+    private:
+        Image_ptr m_image;
     };
 
-    struct ImageArrayResource : public Resource
+    class ImageArrayResource : public Resource
     {
-        explicit ImageArrayResource(const std::vector<std::shared_ptr<Nebula::Image>>& images)
-        : Resource(), m_images(images) {}
+    public:
+        explicit ImageArrayResource(const ImageArray_t& images, const std::string& name = "Image Array Resource")
+        : Resource(name, ResourceType::eImageArray)
+        , m_images(images)
+        {
+        }
 
-        std::vector<std::shared_ptr<Nebula::Image>> m_images;
+        bool is_valid() override
+        {
+            return m_images.empty();
+        }
+
+        const ImageArray_t& get_image_array() const
+        {
+            return m_images;
+        }
+
+    private:
+        ImageArray_t m_images;
     };
 
-    struct ObjectsResource : public Resource
+    class ObjectsResource : public Resource
     {
-        explicit ObjectsResource(const std::vector<sd::Object>& objects)
-        : Resource(), m_objects(objects) {}
+    public:
+        explicit ObjectsResource(const ObjectArray_t& objects, const std::string& name = "Objects Resource")
+        : Resource(name, ResourceType::eObjects)
+        , m_objects(objects)
+        {
+        }
 
-        const std::vector<sd::Object>& m_objects;
+        bool is_valid() override
+        {
+            return m_objects.empty();
+        }
+
+        const ObjectArray_t& get_objects() const
+        {
+            return m_objects;
+        }
+
+    private:
+        const ObjectArray_t& m_objects;
     };
 
-    struct TlasResource : public Resource
+    class TlasResource : public Resource
     {
-        explicit TlasResource(const std::shared_ptr<sdvk::Tlas>& tlas)
-        : Resource(), m_tlas(tlas) {}
+    public:
+        explicit TlasResource(const Tlas_ptr& tlas, const std::string& name = "Tlas Resource")
+        : Resource(name, ResourceType::eTlas)
+        , m_tlas(tlas)
+        {
+        }
 
-        std::shared_ptr<sdvk::Tlas> m_tlas;
+        bool is_valid() override
+        {
+            return m_tlas != nullptr;
+        }
+
+        const Tlas_ptr& get_tlas() const
+        {
+            return m_tlas;
+        }
+
+    private:
+        Tlas_ptr m_tlas;
     };
 }
+
+#pragma clang diagnostic pop

@@ -41,10 +41,10 @@ namespace Nebula::RenderGraph
         }); */
 
         const auto& g_buffer_resource = m_resources["G-Buffer"];
-        auto g_buffer = dynamic_cast<ImageResource&>(*g_buffer_resource).resource;
+        auto g_buffer = dynamic_cast<ImageResource&>(*g_buffer_resource).get_image();
 
         const auto& render_image_resource = m_resources["Render Image"];
-        auto render_image = dynamic_cast<ImageResource&>(*render_image_resource).resource;
+        auto render_image = dynamic_cast<ImageResource&>(*render_image_resource).get_image();
 
         #pragma region RenderPass, Framebuffers
 

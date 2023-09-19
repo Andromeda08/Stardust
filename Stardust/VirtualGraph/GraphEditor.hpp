@@ -6,7 +6,7 @@
 #include <Utility.hpp>
 #include <VirtualGraph/Node.hpp>
 #include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
-#include <Vulkan/Context.hpp>
+#include <VirtualGraph/Common/GraphContext.hpp>
 #include <Scene/Scene.hpp>
 
 namespace Nebula::Editor
@@ -42,14 +42,14 @@ namespace Nebula::Editor
         bool m_has_scene_provider { false };
         bool m_has_presenter { false };
 
-        const sdvk::Context& m_context;
+        RenderGraphContext& m_context;
 
     public:
         // TODO: Should replace Scene with a new representation
         static std::shared_ptr<Scene_t> s_selected_scene;
 
     public:
-        explicit GraphEditor(const sdvk::Context& context);
+        explicit GraphEditor(RenderGraphContext& context);
 
         void render();
 

@@ -11,7 +11,7 @@ namespace Nebula::Editor
 {
     std::shared_ptr<sd::Scene> GraphEditor::s_selected_scene = nullptr;
 
-    GraphEditor::GraphEditor(const sdvk::Context& context)
+    GraphEditor::GraphEditor(RenderGraphContext& context)
     : m_context(context)
     {
         m_factory = std::make_unique<VirtualNodeFactory>();
@@ -158,6 +158,8 @@ namespace Nebula::Editor
         {
             std::cout << msg << std::endl;
         }
+
+        m_context.set_render_path(result.render_path);
     }
 
     bool GraphEditor::_handle_connection()

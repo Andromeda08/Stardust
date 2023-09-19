@@ -41,7 +41,7 @@ void main()
 {
     vec3 N = normalize(inWorldNormal);
 
-    outGBuffer = vec4(i_worldPos, uintBitsToFloat(CompressUnitVec(N)));
+    outGBuffer = vec4(inWorldPos, uintBitsToFloat(CompressUnitVec(N)));
     outAlbedo = vec4(inColor, 1);
 }
 

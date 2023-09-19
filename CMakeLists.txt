@@ -141,7 +141,6 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/Compile/RenderPath.hpp
         Stardust/VirtualGraph/RenderGraph/Nodes/Node.hpp
         Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.cpp
-        Stardust/VirtualGraph/RenderGraph/Resources/ResourceRequirement.hpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/RenderNode.cpp Stardust/VirtualGraph/RenderGraph/Nodes/RenderNode.hpp
@@ -151,7 +150,22 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/Compile/Algorithm/Bfs.hpp
         Stardust/VirtualGraph/Compile/NodeFactory.hpp
         Stardust/VirtualGraph/Common/NodeType.hpp
-        Stardust/VirtualGraph/Compile/NodeFactory.cpp)
+        Stardust/VirtualGraph/Compile/NodeFactory.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/BlurNode.h
+        Stardust/VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/DeferredRender.cpp
+        Stardust/VirtualGraph/Common/GraphContext.hpp
+        Stardust/Nebula/Framebuffer.hpp
+        Stardust/Nebula/Framebuffer.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.hpp
+        Stardust/VirtualGraph/Common/GraphContext.cpp
+)
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm VulkanMemoryAllocator stduuid)

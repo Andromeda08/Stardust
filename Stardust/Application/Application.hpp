@@ -9,6 +9,7 @@
 #include <Vulkan/v2/Descriptor.hpp>
 #include <Window/Window.hpp>
 #include <VirtualGraph/GraphEditor.hpp>
+#include <VirtualGraph/Common/GraphContext.hpp>
 
 namespace sd
 {
@@ -37,6 +38,8 @@ namespace sd
         ApplicationOptions m_options;
 
         std::shared_ptr<rg::RenderGraphEditor> m_editor;
+
+        std::shared_ptr<Nebula::RenderGraphContext> m_rgctx;
         std::shared_ptr<Nebula::Editor::GraphEditor> m_ge;
 
         std::unique_ptr<sd::Window> m_window;

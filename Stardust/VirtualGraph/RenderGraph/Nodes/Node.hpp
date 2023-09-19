@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 #include <VirtualGraph/RenderGraph/Resources/Resource.hpp>
+#include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
+#include <VirtualGraph/Common/NodeType.hpp>
 
 namespace Nebula::RenderGraph
 {
@@ -11,6 +13,12 @@ namespace Nebula::RenderGraph
     {
     public:
         Node() = default;
+
+        Node(std::string name, NodeType type)
+        : m_name(name)
+        , m_type(type)
+        {
+        }
 
         virtual void execute(const vk::CommandBuffer& command_buffer) { /* default: no-op */ }
 
@@ -35,6 +43,20 @@ namespace Nebula::RenderGraph
 
         virtual ~Node() = default;
 
+        std::map<std::string, std::shared_ptr<Resource>>& resources() { return m_resources; }
+
+        virtual const std::vector<ResourceSpecification>& get_resource_specs() const = 0;
+
+        const std::string& name() const
+        {
+            return m_name;
+        }
+
+        NodeType type() const
+        {
+            return m_type;
+        }
+
     protected:
         virtual bool _validate_resource(const std::string& key, const std::shared_ptr<Resource>& resource)
         {
@@ -43,5 +65,9 @@ namespace Nebula::RenderGraph
 
     protected:
         std::map<std::string, std::shared_ptr<Resource>> m_resources;
+
+    private:
+        const std::string m_name = "Unknown Node";
+        const NodeType    m_type = NodeType::eUnknown;
     };
 }

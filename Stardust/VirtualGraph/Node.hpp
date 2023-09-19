@@ -14,6 +14,7 @@
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RenderNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
 
 namespace Nebula::Editor
 {
@@ -197,7 +198,13 @@ namespace Nebula::Editor
                { 242, 205, 205, 255 },
                NodeType::ePresent)
         {
-            m_resource_descriptions.emplace_back("Image", ResourceRole::eInput, ResourceType::eImage);
+
+            const auto& specs = RenderGraph::PresentNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
         }
     };
 

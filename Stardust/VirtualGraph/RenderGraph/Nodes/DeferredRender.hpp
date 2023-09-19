@@ -28,6 +28,8 @@ namespace Nebula::RenderGraph
     public:
         static const std::vector<ResourceSpecification> s_resource_specs;
 
+        const std::vector<ResourceSpecification>& get_resource_specs() const override { return s_resource_specs; }
+
     public:
         explicit DeferredRender(const sdvk::Context& context);
 

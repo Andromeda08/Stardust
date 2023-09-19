@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <VirtualGraph/Common/NodeType.hpp>
+#include <VirtualGraph/Common/GraphContext.hpp>
 
 namespace sd
 {
@@ -11,6 +12,7 @@ namespace sd
 namespace sdvk
 {
     class Context;
+    class Swapchain;
 }
 
 namespace Nebula::RenderGraph
@@ -20,15 +22,13 @@ namespace Nebula::RenderGraph
     class NodeFactory
     {
     public:
-        explicit NodeFactory(const sdvk::Context& context, const std::shared_ptr<sd::Scene>& scene)
+        explicit NodeFactory(const RenderGraphContext& context)
         : m_context(context)
-        , m_scene(scene)
         {}
 
         std::shared_ptr<Node> create(NodeType type);
 
     private:
-        std::shared_ptr<sd::Scene> m_scene;
-        const sdvk::Context& m_context;
+        const RenderGraphContext& m_context;
     };
 }

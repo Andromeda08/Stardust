@@ -9,7 +9,7 @@ namespace Nebula::RenderGraph
     };
 
     SceneProviderNode::SceneProviderNode(const std::shared_ptr<sd::Scene>& scene)
-    : m_scene(scene)
+    : Node("Scene Provider", NodeType::eSceneProvider), m_scene(scene)
     {
     }
 }

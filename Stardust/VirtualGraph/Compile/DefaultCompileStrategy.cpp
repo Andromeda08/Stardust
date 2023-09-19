@@ -16,6 +16,31 @@
 
 namespace Nebula::Editor
 {
+    std::string res_to_string(RenderGraph::ResourceType type)
+    {
+        switch (type)
+        {
+            case RenderGraph::ResourceType::eBuffer:
+                return "Buffer";
+            case RenderGraph::ResourceType::eCamera:
+                return "Camera";
+            case RenderGraph::ResourceType::eDepthImage:
+                return "Depth Image";
+            case RenderGraph::ResourceType::eImage:
+                return "Image";
+            case RenderGraph::ResourceType::eImageArray:
+                return "Image Array";
+            case RenderGraph::ResourceType::eObjects:
+                return "Objects";
+            case RenderGraph::ResourceType::eTlas:
+                return "Tlas";
+            case RenderGraph::ResourceType::eUnknown:
+                // Falls through
+            default:
+                return "Unknown";
+        }
+    }
+
     CompileResult DefaultCompileStrategy::compile(const std::vector<std::shared_ptr<Node>>& nodes, bool verbose)
     {
         CompileResult result = {};
@@ -128,41 +153,89 @@ namespace Nebula::Editor
         // 4. Create GPU resources
         #pragma region Create GPU resources
         std::chrono::milliseconds create_time;
-        std::map<std::string, std::shared_ptr<Nebula::Image>> images;
+        std::map<std::string, std::shared_ptr<Resource>> created_resources;
+
+        std::set<ResourceType> gpu_types = {
+            ResourceType::eImage, ResourceType::eDepthImage, ResourceType::eImageArray
+        };
+
         create_time = sd::bm::measure<std::chrono::milliseconds>([&](){
             for (const auto& [id, resource] : required_resources)
             {
-                if (resource.type != ResourceType::eImage)
-                {
-                    continue;
-                }
 
                 const auto resource_name = std::format("({:%Y-%m-%d %H:%M}) {}-{}", begin_time, resource.name, id);
-
                 const auto& res_spec = resource.spec;
-                auto image = std::make_shared<Nebula::Image>(m_context,
-                                                             res_spec.format,
-                                                             res_spec.extent,
-                                                             res_spec.sample_count,
-                                                             res_spec.usage_flags,
-                                                             res_spec.aspect_flags,
-                                                             res_spec.tiling,
-                                                             res_spec.memory_flags,
-                                                             resource_name);
+                std::shared_ptr<Resource> new_res;
 
-                images.insert({ resource.name, image });
-                if (verbose)
+                if (gpu_types.contains(resource.type))
                 {
-                    logs.push_back(std::format("[Verbose] Created GPU resource: {}", resource_name));
+                    if (resource.type == ResourceType::eImage)
+                    {
+                        auto image = std::make_shared<Nebula::Image>(m_context.context(),
+                                                                     res_spec.format,
+                                                                     m_context.render_resolution(),
+                                                                     res_spec.sample_count,
+                                                                     res_spec.usage_flags | vk::ImageUsageFlagBits::eColorAttachment,
+                                                                     res_spec.aspect_flags,
+                                                                     res_spec.tiling,
+                                                                     res_spec.memory_flags,
+                                                                     resource_name);
+                        new_res = std::make_shared<ImageResource>(image);
+                    }
+                    else if (resource.type == ResourceType::eDepthImage)
+                    {
+                        auto image = Nebula::Image::make_depth_image(m_context.render_resolution(),
+                                                                     m_context.context(),
+                                                                     resource_name);
+                        new_res = std::make_shared<DepthImageResource>(image);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    if (verbose)
+                    {
+                        logs.push_back(std::format("[Verbose] Created GPU resource: {}", resource_name));
+                    }
                 }
+                else
+                {
+                    if (resource.type == ResourceType::eCamera)
+                    {
+                        const auto& camera = m_context.scene()->camera();
+                        new_res = std::make_shared<CameraResource>(camera);
+                    }
+                    else if (resource.type == ResourceType::eObjects)
+                    {
+                        const auto& objects = m_context.scene()->objects();
+                        new_res = std::make_shared<ObjectsResource>(objects);
+                    }
+                    else if (resource.type == ResourceType::eTlas)
+                    {
+                        const auto& tlas = m_context.scene()->acceleration_structure();
+                        new_res = std::make_shared<TlasResource>(tlas);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    if (verbose)
+                    {
+                        logs.push_back(std::format("[Verbose] Created {} resource: {}", res_to_string(resource.type), resource_name));
+                    }
+                }
+
+                created_resources.insert({resource.name, new_res });
             }
         });
-        logs.push_back(std::format("[Info] Created {} resource(s) ({}ms)", std::to_string(images.size()), create_time.count()));
+        logs.push_back(std::format("[Info] Created {} resource(s) ({}ms)", std::to_string(created_resources.size()), create_time.count()));
         #pragma endregion
 
         // 5. Create real nodes
         #pragma region Create real nodes
-        auto node_factory = std::make_shared<NodeFactory>(m_context, Editor::GraphEditor::s_selected_scene);
+        auto node_factory = std::make_shared<NodeFactory>(m_context);
         std::vector<std::shared_ptr<RenderGraph::Node>> real_nodes;
         for (const auto& node : connected_nodes)
         {
@@ -178,10 +251,9 @@ namespace Nebula::Editor
         #pragma region Connect resources to nodes
         for (const auto& node : real_nodes)
         {
-            for (const auto& [name, img] : images)
+            for (const auto& [name, img] : created_resources)
             {
-                auto res = std::make_shared<ImageResource>(img);
-                node->set_resource(name, res);
+                node->set_resource(name, img);
             }
         }
         #pragma endregion
@@ -191,9 +263,9 @@ namespace Nebula::Editor
         auto compile_time = filter_time + tsort_time + resource_eval_time + create_time;
         logs.push_back(std::format("[Info] Graph compiled in {} ms", compile_time.count()));
 
-        RenderGraph::RenderPath render_path;
-        render_path.resources = images;
-        render_path.nodes = real_nodes;
+        auto render_path = std::make_shared<RenderGraph::RenderPath>();
+        render_path->resources = created_resources;
+        render_path->nodes = real_nodes;
 
         result.compile_time = compile_time;
         result.logs = logs;
@@ -203,6 +275,9 @@ namespace Nebula::Editor
 
         // 8. Write logs to file
         write_logs_to_file(std::format("GraphCompile_Log_{:%Y-%m-%d_%H-%M}_{}", begin_time, result.success ? "Success" : "Failed"));
+
+        // 9. Dump graph state
+        write_graph_state_dump(*render_path, std::format("GraphCompile_Log_{:%Y-%m-%d_%H-%M}_{}", begin_time, "Dump"));
 
         return result;
     }

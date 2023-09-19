@@ -1,5 +1,7 @@
 #include "Framebuffer.hpp"
 #include <Vulkan/Context.hpp>
+#include <Vulkan/Utils.hpp>
+#include <format>
 
 namespace Nebula
 {
@@ -37,7 +39,8 @@ namespace Nebula
                              const vk::RenderPass& render_pass,
                              const vk::Extent2D& size,
                              uint32_t count,
-                             const sdvk::Context& ctx)
+                             const sdvk::Context& ctx,
+                             const std::string& name)
     {
         vk::FramebufferCreateInfo create_info;
         create_info.setLayers(1);
@@ -48,7 +51,7 @@ namespace Nebula
         create_info.setWidth(size.width);
 
         const vk::Device& device = ctx.device();
-        m_framebuffers.reserve(count);
+        m_framebuffers.resize(count);
         for (vk::Framebuffer& framebuffer : m_framebuffers)
         {
             vk::Result result = device.createFramebuffer(&create_info, nullptr, &framebuffer);
@@ -56,6 +59,14 @@ namespace Nebula
             {
                 throw std::runtime_error("[Error] Framebuffer creation failed.");
             }
+        }
+
+        for (int32_t i = 0; i < m_framebuffers.size(); i++)
+        {
+            sdvk::util::name_vk_object(std::format("{} {}", name, std::to_string(i)),
+                                       (uint64_t) static_cast<VkFramebuffer>(m_framebuffers[i]),
+                                       vk::ObjectType::eFramebuffer,
+                                       device);
         }
     }
 

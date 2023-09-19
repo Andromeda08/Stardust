@@ -20,7 +20,7 @@ namespace Nebula::RenderGraph
     #pragma endregion
 
     DeferredRender::DeferredRender(const sdvk::Context& context)
-    : Node(), m_context(context)
+    : Node("Deferred Pass", NodeType::eDeferredRender), m_context(context)
     {
     }
 
@@ -30,9 +30,9 @@ namespace Nebula::RenderGraph
         const auto& r_albedo = m_resources["Albedo Image"];
         const auto& r_depth = m_resources["Depth Image"];
 
-        auto gbuffer = dynamic_cast<ImageResource&>(*r_gbuffer).resource;
-        auto albedo = dynamic_cast<ImageResource&>(*r_albedo).resource;
-        auto depth = dynamic_cast<DepthImageResource&>(*r_depth).resource;
+        auto gbuffer = dynamic_cast<ImageResource&>(*r_gbuffer).get_image();
+        auto albedo = dynamic_cast<ImageResource&>(*r_albedo).get_image();
+        auto depth = dynamic_cast<DepthImageResource&>(*r_depth).get_depth_image();
 
         m_renderer.render_resolution = sd::Application::s_extent.vk_ext();
         m_renderer.frames_in_flight = sd::Application::s_max_frames_in_flight;
@@ -67,7 +67,7 @@ namespace Nebula::RenderGraph
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
-            .set_attachment_count(3)
+            .set_attachment_count(2)
             .add_attribute_descriptions({ sd::VertexData::attribute_descriptions() })
             .add_binding_descriptions({ sd::VertexData::binding_description() })
             .add_shader("rg_deferred_pass.vert.spv", vk::ShaderStageFlagBits::eVertex)
@@ -78,6 +78,7 @@ namespace Nebula::RenderGraph
         m_renderer.pipeline = pipeline.pipeline;
         m_renderer.pipeline_layout = pipeline.pipeline_layout;
 
+        m_renderer.uniform.resize(m_renderer.frames_in_flight);
         for (auto& ub : m_renderer.uniform)
         {
             ub = sdvk::Buffer::Builder()
@@ -92,7 +93,7 @@ namespace Nebula::RenderGraph
         uint32_t current_frame = sd::Application::s_current_frame;
 
         _update_descriptor(current_frame);
-        auto& objects = (dynamic_cast<ObjectsResource&>(*m_resources["Objects"])).m_objects;
+        auto& objects = (dynamic_cast<ObjectsResource&>(*m_resources["Objects"])).get_objects();
 
         auto render_commands = [&](const vk::CommandBuffer& cmd){
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
@@ -117,9 +118,10 @@ namespace Nebula::RenderGraph
             }
         };
 
+        auto framebuffer = m_renderer.framebuffers->get(current_frame);
         sdvk::RenderPass::Execute()
             .with_clear_values(m_renderer.clear_values)
-            .with_framebuffer(m_renderer.framebuffers->get(current_frame))
+            .with_framebuffer(framebuffer)
             .with_render_area({{ 0, 0 }, m_renderer.render_resolution})
             .with_render_pass(m_renderer.render_pass)
             .execute(command_buffer, render_commands);
@@ -127,11 +129,11 @@ namespace Nebula::RenderGraph
 
     void DeferredRender::_update_descriptor(uint32_t current_frame)
     {
-        auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).m_camera);
+        auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
         auto camera_data = camera.uniform_data();
         m_renderer.uniform[current_frame]->set_data(&camera_data, m_context.device());
 
-        auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).m_tlas;
+        auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).get_tlas();
 
         vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &tlas->tlas() };
         vk::DescriptorBufferInfo un_info { m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData) };

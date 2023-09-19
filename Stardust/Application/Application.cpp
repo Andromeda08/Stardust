@@ -73,7 +73,9 @@ namespace sd
 
         m_editor->_add_initial_nodes();
 
-        m_ge = std::make_shared<Nebula::Editor::GraphEditor>(*m_context);
+
+        m_rgctx = std::make_shared<Nebula::RenderGraphContext>(*m_context, *m_swapchain);
+        m_ge = std::make_shared<Nebula::Editor::GraphEditor>(*m_rgctx);
 
 #pragma region node testing
         auto connect_time = bm::measure<std::chrono::milliseconds>([&](){
@@ -119,6 +121,7 @@ namespace sd
 #pragma endregion
 
         m_ge->set_scene(g_rgs);
+        m_rgctx->set_scene(g_rgs);
 
         std::cout
                 << "Ctx init time   : " << ctx_init.count() << "ms\n"
@@ -178,6 +181,12 @@ namespace sd
                 g_osrnode->execute(command_buffer);
                 g_rtaonode->execute(command_buffer);
                 g_cnode->execute(command_buffer);
+            }
+
+            const auto& render_path = m_rgctx->get_render_path();
+            if (render_path != nullptr)
+            {
+                render_path->execute(command_buffer);
             }
 
             std::array<vk::ClearValue, 1> clear_value;

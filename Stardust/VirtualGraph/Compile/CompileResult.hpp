@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
 #include "RenderPath.hpp"
@@ -14,6 +15,6 @@ namespace Nebula::Editor
         bool success = false;
         std::chrono::milliseconds compile_time;
 
-        RenderGraph::RenderPath render_path;
+        std::shared_ptr<RenderGraph::RenderPath> render_path;
     };
 }

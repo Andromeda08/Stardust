@@ -50,7 +50,12 @@ namespace Nebula
 
         void update_state(ImageState state) { m_state = state; }
 
-        static std::shared_ptr<Image> make_depth_image(const sdvk::Context& context);
+        static std::shared_ptr<Image> make_depth_image(vk::Extent2D extent,
+                                                       const sdvk::Context& context,
+                                                       const std::string& name);
+
+    private:
+        static vk::Format find_depth_format(vk::PhysicalDevice const& physical_device);
 
     private:
         vk::Image        m_image;

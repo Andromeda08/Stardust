@@ -84,4 +84,36 @@ namespace Nebula
                                        context.device());
         }
     }
+
+    std::shared_ptr<Image> Image::make_depth_image(vk::Extent2D extent,
+                                                   const sdvk::Context& context,
+                                                   const std::string& name)
+    {
+        auto format = find_depth_format(context.physical_device());
+        return std::make_shared<Image>(context,
+                                       format,
+                                       extent,
+                                       vk::SampleCountFlagBits::e1,
+                                       vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                                       vk::ImageAspectFlagBits::eDepth,
+                                       vk::ImageTiling::eOptimal,
+                                       vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                       name);
+    }
+
+    vk::Format Image::find_depth_format(const vk::PhysicalDevice& physical_device)
+    {
+        static const std::vector<vk::Format> candidates = { vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint };
+        for (auto format : candidates)
+        {
+            auto format_props = physical_device.getFormatProperties(format);
+
+            if ((format_props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) ==
+                vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+            {
+                return format;
+            }
+        }
+        throw std::runtime_error("Failed to find a supported depth buffer format.");
+    }
 }

@@ -38,7 +38,8 @@ namespace Nebula
                     const vk::RenderPass& render_pass,
                     const vk::Extent2D& size,
                     uint32_t count,
-                    const sdvk::Context& ctx);
+                    const sdvk::Context& ctx,
+                    const std::string& name = "Framebuffer");
 
         const vk::Framebuffer& get(uint32_t index);
 

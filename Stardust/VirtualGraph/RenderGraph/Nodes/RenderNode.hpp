@@ -45,9 +45,11 @@ namespace Nebula::RenderGraph
     };
 
     // PushConstant block used while rendering, also contains options.
-    struct RenderNodePushConstant : RenderNodeOptions
+    struct RenderNodePushConstant
     {
-        explicit RenderNodePushConstant(const RenderNodeOptions& options): RenderNodeOptions(options) {}
+        explicit RenderNodePushConstant(const RenderNodeOptions& options) {}
+
+        // glm::ivec4
     };
 
     class RenderNode : public Node
@@ -58,6 +60,8 @@ namespace Nebula::RenderGraph
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         ~RenderNode() override = default;
+
+        const std::vector<ResourceSpecification>& get_resource_specs() const override { return s_resource_specs; }
 
     protected:
         bool _validate_resource(const std::string& key, const std::shared_ptr<Resource>& resource) override;

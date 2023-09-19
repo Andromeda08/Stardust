@@ -82,6 +82,7 @@ namespace Nebula
 
     void Descriptor::_create_descriptors()
     {
+        m_descriptors.resize(m_set_count);
         std::vector<vk::DescriptorSetLayout> layouts(m_set_count, m_layout);
         vk::DescriptorSetAllocateInfo alloc_info;
         alloc_info.setDescriptorPool(m_pool);
