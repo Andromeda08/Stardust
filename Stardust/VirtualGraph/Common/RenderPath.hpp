@@ -38,6 +38,8 @@ namespace Nebula::RenderGraph
                 {
                     node->initialize();
                 }
+
+                m_is_initialized = true;
             }
 
             for (const auto& node : nodes)
