@@ -161,7 +161,12 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
-        Stardust/VirtualGraph/RenderGraph/Options/LightingPassOptions.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/AmbientOcclusionStrategy.hpp Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/AmbientOcclusionStrategy.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/AmbientOcclusionMode.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/ScreenSpaceAO.hpp Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/ScreenSpaceAO.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/AmbientOcclusionOptions.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/RayTracedAO.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/RayTracedAO.hpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)

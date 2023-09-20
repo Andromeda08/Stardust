@@ -10,6 +10,7 @@
 #include <Math/Graph/Vertex.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Common/NodeType.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
@@ -102,11 +103,12 @@ namespace Nebula::RenderGraph::Editor
                { 250, 179, 135, 255 },
                NodeType::eAmbientOcclusion)
         {
-            m_resource_descriptions.emplace_back("G-Buffer", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("Camera", ResourceRole::eInput, ResourceType::eCamera);
-            m_resource_descriptions.emplace_back("TLAS", ResourceRole::eInput, ResourceType::eTlas);
-
-            m_resource_descriptions.emplace_back("AO Buffer", ResourceRole::eOutput, ResourceType::eImage);
+            const auto& specs = RenderGraph::AmbientOcclusionNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
         }
     };
 

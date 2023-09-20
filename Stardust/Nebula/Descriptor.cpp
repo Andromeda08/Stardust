@@ -22,6 +22,8 @@ namespace Nebula
                 return vk::DescriptorType::eSampler;
             case DescriptorType::eUniformBuffer:
                 return vk::DescriptorType::eUniformBuffer;
+            case DescriptorType::eUniformBufferDynamic:
+                return vk::DescriptorType::eUniformBufferDynamic;
             case DescriptorType::eAccelerationStructure:
                 return vk::DescriptorType::eAccelerationStructureKHR;
             default:
@@ -155,11 +157,11 @@ namespace Nebula
     
     Descriptor::Write& Descriptor::Write::uniform_buffer(uint32_t binding,
                                                          const vk::Buffer& buffer,
-                                                         uint32_t offset,
-                                                         uint32_t range,
+                                                         size_t offset,
+                                                         size_t range,
                                                          uint32_t count)
     {
-        _buffer_infos.emplace_back(buffer, offset, range);
+        auto info = _buffer_infos.emplace_back(buffer, offset, range);
 
         vk::WriteDescriptorSet write;
         write.setDstBinding(binding);
@@ -168,6 +170,60 @@ namespace Nebula
         write.setDescriptorType(vk::DescriptorType::eUniformBuffer);
         write.setDstArrayElement(0);
         write.setPBufferInfo(&_buffer_infos.back());
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+
+    Descriptor::Write&
+    Descriptor::Write::uniform_buffer(uint32_t binding, const vk::DescriptorBufferInfo& buffer, uint32_t count)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+        write.setDstArrayElement(0);
+        write.setPBufferInfo(&buffer);
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    Descriptor::Write& Descriptor::Write::uniform_buffer_dynamic(uint32_t binding,
+                                                         const vk::Buffer& buffer,
+                                                         size_t offset,
+                                                         size_t range,
+                                                         uint32_t count)
+    {
+        auto info = _buffer_infos.emplace_back(buffer, offset, range);
+
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
+        write.setDstArrayElement(0);
+        write.setPBufferInfo(&info);
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
+    Descriptor::Write&
+    Descriptor::Write::uniform_buffer_dynamic(uint32_t binding, const vk::DescriptorBufferInfo& buffer_info, uint32_t count)
+    {
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
+        write.setDstArrayElement(0);
+        write.setPBufferInfo(&buffer_info);
 
         _writes.push_back(write);
 
@@ -317,6 +373,14 @@ namespace Nebula
         _bindings.push_back(make_binding(DescriptorType::eUniformBuffer, binding, shader_stage, count));
         return *this;
     }
+
+    Descriptor::Builder&
+    Descriptor::Builder::uniform_buffer_dynamic(uint32_t binding, vk::ShaderStageFlags shader_stage, uint32_t count)
+    {
+        _bindings.push_back(make_binding(DescriptorType::eUniformBufferDynamic, binding, shader_stage, count));
+        return *this;
+    }
+
 
     Descriptor::Builder&
     Descriptor::Builder::acceleration_structure(uint32_t binding, vk::ShaderStageFlags shader_stage, uint32_t count)

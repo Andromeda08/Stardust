@@ -20,6 +20,6 @@ namespace Nebula::RenderGraph
         vk::MemoryPropertyFlags memory_flags { vk::MemoryPropertyFlagBits::eDeviceLocal };
         vk::SampleCountFlagBits sample_count { vk::SampleCountFlagBits::e1 };
         vk::ImageTiling tiling { vk::ImageTiling::eOptimal };
-        vk::ImageUsageFlags usage_flags { vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled };
+        vk::ImageUsageFlags usage_flags { vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage };
     };
 }

@@ -13,7 +13,6 @@ namespace Nebula::RenderGraph
      const std::vector<ResourceSpecification> DeferredRender::s_resource_specs = {
         { "Objects", ResourceRole::eInput, ResourceType::eObjects },
         { "Camera", ResourceRole::eInput, ResourceType::eCamera },
-        { "TLAS", ResourceRole::eInput, ResourceType::eTlas },
         { "Position Buffer", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Normal Buffer", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Albedo Image", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
@@ -67,7 +66,6 @@ namespace Nebula::RenderGraph
 
         m_renderer.descriptor = Descriptor::Builder()
             .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-            .acceleration_structure(1, vk::ShaderStageFlagBits::eFragment)
             .create(m_renderer.frames_in_flight, m_context);
 
         auto pipeline = sdvk::PipelineBuilder(m_context)
@@ -157,14 +155,10 @@ namespace Nebula::RenderGraph
         auto camera_data = camera.uniform_data();
         m_renderer.uniform[current_frame]->set_data(&camera_data, m_context.device());
 
-        auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).get_tlas();
-
-        vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &tlas->tlas() };
         vk::DescriptorBufferInfo un_info { m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData) };
 
         m_renderer.descriptor->begin_write(current_frame)
             .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData))
-            .acceleration_structure(1, 1, &tlas->tlas())
             .commit();
     }
 }

@@ -18,7 +18,8 @@ layout (set = 0, binding = 1) uniform sampler2D u_position;
 layout (set = 0, binding = 2) uniform sampler2D u_normal;
 layout (set = 0, binding = 3) uniform sampler2D u_albedo;
 layout (set = 0, binding = 4) uniform sampler2D u_depth;
-layout (set = 0, binding = 5) uniform accelerationStructureEXT u_tlas;
+layout (set = 0, binding = 5) uniform sampler2D u_ao;
+layout (set = 0, binding = 6) uniform accelerationStructureEXT u_tlas;
 
 layout (push_constant) uniform LightingPassPushConstant {
     // [0]: Enabled RayQuery shadows
@@ -86,5 +87,6 @@ void main() {
     }
 
     float gamma = 1.0 / 2.2;
-    outColor = vec4(pow(color.rgb, vec3(gamma)), 1.0);
+    float occlusion = texture(u_ao, uv).r;
+    outColor = vec4(pow(color.rgb * occlusion, vec3(gamma)), 1.0);
 }

@@ -13,9 +13,9 @@ namespace Nebula::RenderGraph
         { "Position Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Normal Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Albedo Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
+        { "Depth Image", ResourceRole::eInput, ResourceType::eDepthImage },
         { "AO Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32Sfloat },
         { "AA Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR16G16B16A16Sfloat },
-        { "Depth Image", ResourceRole::eInput, ResourceType::eDepthImage },
         { "Camera", ResourceRole::eInput, ResourceType::eCamera },
         { "TLAS", ResourceRole::eInput, ResourceType::eTlas },
         { "Lighting Result", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
@@ -67,11 +67,13 @@ namespace Nebula::RenderGraph
         auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
         auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
+        auto ao = dynamic_cast<ImageResource&>(*m_resources["AO Image"]).get_image();
 
         Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(ao, ao->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
 
         _update_descriptor(current_frame);
 
@@ -87,6 +89,7 @@ namespace Nebula::RenderGraph
         Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(ao, ao->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
 
     void LightingPass::initialize()
@@ -118,7 +121,8 @@ namespace Nebula::RenderGraph
             .combined_image_sampler(2, vk::ShaderStageFlagBits::eFragment)
             .combined_image_sampler(3, vk::ShaderStageFlagBits::eFragment)
             .combined_image_sampler(4, vk::ShaderStageFlagBits::eFragment)
-            .acceleration_structure(5, vk::ShaderStageFlagBits::eFragment)
+            .combined_image_sampler(5, vk::ShaderStageFlagBits::eFragment)
+            .acceleration_structure(6, vk::ShaderStageFlagBits::eFragment)
             .create(m_renderer.frames_in_flight, m_context);
 
         auto pipeline = sdvk::PipelineBuilder(m_context)
@@ -145,7 +149,7 @@ namespace Nebula::RenderGraph
                 .create(m_context);
         }
 
-        m_renderer.samplers.resize(4);
+        m_renderer.samplers.resize(5);
         for (vk::Sampler& sampler : m_renderer.samplers)
         {
             sampler = sdvk::SamplerBuilder().create(m_context.device());
@@ -158,6 +162,7 @@ namespace Nebula::RenderGraph
         auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
         auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
+        auto ao = dynamic_cast<ImageResource&>(*m_resources["AO Image"]).get_image();
 
         auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
         auto camera_data = camera.uniform_data();
@@ -165,7 +170,7 @@ namespace Nebula::RenderGraph
 
         auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).get_tlas();
 
-        LightingPassUniform uniform_data;
+        LightingPassUniform uniform_data {};
         uniform_data.view = camera_data.view;
         uniform_data.proj = camera_data.proj;
         uniform_data.view_inverse = camera_data.view_inverse;
@@ -177,6 +182,7 @@ namespace Nebula::RenderGraph
         vk::DescriptorImageInfo normal_info { m_renderer.samplers[1],normal->image_view(),normal->state().layout };
         vk::DescriptorImageInfo albedo_info { m_renderer.samplers[2], albedo->image_view(), albedo->state().layout };
         vk::DescriptorImageInfo depth_info { m_renderer.samplers[3], depth->image_view(), depth->state().layout };
+        vk::DescriptorImageInfo ao_info { m_renderer.samplers[4], ao->image_view(), ao->state().layout };
         vk::DescriptorBufferInfo un_info { m_renderer.uniform[current_frame]->buffer(), 0, sizeof(LightingPassUniform) };
 
         m_renderer.descriptor->begin_write(current_frame)
@@ -185,7 +191,8 @@ namespace Nebula::RenderGraph
             .combined_image_sampler(2, normal_info)
             .combined_image_sampler(3, albedo_info)
             .combined_image_sampler(4, depth_info)
-            .acceleration_structure(5, 1, &tlas->tlas())
+            .combined_image_sampler(5, ao_info)
+            .acceleration_structure(6, 1, &tlas->tlas())
             .commit();
     }
 }
