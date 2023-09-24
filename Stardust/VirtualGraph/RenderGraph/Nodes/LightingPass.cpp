@@ -15,7 +15,6 @@ namespace Nebula::RenderGraph
         { "Albedo Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Depth Image", ResourceRole::eInput, ResourceType::eDepthImage },
         { "AO Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32Sfloat },
-        { "AA Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR16G16B16A16Sfloat },
         { "Camera", ResourceRole::eInput, ResourceType::eCamera },
         { "TLAS", ResourceRole::eInput, ResourceType::eTlas },
         { "Lighting Result", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
