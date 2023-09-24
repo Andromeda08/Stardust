@@ -1,7 +1,14 @@
 #pragma once
 
-#include "Node.hpp"
+#include <array>
+#include <vector>
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
+#include <Nebula/Descriptor.hpp>
+#include <Nebula/Framebuffer.hpp>
+#include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
+#include <Vulkan/Buffer.hpp>
 
 namespace sdvk
 {
@@ -10,43 +17,56 @@ namespace sdvk
 
 namespace Nebula::RenderGraph
 {
-    enum class AntiAliasingMode
+    struct AntiAliasingNodePushConstant
     {
-        eNone,
-        eFXAA,
-        eFSR2,
-    };
-
-    std::string to_string(AntiAliasingMode mode);
-    std::string to_full_string(AntiAliasingMode mode);
-
-    enum class FSRMode
-    {
-        eQuality,
-        eBalanced,
-        ePerformance
-    };
-
-    std::string to_string(FSRMode mode);
-    std::string to_full_string(FSRMode mode);
-
-    class FSR
-    {
-        static bool check_gpu_requirements(const sdvk::Context& ctx);
+        /* [0]: Enabled
+         * [1]: Show edges (debug)
+         */
+        glm::ivec4 params;
     };
 
     struct AntiAliasingNodeOptions
     {
-        AntiAliasingMode mode = AntiAliasingMode::eNone;
-        FSRMode fsr_mode = FSRMode::eQuality;
+        bool enabled {true};
+        bool debug_show_edges {false};
     };
 
-    class AntiAliasingNode
+    class AntiAliasingNode : public Node
     {
     public:
+        explicit AntiAliasingNode(const sdvk::Context& context);
 
+        void execute(const vk::CommandBuffer& command_buffer) override;
+
+        void initialize() override;
 
     private:
-        AntiAliasingNodeOptions m_options;
+        void _update_descriptor(uint32_t current_frame);
+
+        AntiAliasingNodeOptions m_options {};
+
+        struct Renderer
+        {
+            std::shared_ptr<Descriptor> descriptor;
+            std::shared_ptr<Framebuffer> framebuffers;
+            vk::Pipeline pipeline;
+            vk::PipelineLayout pipeline_layout;
+            vk::RenderPass render_pass;
+            vk::Sampler sampler;
+
+            std::array<vk::ClearValue, 1> clear_values;
+            uint32_t frames_in_flight;
+            vk::Extent2D render_resolution;
+        } m_renderer;
+
+        const sdvk::Context& m_context;
+
+    public:
+        const std::vector<ResourceSpecification>& get_resource_specs() const override
+        {
+            return s_resource_specs;
+        }
+
+        static const std::vector<ResourceSpecification> s_resource_specs;
     };
 }

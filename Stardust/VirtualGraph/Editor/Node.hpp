@@ -11,6 +11,7 @@
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Common/NodeType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
@@ -120,6 +121,12 @@ namespace Nebula::RenderGraph::Editor
                { 250, 179, 135, 255 },
                NodeType::eAntiAliasing)
         {
+            const auto& specs = RenderGraph::AntiAliasingNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
         }
     };
 
