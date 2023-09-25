@@ -151,13 +151,6 @@ namespace sd
             Nebula::Sync::ImageBarrier(nebula_resolve_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal).apply(cmd);
             Nebula::Sync::ImageResolve(nebula_image, nebula_resolve_image).resolve(cmd);
         });
-
-//        std::shared_ptr<Nebula::RenderGraph::Resource> img_res_a = std::make_shared<Nebula::RenderGraph::ImageResource>(nebula_resolve_image, "Lighting Result");
-//        std::shared_ptr<Nebula::RenderGraph::Resource> img_res_b = std::make_shared<Nebula::RenderGraph::ImageResource>(nebula_resolve_image, "Anti-Aliasing Output");
-//        auto aa_node = std::make_shared<Nebula::RenderGraph::AntiAliasingNode>(*m_context);
-//        aa_node->set_resource("Lighting Result", img_res_a);
-//        aa_node->set_resource("Anti-Aliasing Output", img_res_b);
-//        aa_node->initialize();
     }
 
     void Application::run()
