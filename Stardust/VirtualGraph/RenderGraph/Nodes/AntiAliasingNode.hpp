@@ -19,10 +19,7 @@ namespace Nebula::RenderGraph
 {
     struct AntiAliasingNodePushConstant
     {
-        /* [0]: Enabled
-         * [1]: Show edges (debug)
-         */
-        glm::ivec4 params;
+        glm::vec2 resolution_rcp;
     };
 
     struct AntiAliasingNodeOptions
@@ -57,6 +54,7 @@ namespace Nebula::RenderGraph
             std::array<vk::ClearValue, 1> clear_values;
             uint32_t frames_in_flight;
             vk::Extent2D render_resolution;
+            glm::vec2 render_resolution_rcp;
         } m_renderer;
 
         const sdvk::Context& m_context;

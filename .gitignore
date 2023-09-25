@@ -1,6 +1,10 @@
 # CMake build directory
 /cmake-build-debug/
 
+# Visual Studio
+/out/
+/.vs/
+
 # Shader binary directory
 Resources/Shaders/out
 Resources/Shaders/Reflection/out

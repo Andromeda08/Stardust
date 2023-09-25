@@ -67,12 +67,14 @@ namespace Nebula::RenderGraph
         auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
         auto ao = dynamic_cast<ImageResource&>(*m_resources["AO Image"]).get_image();
+        auto lr = dynamic_cast<ImageResource&>(*m_resources["Lighting Result"]).get_image();
 
         Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(ao, ao->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(lr, lr->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
 
         _update_descriptor(current_frame);
 
@@ -89,6 +91,7 @@ namespace Nebula::RenderGraph
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
         Nebula::Sync::ImageBarrier(ao, ao->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(lr, lr->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
 
     void LightingPass::initialize()

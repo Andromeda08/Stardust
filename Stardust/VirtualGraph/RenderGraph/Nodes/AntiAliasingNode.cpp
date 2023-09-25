@@ -2,7 +2,6 @@
 #include <Vulkan/Image/Sampler.hpp>
 #include <Application/Application.hpp>
 #include <Nebula/Barrier.hpp>
-#include <Nebula/Image.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
 #include <Vulkan/Context.hpp>
@@ -29,8 +28,7 @@ namespace Nebula::RenderGraph
 
         auto render_commands = [&](const vk::CommandBuffer& cmd){
             AntiAliasingNodePushConstant pc {};
-            pc.params[0] = 1;
-            pc.params[1] = 0;
+            pc.resolution_rcp = m_renderer.render_resolution_rcp;
 
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
             cmd.pushConstants(m_renderer.pipeline_layout,
@@ -71,9 +69,15 @@ namespace Nebula::RenderGraph
         const auto& r_aa = m_resources["Anti-Aliasing Output"];
         auto aa = dynamic_cast<ImageResource&>(*r_aa).get_image();
 
-        m_renderer.render_resolution = sd::Application::s_extent.vk_ext();
+        auto extent = sd::Application::s_extent.vk_ext();
+
         m_renderer.frames_in_flight = sd::Application::s_max_frames_in_flight;
         m_renderer.clear_values[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
+        m_renderer.render_resolution = extent;
+        m_renderer.render_resolution_rcp = glm::vec2 {
+            1.0f / static_cast<float>(extent.width),
+            1.0f / static_cast<float>(extent.height)
+        };
 
         m_renderer.render_pass = sdvk::RenderPass::Builder()
             .add_color_attachment(aa->properties().format)
@@ -98,8 +102,8 @@ namespace Nebula::RenderGraph
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
             .set_attachment_count(1)
-            .add_shader("rg_fxaa.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("rg_fxaa.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .add_shader("rg_fxaa_hlsl.vert.spv", vk::ShaderStageFlagBits::eVertex)
+            .add_shader("rg_fxaa_hlsl.frag.spv", vk::ShaderStageFlagBits::eFragment)
             .with_name("Anti-Aliasing (Mode)")
             .create_graphics_pipeline(m_renderer.render_pass);
 
