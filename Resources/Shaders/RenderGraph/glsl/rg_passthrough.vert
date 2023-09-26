@@ -9,5 +9,4 @@ out gl_PerVertex {
 void main() {
     f_uv        = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
     gl_Position = vec4(f_uv * 2.0f - 1.0f, 1.0f, 1.0f);
-    f_uv.y = -f_uv.y;
 }
