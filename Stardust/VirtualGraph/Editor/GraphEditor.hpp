@@ -56,5 +56,9 @@ namespace Nebula::RenderGraph::Editor
         void _erase_edge(id_t edge_id);
 
         void _handle_add_node(NodeType type);
+
+        void _handle_reset();
+
+        void _add_default_nodes();
     };
 }

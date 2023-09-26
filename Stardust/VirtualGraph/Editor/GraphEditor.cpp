@@ -16,31 +16,7 @@ namespace Nebula::RenderGraph::Editor
     {
         m_factory = std::make_unique<VirtualNodeFactory>();
         m_compiler = std::make_unique<Compiler::DefaultCompileStrategy>(m_context);
-
-        std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent,
-                                            /* NodeType::eAmbientOcclusion, NodeType::eCombine,
-                                            NodeType::eDenoise,NodeType::eRender */ };
-
-        for (auto t : to_create)
-        {
-            switch (t)
-            {
-                case NodeType::eSceneProvider:
-                    m_has_scene_provider = true;
-                    break;
-                case NodeType::ePresent:
-                    m_has_presenter = true;
-                    break;
-                default:
-                    break;
-            }
-
-            auto node = m_factory->create(t);
-            m_nodes.insert(std::pair<id_t, node_ptr_t>{
-                    node->id(),
-                    std::shared_ptr<Node>(node)
-            });
-        }
+        _add_default_nodes();
     }
 
     void GraphEditor::render()
@@ -115,6 +91,11 @@ namespace Nebula::RenderGraph::Editor
                 if (ImGui::Button("Compile"))
                 {
                     _handle_compile();
+                }
+
+                if (ImGui::Button("Reset"))
+                {
+                    _handle_reset();
                 }
 
                 ImGui::EndMenuBar();
@@ -265,5 +246,40 @@ namespace Nebula::RenderGraph::Editor
     {
         auto node = m_factory->create(type);
         m_nodes.insert({ node->id(), std::shared_ptr<Node>(node) });
+    }
+
+    void GraphEditor::_handle_reset()
+    {
+        m_messages.clear();
+        m_nodes.clear();
+        m_edges.clear();
+        _add_default_nodes();
+        std::cout << "[Info] Reset graph editor." << std::endl;
+    }
+
+    void GraphEditor::_add_default_nodes()
+    {
+        std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent, NodeType::eDeferredRender };
+
+        for (auto t : to_create)
+        {
+            switch (t)
+            {
+                case NodeType::eSceneProvider:
+                    m_has_scene_provider = true;
+                    break;
+                case NodeType::ePresent:
+                    m_has_presenter = true;
+                    break;
+                default:
+                    break;
+            }
+
+            auto node = m_factory->create(t);
+            m_nodes.insert(std::pair<id_t, node_ptr_t>{
+                node->id(),
+                std::shared_ptr<Node>(node)
+            });
+        }
     }
 }
