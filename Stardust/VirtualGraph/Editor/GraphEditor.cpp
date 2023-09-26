@@ -60,7 +60,7 @@ namespace Nebula::RenderGraph::Editor
                     {
                         _handle_add_node(NodeType::eAntiAliasing);
                     }
-                    if (ImGui::MenuItem("Blur"))
+                    if (ImGui::MenuItem("Gaussian Blur"))
                     {
                         _handle_add_node(NodeType::eGaussianBlur);
                     }

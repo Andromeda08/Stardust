@@ -12,6 +12,7 @@
 #include <VirtualGraph/Common/NodeType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
@@ -19,6 +20,11 @@
 
 namespace Nebula::RenderGraph::Editor
 {
+    /**
+     * Node colors from the Catppuccin theme
+     * https://github.com/catppuccin/catppuccin
+     */
+
     class Node : public Nebula::Graph::Vertex
     {
     public:
@@ -122,6 +128,23 @@ namespace Nebula::RenderGraph::Editor
                NodeType::eAntiAliasing)
         {
             const auto& specs = RenderGraph::AntiAliasingNode::s_resource_specs;
+            for (const auto& spec : specs)
+            {
+                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
+                m_resource_descriptions.back().spec = spec;
+            }
+        }
+    };
+
+    class BlurNode : public Node {
+    public:
+        BlurNode()
+            : Node("Gaussian Blur",
+                   { 221, 120, 120, 255 },
+                   { 242, 205, 205, 255 },
+                   NodeType::eGaussianBlur)
+        {
+            const auto& specs = RenderGraph::BlurNode::s_resource_specs;
             for (const auto& spec : specs)
             {
                 m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
@@ -237,6 +260,8 @@ namespace Nebula::RenderGraph::Editor
                     return new AmbientOcclusionNode();
                 case NodeType::eAntiAliasing:
                     return new AntiAliasingNode();
+                case NodeType::eGaussianBlur:
+                    return new BlurNode();
                 case NodeType::eDeferredRender:
                     return new DeferredPassNode();
                 case NodeType::eDenoise:
