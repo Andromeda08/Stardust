@@ -6,6 +6,7 @@
 /.vs/
 
 # Shader binary directory
+Resources/Shaders/RenderGraph/bin
 Resources/Shaders/out
 Resources/Shaders/Reflection/out
 

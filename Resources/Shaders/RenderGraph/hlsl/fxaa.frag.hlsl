@@ -3,7 +3,7 @@
 #define FXAA_QUALITY__PRESET 39
 #define FXAA_GREEN_AS_LUMA 1
 
-#include "fxaa.hlsl"
+#include "inc/fxaa.hlsl"
 
 static const float fxaaSubpix = 0.75;
 static const float fxaaEdgeThreshold = 0.166;
@@ -14,12 +14,11 @@ struct PushConstant
     float2 resolution_rcp;
 };
 
-[[vk::push_constant]]
-cbuffer pcb
-{
-    PushConstant pc;
-};
-
+#if defined(_DXC)
+[[vk::push_constant]] PushConstant pc;
+#else
+[[vk::push_constant]] ConstantBuffer<PushConstant> pc;
+#endif
 
 [[vk::combinedImageSampler]]
 [[vk::binding(0)]]
