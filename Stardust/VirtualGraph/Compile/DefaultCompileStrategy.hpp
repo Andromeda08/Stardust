@@ -12,6 +12,7 @@
 namespace Nebula::RenderGraph::Editor
 {
     class Node;
+    struct Edge;
 }
 
 namespace Nebula::RenderGraph::Compiler
@@ -21,7 +22,9 @@ namespace Nebula::RenderGraph::Compiler
     public:
         DefaultCompileStrategy(const RenderGraphContext& context): GraphCompileStrategy(context) {}
 
-        CompileResult compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes, bool verbose) override;
+        CompileResult compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes,
+                              const std::vector<Editor::Edge>& edges,
+                              bool verbose) override;
 
         ~DefaultCompileStrategy() = default;
     };

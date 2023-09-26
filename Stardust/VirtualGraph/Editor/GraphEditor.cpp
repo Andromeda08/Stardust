@@ -130,7 +130,7 @@ namespace Nebula::RenderGraph::Editor
                 {
                     auto link_color = get_resource_type_color(edge.attr_type);
                     ImNodes::PushColorStyle(ImNodesCol_Link, IM_COL32(link_color.r, link_color.g, link_color.b, 255));
-                    ImNodes::Link(edge.id, edge.start_attr, edge.end_attr);
+                    ImNodes::Link(edge.id, edge.start.res_id, edge.end.res_id);
                     ImNodes::PopColorStyle();
                 }
             }
@@ -153,7 +153,7 @@ namespace Nebula::RenderGraph::Editor
             nodes_vector.push_back(v);
         }
 
-        auto result = m_compiler->compile(nodes_vector, true);
+        auto result = m_compiler->compile(nodes_vector, m_edges, true);
         for (const auto& msg : result.logs)
         {
             std::cout << msg << std::endl;
@@ -182,8 +182,8 @@ namespace Nebula::RenderGraph::Editor
             auto& e_node = m_nodes[end_node];
             auto& e_attr = e_node->get_resource(end_attr);
 
-            auto edge_exists = std::any_of(m_edges.begin(), m_edges.end(), [s_attr, e_attr](const auto& edge){
-                return edge.start_attr == s_attr.id && edge.end_attr == e_attr.id;
+            auto edge_exists = std::any_of(m_edges.begin(), m_edges.end(), [s_attr, e_attr](const Edge& edge){
+                return edge.start.res_id == s_attr.id && edge.end.res_id == e_attr.id;
             });
 
             std::string message;
@@ -212,7 +212,7 @@ namespace Nebula::RenderGraph::Editor
             }
 
             Node::make_directed_edge(s_node, e_node);
-            m_edges.emplace_back(start_node, start_attr, end_node, end_attr, s_attr.type);
+            m_edges.emplace_back(*s_node, s_attr, *e_node, e_attr, s_attr.type);
             e_attr.input_is_connected = true;
 
             message = std::format(
@@ -244,11 +244,11 @@ namespace Nebula::RenderGraph::Editor
 
         if (edge != m_edges.end())
         {
-            auto& s_node = m_nodes[edge->start_node];
-            auto& s_attr = s_node->get_resource(edge->start_attr);
+            auto& s_node = m_nodes[edge->start.node_id];
+            auto& s_attr = s_node->get_resource(edge->start.res_id);
 
-            auto& e_node = m_nodes[edge->end_node];
-            auto& e_attr = e_node->get_resource(edge->end_attr);
+            auto& e_node = m_nodes[edge->end.node_id];
+            auto& e_attr = e_node->get_resource(edge->end.res_id);
 
             std::cout
                 << std::format(

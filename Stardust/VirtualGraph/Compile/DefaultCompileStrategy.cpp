@@ -5,6 +5,7 @@
 #include <sstream>
 #include <Benchmarking.hpp>
 #include <Nebula/Image.hpp>
+#include <VirtualGraph/Editor/Edge.hpp>
 #include <VirtualGraph/Editor/Node.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Compile/NodeFactory.hpp>
@@ -40,7 +41,9 @@ namespace Nebula::RenderGraph::Compiler
         }
     }
 
-    CompileResult DefaultCompileStrategy::compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes, bool verbose)
+    CompileResult DefaultCompileStrategy::compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes,
+                                                  const std::vector<Editor::Edge>& edges,
+                                                  bool verbose)
     {
         CompileResult result = {};
 
@@ -168,6 +171,10 @@ namespace Nebula::RenderGraph::Compiler
         create_time = sd::bm::measure<std::chrono::milliseconds>([&](){
             for (const auto& [id, resource] : required_resources)
             {
+                if (resource.role == ResourceRole::eInput)
+                {
+                    continue;
+                }
 
                 const auto resource_name = std::format("({:%Y-%m-%d %H:%M}) {}-{}", begin_time, resource.name, id);
                 const auto& res_spec = resource.spec;
@@ -245,6 +252,7 @@ namespace Nebula::RenderGraph::Compiler
 
         auto node_factory = std::make_shared<NodeFactory>(m_context);
         std::vector<std::shared_ptr<RenderGraph::Node>> real_nodes;
+        std::map<int32_t, int32_t> id_to_node;
         auto node_creation_time = sd::bm::measure<std::chrono::milliseconds>([&](){
             for (const auto& node : topological_ordering)
             {
@@ -252,6 +260,7 @@ namespace Nebula::RenderGraph::Compiler
                 if (n != nullptr)
                 {
                     real_nodes.push_back(n);
+                    id_to_node.insert({ node->id(), real_nodes.size() - 1 });
                 }
             }
         });
@@ -260,14 +269,36 @@ namespace Nebula::RenderGraph::Compiler
 
         // 6. Connect resources to nodes
         #pragma region Connect resources to nodes
-
         auto resource_connection_time = sd::bm::measure<std::chrono::milliseconds>([&](){
+            // Set Outputs
             for (const auto& node : real_nodes)
             {
                 for (const auto& [name, res] : created_resources)
                 {
                     node->set_resource(name, res);
                 }
+            }
+
+            // Set Inputs
+            for (const auto& edge : edges)
+            {
+                // Are the nodes still valid
+                if (!id_to_node.contains(edge.start.node_id))
+                {
+                    continue;
+                }
+
+                if (!id_to_node.contains(edge.end.node_id))
+                {
+                    continue;
+                }
+
+                // Get resource to be connected
+                auto& resource = created_resources[edge.start.res_name];
+
+                // Set resource
+                auto& end_node = real_nodes[id_to_node[edge.end.node_id]];
+                end_node->set_resource(edge.end.res_name, resource);
             }
         });
 

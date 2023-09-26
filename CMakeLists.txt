@@ -168,6 +168,7 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/RayTracedAO.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/RayTracedAO.hpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.cpp
+        Stardust/VirtualGraph/Editor/Edge.hpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)

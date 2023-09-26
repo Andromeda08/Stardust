@@ -9,6 +9,7 @@
 namespace Nebula::RenderGraph::Editor
 {
     class Node;
+    struct Edge;
 }
 
 namespace Nebula::RenderGraph::Compiler
@@ -18,7 +19,9 @@ namespace Nebula::RenderGraph::Compiler
     public:
         explicit GraphCompileStrategy(const RenderGraphContext& context): m_context(context) {}
 
-        virtual CompileResult compile(const std::vector<std::shared_ptr<Editor::Node>>&, bool verbose) = 0;
+        virtual CompileResult compile(const std::vector<std::shared_ptr<Editor::Node>>&,
+                                      const std::vector<Editor::Edge>& edges,
+                                      bool verbose) = 0;
 
         virtual ~GraphCompileStrategy() = default;
 
