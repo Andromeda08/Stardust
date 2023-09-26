@@ -27,6 +27,9 @@ namespace Nebula::RenderGraph::Compiler
                 return std::make_shared<LightingPass>(m_context.context());
             case NodeType::eSceneProvider:
                 return std::make_shared<SceneProviderNode>(m_context.scene());
+            case NodeType::ePresent:
+                return std::make_shared<PresentNode>(m_context.context(), m_context.swapchain());
+
             default:
                 return nullptr;
         }
