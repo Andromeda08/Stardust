@@ -11,7 +11,7 @@ namespace Nebula::RenderGraph
 {
     #pragma region Resource Specifications
     const std::vector<ResourceSpecification> AntiAliasingNode::s_resource_specs = {
-        { "Lighting Result", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
+        { "Anti-Aliasing Input", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Anti-Aliasing Output", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
     };
     #pragma endregion
@@ -44,7 +44,7 @@ namespace Nebula::RenderGraph
         };
 
 
-        auto aa_in = dynamic_cast<ImageResource&>(*m_resources["Lighting Result"]).get_image();
+        auto aa_in = dynamic_cast<ImageResource&>(*m_resources["Anti-Aliasing Input"]).get_image();
         auto aa_out = dynamic_cast<ImageResource&>(*m_resources["Anti-Aliasing Output"]).get_image();
 
         Nebula::Sync::ImageBarrier(aa_in, aa_in->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
@@ -115,7 +115,7 @@ namespace Nebula::RenderGraph
 
     void AntiAliasingNode::_update_descriptor(uint32_t current_frame)
     {
-        auto aa_in = dynamic_cast<ImageResource&>(*m_resources["Lighting Result"]).get_image();
+        auto aa_in = dynamic_cast<ImageResource&>(*m_resources["Anti-Aliasing Input"]).get_image();
         vk::DescriptorImageInfo aa_in_info { m_renderer.sampler, aa_in->image_view(), aa_in->state().layout };
 
         m_renderer.descriptor->begin_write(current_frame)
