@@ -286,6 +286,7 @@ namespace sdvk
         m_device_features.device_features.setFillModeNonSolid(true);
         m_device_features.device_features.setSampleRateShading(true);
         m_device_features.device_features.setShaderStorageImageMultisample(true);
+        m_device_features.timeline_semaphores.setTimelineSemaphore(true);
 
         vk::DeviceCreateInfo create_info;
         create_info.setEnabledLayerCount(validation_layers.size());
@@ -295,11 +296,12 @@ namespace sdvk
         create_info.setPEnabledFeatures(&m_device_features.device_features);
         create_info.setQueueCreateInfoCount(queue_infos.size());
         create_info.setPQueueCreateInfos(queue_infos.data());
+        create_info.setPNext(&m_device_features.timeline_semaphores);
 
         if (options.raytracing)
         {
             m_device_features.with_ray_tracing();
-            create_info.setPNext(&m_device_features.ray_tracing_pipeline);
+            m_device_features.timeline_semaphores.setPNext(&m_device_features.ray_tracing_pipeline);
         }
 
         vk::Result result = m_physical_device.createDevice(&create_info, nullptr, &m_device);

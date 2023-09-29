@@ -15,6 +15,7 @@ namespace sdvk
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR ray_tracing_pipeline;
         vk::PhysicalDeviceSynchronization2FeaturesKHR synchronization2;
         vk::PhysicalDeviceRayQueryFeaturesKHR ray_query;
+        vk::PhysicalDeviceTimelineSemaphoreFeatures timeline_semaphores;
 
         DeviceFeatures() = default;
 
