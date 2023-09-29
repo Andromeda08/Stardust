@@ -1,9 +1,5 @@
 #include "Application.hpp"
 
-//#include <sl.h>
-//#include <sl_dlss.h>
-//#include <sl_helpers_vk.h>
-
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -28,22 +24,6 @@ namespace sd
     {
         m_window = std::make_unique<Window>(m_options.window_options);
 
-/*        sl::Preferences prefs {};
-        prefs.showConsole = true;
-        prefs.logLevel = sl::LogLevel::eDefault;
-        prefs.pathsToPlugins = {};
-        prefs.numPathsToPlugins = 0;
-        // prefs.logMessageCallback = sl_message_callback;
-        prefs.applicationId = 7512;
-        prefs.engineVersion = "2.0";
-
-        if (SL_FAILED(res, slInit(prefs)))
-        {
-            if (res == sl::Result::eErrorDriverOutOfDate)
-            {
-            }
-        }*/
-
         m_context = sdvk::ContextBuilder()
             .add_instance_extensions(m_window->get_vk_extensions())
             .add_instance_extensions({ VK_KHR_SURFACE_EXTENSION_NAME })
@@ -58,35 +38,6 @@ namespace sd
                                    })
             .add_raytracing_extensions(true)
             .create_context();
-
-        /*sl::VulkanInfo sl_vk{};
-        sl_vk.instance = static_cast<VkInstance>(m_context->instance());
-        sl_vk.physicalDevice = static_cast<VkPhysicalDevice>(m_context->physical_device());
-        sl_vk.device = static_cast<VkDevice>(m_context->device());
-        sl_vk.computeQueueIndex = m_context->q_compute().index;
-        sl_vk.graphicsQueueIndex = m_context->q_graphics().index;
-
-        if (SL_FAILED(res, slSetVulkanInfo(sl_vk)))
-        {
-            std::cout << "[SL] Vulkan stuff failed?" << std::endl;
-        }
-
-        sl::AdapterInfo adapter_info {};
-        adapter_info.vkPhysicalDevice = static_cast<VkPhysicalDevice>(m_context->physical_device());
-        if (SL_FAILED(res, slIsFeatureSupported(sl::kFeatureDLSS, adapter_info)))
-        {
-            std::cout << "[SL] DLSS is not supported on your system." << std::endl;
-        }
-
-        sl::DLSSOptimalSettings dlss_settings {};
-        sl::DLSSOptions dlss_options {};
-        dlss_options.mode = sl::DLSSMode::eBalanced;
-        dlss_options.outputHeight = m_swapchain->extent().height;
-        dlss_options.outputWidth = m_swapchain->extent().width;
-        if (SL_FAILED(res, slDLSSGetOptimalSettings(dlss_options, dlss_settings)))
-        {
-
-        }*/
 
         m_command_buffers = std::make_unique<sdvk::CommandBuffers>(8, *m_context);
 
