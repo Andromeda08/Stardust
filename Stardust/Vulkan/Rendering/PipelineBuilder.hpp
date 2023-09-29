@@ -63,9 +63,9 @@ namespace sdvk
             return *this;
         }
 
-        Pipeline create_graphics_pipeline(const vk::RenderPass& render_pass);
+        std::tuple<vk::Pipeline, vk::PipelineLayout> create_graphics_pipeline(const vk::RenderPass& render_pass);
 
-        Pipeline create_compute_pipeline();
+        std::tuple<vk::Pipeline, vk::PipelineLayout> create_compute_pipeline();
 
         Pipeline create_ray_tracing_pipeline(int ray_recursion_depth);
 

@@ -28,7 +28,7 @@ namespace Nebula::Graph
 
         const std::string& name() const { return m_name; }
 
-        const std::vector<vtx_ptr>& get_incoming_edges() const
+        std::vector<vtx_ptr>& get_incoming_edges()
         {
             return m_incoming_edges;
         }
@@ -38,7 +38,7 @@ namespace Nebula::Graph
             return static_cast<int32_t>(m_incoming_edges.size());
         }
 
-        const std::vector<vtx_ptr>& get_outgoing_edges() const
+        std::vector<vtx_ptr>& get_outgoing_edges()
         {
             return m_outgoing_edges;
         }
@@ -60,6 +60,30 @@ namespace Nebula::Graph
 
             a->m_outgoing_edges.push_back(b);
             b->m_incoming_edges.push_back(a);
+
+            return true;
+        }
+
+        static bool remove_directed_edge(const vtx_ptr& a, const vtx_ptr& b)
+        {
+            auto find_a = std::find_if(a->m_outgoing_edges.begin(), a->m_outgoing_edges.end(), [&](const auto& v){
+                return v->id() == b->id();
+            });
+            if (find_a == std::end(a->m_outgoing_edges))
+            {
+                return false;
+            }
+
+            auto find_b = std::find_if(b->m_incoming_edges.begin(), b->m_incoming_edges.end(), [&](const auto& v){
+                return v->id() == a->id();
+            });
+            if (find_b == std::end(b->m_incoming_edges))
+            {
+                return false;
+            }
+
+            auto erased_a = a->m_outgoing_edges.erase(find_a);
+            auto erased_b = b->m_incoming_edges.erase(find_b);
 
             return true;
         }

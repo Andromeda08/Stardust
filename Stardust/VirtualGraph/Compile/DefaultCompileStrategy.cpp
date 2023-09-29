@@ -256,7 +256,7 @@ namespace Nebula::RenderGraph::Compiler
         auto node_creation_time = sd::bm::measure<std::chrono::milliseconds>([&](){
             for (const auto& node : topological_ordering)
             {
-                auto n = node_factory->create(node->type());
+                auto n = node_factory->create(node, node->type());
                 if (n != nullptr)
                 {
                     real_nodes.push_back(n);

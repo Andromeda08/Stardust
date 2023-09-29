@@ -66,7 +66,7 @@ namespace sdvk
         return *this;
     }
 
-    Pipeline PipelineBuilder::create_graphics_pipeline(const vk::RenderPass& render_pass)
+    std::tuple<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::create_graphics_pipeline(const vk::RenderPass& render_pass)
     {
         if (!pipeline.pipeline_layout)
         {
@@ -111,7 +111,7 @@ namespace sdvk
             sdvk::util::name_vk_object(_name + " PipelineLayout", (uint64_t) static_cast<VkPipelineLayout>(pipeline.pipeline_layout), vk::ObjectType::ePipelineLayout, _context.device());
         }
 
-        return pipeline;
+        return std::tuple<vk::Pipeline, vk::PipelineLayout>(pipeline.pipeline, pipeline.pipeline_layout);
     }
 
     PipelineBuilder& PipelineBuilder::make_rt_shader_groups()
@@ -176,7 +176,7 @@ namespace sdvk
         return pipeline;
     }
 
-    Pipeline PipelineBuilder::create_compute_pipeline()
+    std::tuple<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::create_compute_pipeline()
     {
         vk::ComputePipelineCreateInfo create_info;
         create_info.setLayout(pipeline.pipeline_layout);
@@ -190,6 +190,6 @@ namespace sdvk
             sdvk::util::name_vk_object(_name + " PipelineLayout", (uint64_t) static_cast<VkPipelineLayout>(pipeline.pipeline_layout), vk::ObjectType::ePipelineLayout, _context.device());
         }
 
-        return pipeline;
+        return std::tuple<vk::Pipeline, vk::PipelineLayout>(pipeline.pipeline, pipeline.pipeline_layout);
     }
 }

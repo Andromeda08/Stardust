@@ -11,7 +11,7 @@
 
 namespace Nebula::RenderGraph::Compiler
 {
-    std::shared_ptr<Node> NodeFactory::create(NodeType type)
+    std::shared_ptr<Node> NodeFactory::create(const std::shared_ptr<Editor::Node>& enode, NodeType type)
     {
         switch (type)
         {
@@ -24,7 +24,8 @@ namespace Nebula::RenderGraph::Compiler
             case NodeType::eDeferredRender:
                 return std::make_shared<DeferredRender>(m_context.context());
             case NodeType::eLightingPass:
-                return std::make_shared<LightingPass>(m_context.context());
+                return std::make_shared<LightingPass>(m_context.context(),
+                                                      dynamic_cast<Editor::LightingPassNode&>(*enode).params);
             case NodeType::eSceneProvider:
                 return std::make_shared<SceneProviderNode>(m_context.scene());
             case NodeType::ePresent:

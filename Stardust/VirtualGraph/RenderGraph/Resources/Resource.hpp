@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-pass-by-value"
 #pragma once
 
 #include <memory>
@@ -201,5 +199,3 @@ namespace Nebula::RenderGraph
         Tlas_ptr m_tlas;
     };
 }
-
-#pragma clang diagnostic pop

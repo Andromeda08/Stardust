@@ -3,6 +3,7 @@
 #include <memory>
 #include <VirtualGraph/Common/NodeType.hpp>
 #include <VirtualGraph/Common/GraphContext.hpp>
+#include <VirtualGraph/Editor/Node.hpp>
 
 namespace sd
 {
@@ -29,7 +30,7 @@ namespace Nebula::RenderGraph::Compiler
         : m_context(context)
         {}
 
-        std::shared_ptr<Node> create(NodeType type);
+        std::shared_ptr<Node> create(const std::shared_ptr<Editor::Node>& enode, NodeType type);
 
     private:
         const RenderGraphContext& m_context;

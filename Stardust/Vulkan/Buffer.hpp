@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include <Nebula/Image.hpp>
+#include <Resources/VertexData.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Utils.hpp>
-#include <Vulkan/Image/Image.hpp>
-#include <Resources/VertexData.hpp>
 
 namespace sdvk
 {
@@ -86,9 +86,9 @@ namespace sdvk
 
         void copy_to_buffer(Buffer const& dst, vk::CommandBuffer const& command_buffer);
 
-        static void copy_to_image(Buffer const& src, Image const& dst, CommandBuffers const& command_buffers);
+        static void copy_to_image(Buffer const& src, Nebula::Image const& dst, CommandBuffers const& command_buffers);
 
-        void copy_to_image(Image const& dst, vk::CommandBuffer const& command_buffer);
+        void copy_to_image(Nebula::Image const& dst, vk::CommandBuffer const& command_buffer);
 
     protected:
         vk::Buffer              m_buffer;

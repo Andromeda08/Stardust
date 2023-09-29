@@ -5,6 +5,8 @@
 /out/
 /.vs/
 
+/Lib/
+
 # Shader binary directory
 Resources/Shaders/RenderGraph/bin
 Resources/Shaders/out

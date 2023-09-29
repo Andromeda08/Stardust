@@ -129,10 +129,10 @@ namespace sdvk
         command_buffer.copyBuffer(m_buffer, dst.m_buffer, 1, &copy_region);
     }
 
-    void Buffer::copy_to_image(const Buffer& src, const Image& dst, const CommandBuffers& command_buffers)
+    void Buffer::copy_to_image(const Buffer& src, const Nebula::Image& dst, const CommandBuffers& command_buffers)
     {
         command_buffers.execute_single_time([&src, &dst](vk::CommandBuffer const& cmd){
-            auto extent = dst.extent();
+            auto extent = dst.properties().extent;
             vk::BufferImageCopy copy_region;
             copy_region.setBufferOffset(0);
             copy_region.setBufferRowLength(0);
@@ -145,9 +145,9 @@ namespace sdvk
         });
     }
 
-    void Buffer::copy_to_image(const Image& dst, const vk::CommandBuffer& command_buffer)
+    void Buffer::copy_to_image(const Nebula::Image& dst, const vk::CommandBuffer& command_buffer)
     {
-        auto extent = dst.extent();
+        auto extent = dst.properties().extent;
         vk::BufferImageCopy copy_region;
         copy_region.setBufferOffset(0);
         copy_region.setBufferRowLength(0);

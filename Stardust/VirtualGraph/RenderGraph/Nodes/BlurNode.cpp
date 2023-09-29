@@ -46,9 +46,6 @@ namespace Nebula::RenderGraph
         pc.direction_vector = glm::ivec4(0, 1, 0, 0);
         command_buffer.pushConstants(m_kernel.pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(BlurNodePushConstant), &pc);
         command_buffer.dispatch(group_x, group_y, 1);
-
-        Nebula::Sync::ImageBarrier(blur_in, blur_in->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(blur_out, blur_out->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
 
     void BlurNode::initialize()
@@ -67,7 +64,7 @@ namespace Nebula::RenderGraph
             .storage_image(1, vk::ShaderStageFlagBits::eCompute)
             .create(m_kernel.frames_in_flight, m_context);
 
-        auto pl = sdvk::PipelineBuilder(m_context)
+        auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
             .add_push_constant({ vk::ShaderStageFlagBits::eCompute, 0, sizeof(BlurNodePushConstant) })
             .add_descriptor_set_layout(m_kernel.descriptor->layout())
             .create_pipeline_layout()
@@ -75,8 +72,8 @@ namespace Nebula::RenderGraph
             .with_name("Gaussian Blur Node")
             .create_compute_pipeline();
 
-        m_kernel.pipeline = pl.pipeline;
-        m_kernel.pipeline_layout = pl.pipeline_layout;
+        m_kernel.pipeline = pipeline;
+        m_kernel.pipeline_layout = pipeline_layout;
     }
 
     void BlurNode::_update_descriptor(uint32_t current_frame)

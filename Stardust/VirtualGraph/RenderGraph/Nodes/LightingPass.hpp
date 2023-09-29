@@ -28,9 +28,8 @@ namespace Nebula::RenderGraph
 
     struct LightingPassOptions
     {
-        bool include_ao {false};
-        bool include_aa {false};
-        bool with_shadows {true};
+        bool ambient_occlusion {false};
+        bool enable_shadows {true};
     };
 
     struct LightingPassUniform
@@ -46,7 +45,7 @@ namespace Nebula::RenderGraph
     {
         LightingPassPushConstant(const LightingPassOptions& options)
         {
-            flags_a = { options.with_shadows, 0, 0, 0 };
+            flags_a = { options.enable_shadows, 0, 0, 0 };
         }
 
         /*
@@ -59,7 +58,7 @@ namespace Nebula::RenderGraph
     class LightingPass : public Node
     {
     public:
-        explicit LightingPass(const sdvk::Context& context);
+        explicit LightingPass(const sdvk::Context& context, const LightingPassOptions& params);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
@@ -70,7 +69,9 @@ namespace Nebula::RenderGraph
     private:
         void _update_descriptor(uint32_t current_frame);
 
-        LightingPassOptions m_options;
+        std::string _select_fragment_shader();
+
+        LightingPassOptions m_params;
 
         struct Renderer
         {

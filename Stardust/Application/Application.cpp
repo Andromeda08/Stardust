@@ -1,36 +1,23 @@
 #include "Application.hpp"
 
+//#include <sl.h>
+//#include <sl_dlss.h>
+//#include <sl_helpers_vk.h>
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <imnodes.h>
 
-#include <Benchmarking.hpp>
 #include <Vulkan/ContextBuilder.hpp>
 #include <Vulkan/Presentation/SwapchainBuilder.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
 
 #include <Scene/Scene.hpp>
-
-#include <RenderGraph/node/CompositionNode.hpp>
-#include <RenderGraph/node/RTAONode.hpp>
-#include <RenderGraph/node/OffscreenRenderNode.hpp>
-#include <RenderGraph/node/SceneNode.hpp>
-#include <RenderGraph/res/ImageResource.hpp>
-#include <RenderGraph/res/AccelerationStructureResource.hpp>
-#include <RenderGraph/res/CameraResource.hpp>
-#include <RenderGraph/res/ObjectsResource.hpp>
-
 #include <Nebula/Image.hpp>
-#include <Nebula/ImageResolve.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
-#include <VirtualGraph/RenderGraph/Resources/Resource.hpp>
+#include <VirtualGraph/Builder/Builder.h>
 
 std::shared_ptr<sd::Scene> g_rgs;
-std::unique_ptr<sd::rg::RTAONode> g_rtaonode;
-std::unique_ptr<sd::rg::OffscreenRenderNode> g_osrnode;
-std::unique_ptr<sd::rg::SceneNode> g_snode;
-std::unique_ptr<sd::rg::CompositionNode> g_cnode;
 
 namespace sd
 {
@@ -41,22 +28,65 @@ namespace sd
     {
         m_window = std::make_unique<Window>(m_options.window_options);
 
-        auto ctx_init = bm::measure<std::chrono::milliseconds>([&](){
-            m_context = sdvk::ContextBuilder()
-                    .add_instance_extensions(m_window->get_vk_extensions())
-                    .add_instance_extensions({ VK_KHR_SURFACE_EXTENSION_NAME })
-                    .set_validation(true)
-                    .set_debug_utils(true)
-                    .with_surface(m_window->handle())
-                    .add_device_extensions({
-                        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                        VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-                        VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-                        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-                    })
-                    .add_raytracing_extensions(true)
-                    .create_context();
-        });
+/*        sl::Preferences prefs {};
+        prefs.showConsole = true;
+        prefs.logLevel = sl::LogLevel::eDefault;
+        prefs.pathsToPlugins = {};
+        prefs.numPathsToPlugins = 0;
+        // prefs.logMessageCallback = sl_message_callback;
+        prefs.applicationId = 7512;
+        prefs.engineVersion = "2.0";
+
+        if (SL_FAILED(res, slInit(prefs)))
+        {
+            if (res == sl::Result::eErrorDriverOutOfDate)
+            {
+            }
+        }*/
+
+        m_context = sdvk::ContextBuilder()
+            .add_instance_extensions(m_window->get_vk_extensions())
+            .add_instance_extensions({ VK_KHR_SURFACE_EXTENSION_NAME })
+            .set_validation(true)
+            .set_debug_utils(true)
+            .with_surface(m_window->handle())
+            .add_device_extensions({
+                                       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                       VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                                       VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+                                       VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+                                   })
+            .add_raytracing_extensions(true)
+            .create_context();
+
+        /*sl::VulkanInfo sl_vk{};
+        sl_vk.instance = static_cast<VkInstance>(m_context->instance());
+        sl_vk.physicalDevice = static_cast<VkPhysicalDevice>(m_context->physical_device());
+        sl_vk.device = static_cast<VkDevice>(m_context->device());
+        sl_vk.computeQueueIndex = m_context->q_compute().index;
+        sl_vk.graphicsQueueIndex = m_context->q_graphics().index;
+
+        if (SL_FAILED(res, slSetVulkanInfo(sl_vk)))
+        {
+            std::cout << "[SL] Vulkan stuff failed?" << std::endl;
+        }
+
+        sl::AdapterInfo adapter_info {};
+        adapter_info.vkPhysicalDevice = static_cast<VkPhysicalDevice>(m_context->physical_device());
+        if (SL_FAILED(res, slIsFeatureSupported(sl::kFeatureDLSS, adapter_info)))
+        {
+            std::cout << "[SL] DLSS is not supported on your system." << std::endl;
+        }
+
+        sl::DLSSOptimalSettings dlss_settings {};
+        sl::DLSSOptions dlss_options {};
+        dlss_options.mode = sl::DLSSMode::eBalanced;
+        dlss_options.outputHeight = m_swapchain->extent().height;
+        dlss_options.outputWidth = m_swapchain->extent().width;
+        if (SL_FAILED(res, slDLSSGetOptimalSettings(dlss_options, dlss_settings)))
+        {
+
+        }*/
 
         m_command_buffers = std::make_unique<sdvk::CommandBuffers>(8, *m_context);
 
@@ -66,91 +96,45 @@ namespace sd
                 .set_preferred_format(vk::Format::eR8G8B8A8Srgb)
                 .create();
 
-        auto scene_init = bm::measure<std::chrono::milliseconds>([&](){
-            g_rgs = std::make_shared<sd::Scene>(*m_command_buffers, *m_context);
-        });
-
-        m_editor = std::make_shared<rg::RenderGraphEditor>(*m_command_buffers, *m_context, *m_swapchain, g_rgs);
-
-        m_editor->_add_initial_nodes();
+        g_rgs = std::make_shared<sd::Scene>(*m_command_buffers, *m_context);
 
         m_rgctx = std::make_shared<Nebula::RenderGraph::RenderGraphContext>(*m_command_buffers, *m_context, *m_swapchain);
-        m_ge = std::make_shared<Nebula::RenderGraph::Editor::GraphEditor>(*m_rgctx);
-
-#pragma region node testing
-        auto connect_time = bm::measure<std::chrono::milliseconds>([&](){
-            g_snode = std::make_unique<sd::rg::SceneNode>(g_rgs);
-            g_rtaonode = std::make_unique<sd::rg::RTAONode>(*m_context, *m_command_buffers);
-            g_osrnode = std::make_unique<sd::rg::OffscreenRenderNode>(*m_context, *m_command_buffers);
-            g_cnode = std::make_unique<sd::rg::CompositionNode>(*m_command_buffers, *m_context, *m_swapchain);
-
-            auto& cam_res = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]);
-            auto& tlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_snode->m_outputs[2]);
-
-            auto& oscam_res = dynamic_cast<rg::CameraResource&>(*g_osrnode->m_inputs[1]);
-            oscam_res.m_resource = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]).m_resource;
-
-            auto& osobj_res = dynamic_cast<rg::ObjectsResource&>(*g_osrnode->m_inputs[0]);
-            osobj_res.m_resource = dynamic_cast<rg::ObjectsResource&>(*g_snode->m_outputs[0]).m_resource;
-
-            auto& ostlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_osrnode->m_inputs[2]);
-            ostlas_res.m_resource = dynamic_cast<rg::AccelerationStructureResource&>(*g_snode->m_outputs[2]).m_resource;
-
-            // Wire G-Buffer into AO node
-            auto& gbfr_res = dynamic_cast<rg::ImageResource&>(*g_rtaonode->m_inputs[0]);
-            gbfr_res.m_resource = dynamic_cast<rg::ImageResource&>(*g_osrnode->m_outputs[1]).m_resource;
-
-            // Camera into AO node
-            auto& rtcam_res = dynamic_cast<rg::CameraResource&>(*g_rtaonode->m_inputs[1]);
-            rtcam_res.m_resource = dynamic_cast<rg::CameraResource&>(*g_snode->m_outputs[1]).m_resource;
-
-            // Wire TLAS into AO node
-            auto& rttlas_res = dynamic_cast<rg::AccelerationStructureResource&>(*g_rtaonode->m_inputs[2]);
-            rttlas_res.m_resource = dynamic_cast<rg::AccelerationStructureResource&>(*g_snode->m_outputs[2]).m_resource;
-
-            auto& cimg_res = dynamic_cast<rg::ImageResource&>(*g_cnode->m_inputs[0]);
-            cimg_res.m_resource = dynamic_cast<rg::ImageResource&>(*g_osrnode->m_outputs[0]).m_resource;
-
-            auto& cao_res = dynamic_cast<rg::ImageResource&>(*g_cnode->m_inputs[1]);
-            cao_res.m_resource = dynamic_cast<rg::ImageResource&>(*g_rtaonode->m_outputs[0]).m_resource;
-        });
-
-        auto compile_t1 = bm::measure<std::chrono::milliseconds>([&](){ g_osrnode->compile(); });
-        auto compile_t2 = bm::measure<std::chrono::milliseconds>([&](){ g_rtaonode->compile(); });
-        auto compile_t3 = bm::measure<std::chrono::milliseconds>([&](){ g_cnode->compile(); });
-#pragma endregion
-
-        m_ge->set_scene(g_rgs);
         m_rgctx->set_scene(g_rgs);
 
-        std::cout
-                << "Ctx init time   : " << ctx_init.count() << "ms\n"
-                << "Scene init time : " << scene_init.count() << "ms\n"
-                << "Connection time : " << connect_time.count() << "ms\n"
-                << "Compile OSR     : " << compile_t1.count() << "ms\n"
-                << "Compile RTAO    : " << compile_t2.count() << "ms\n"
-                << "Compile Comp.   : " << compile_t3.count() << "ms\n"
-                << std::endl;
+        m_ge = std::make_shared<Nebula::RenderGraph::Editor::GraphEditor>(*m_rgctx);
+        m_ge->set_scene(g_rgs);
+
+        // Build initial graph
+        auto graph_builder = Nebula::RenderGraph::Builder(m_rgctx);
+        {
+            using namespace Nebula::RenderGraph;
+            auto pass_a = graph_builder.add_pass(NodeType::eDeferredRender);
+            auto pass_b = graph_builder.add_pass(NodeType::eLightingPass);
+            auto pass_c = graph_builder.add_pass(NodeType::eSceneProvider);
+            auto pass_d = graph_builder.add_pass(NodeType::ePresent);
+            auto pass_e = graph_builder.add_pass(NodeType::eAmbientOcclusion);
+
+            auto compile_result = graph_builder
+                .make_connection(pass_c, pass_a, "Objects")
+                .make_connection(pass_c, pass_a, "Camera")
+                .make_connection(pass_c, pass_b, "Camera")
+                .make_connection(pass_c, pass_b, "TLAS")
+                .make_connection(pass_a, pass_b, "Position Buffer")
+                .make_connection(pass_a, pass_b, "Normal Buffer")
+                .make_connection(pass_a, pass_b, "Albedo Image")
+                .make_connection(pass_a, pass_b, "Depth Image")
+                .make_connection(pass_e, pass_b, "AO Image")
+                .make_connection(pass_c, pass_e, "Camera")
+                .make_connection(pass_c, pass_e, "TLAS")
+                .make_connection(pass_a, pass_e, "Position Buffer")
+                .make_connection(pass_a, pass_e, "Normal Buffer")
+                .make_connection(pass_b, pass_d, "Lighting Result", "Final Image")
+                .compile();
+
+            m_rgctx->set_render_path(compile_result.render_path);
+        }
 
         init_imgui();
-
-
-        auto nebula_image = std::make_shared<Nebula::Image>(*m_context,
-                                                            vk::Format::eR32G32B32A32Sfloat,
-                                                            vk::Extent2D(1920, 1080),
-                                                            vk::SampleCountFlagBits::e8,
-                                                            vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled);
-        auto nebula_resolve_image = std::make_shared<Nebula::Image>(*m_context,
-                                                                    vk::Format::eR32G32B32A32Sfloat,
-                                                                    vk::Extent2D(1920, 1080),
-                                                                    vk::SampleCountFlagBits::e1,
-                                                                    vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
-
-        m_command_buffers->execute_single_time([&](const auto& cmd){
-            Nebula::Sync::ImageBarrier(nebula_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal).apply(cmd);
-            Nebula::Sync::ImageBarrier(nebula_resolve_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal).apply(cmd);
-            Nebula::Sync::ImageResolve(nebula_image, nebula_resolve_image).resolve(cmd);
-        });
     }
 
     void Application::run()
@@ -175,19 +159,8 @@ namespace sd
             command_buffer.setViewport(0, 1, &vp);
             command_buffer.setScissor(0, 1, &sc);
 
-            bool editor = m_editor->execute(command_buffer);
-
-            if (!editor) {
-                g_osrnode->execute(command_buffer);
-                g_rtaonode->execute(command_buffer);
-                g_cnode->execute(command_buffer);
-            }
-
             const auto& render_path = m_rgctx->get_render_path();
-            if (render_path != nullptr)
-            {
-                render_path->execute(command_buffer);
-            }
+            render_path->execute(command_buffer);
 
             std::array<vk::ClearValue, 1> clear_value;
             clear_value[0].color = std::array<float, 4>({ 0.f, 0.f, 0.f, 0.f });
@@ -208,8 +181,6 @@ namespace sd
                             ImGui::Begin("Metrics");
                             ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
                             ImGui::End();
-
-                            // m_editor->draw();
 
                             m_ge->render();
                         }

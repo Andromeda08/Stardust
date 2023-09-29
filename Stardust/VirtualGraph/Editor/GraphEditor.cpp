@@ -120,7 +120,19 @@ namespace Nebula::RenderGraph::Editor
 
         _handle_connection();
 
-        _handle_link_delete();
+        // _handle_link_delete();
+
+        const int num_selected = ImNodes::NumSelectedLinks();
+        if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
+        {
+            std::vector<int32_t> selected_links;
+            selected_links.resize(static_cast<size_t>(num_selected));
+            ImNodes::GetSelectedLinks(selected_links.data());
+            for (const int edge_id : selected_links)
+            {
+                _erase_edge(edge_id);
+            }
+        }
 
         ImGui::End();
         ImGui::PopStyleVar();
@@ -230,16 +242,28 @@ namespace Nebula::RenderGraph::Editor
 
             auto& e_node = m_nodes[edge->end.node_id];
             auto& e_attr = e_node->get_resource(edge->end.res_id);
+            e_attr.input_is_connected = false;
+
+            auto find_a = std::find_if(s_node->get_outgoing_edges().begin(), s_node->get_outgoing_edges().end(), [&](const auto& v){
+                return v->id() == e_node->id();
+            });
+
+            auto find_b = std::find_if(e_node->get_incoming_edges().begin(), e_node->get_incoming_edges().end(), [&](const auto& v){
+                return v->id() == s_node->id();
+            });
+
+            auto erased_a = s_node->get_outgoing_edges().erase(find_a);
+            auto erased_b = e_node->get_incoming_edges().erase(find_b);
+
+            m_edges.erase(edge);
 
             std::cout
                 << std::format(
-                        R"([Info] (Will) Deleting link: "{}" ("{}") --> "{}" ("{}"))",
+                        R"([Info] Deleting link: "{}" ("{}") --> "{}" ("{}"))",
                         s_node->name(), s_attr.name,
                         e_node->name(), e_attr.name)
                 << std::endl;
         }
-
-        std::cout << "[Warning] What the fuck" << std::endl;
     }
 
     void GraphEditor::_handle_add_node(NodeType type)

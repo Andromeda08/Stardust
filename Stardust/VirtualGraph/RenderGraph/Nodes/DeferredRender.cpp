@@ -68,7 +68,7 @@ namespace Nebula::RenderGraph
             .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
             .create(m_renderer.frames_in_flight, m_context);
 
-        auto pipeline = sdvk::PipelineBuilder(m_context)
+        auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
             .add_push_constant({ vk::ShaderStageFlagBits::eVertex, 0, sizeof(DeferredPassPushConstant) })
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
@@ -81,8 +81,8 @@ namespace Nebula::RenderGraph
             .with_name("DeferredPass")
             .create_graphics_pipeline(m_renderer.render_pass);
 
-        m_renderer.pipeline = pipeline.pipeline;
-        m_renderer.pipeline_layout = pipeline.pipeline_layout;
+        m_renderer.pipeline = pipeline;
+        m_renderer.pipeline_layout = pipeline_layout;
 
         m_renderer.uniform.resize(m_renderer.frames_in_flight);
         for (auto& ub : m_renderer.uniform)
@@ -142,11 +142,6 @@ namespace Nebula::RenderGraph
             .with_render_area({{ 0, 0 }, m_renderer.render_resolution})
             .with_render_pass(m_renderer.render_pass)
             .execute(command_buffer, render_commands);
-
-        Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
 
     void DeferredRender::_update_descriptor(uint32_t current_frame)

@@ -107,7 +107,7 @@ namespace Nebula::RenderGraph
             .combined_image_sampler(3, vk::ShaderStageFlagBits::eFragment)
             .create(m_kernel.frames_in_flight, m_context);
 
-        auto pipeline = sdvk::PipelineBuilder(m_context)
+        auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
             .add_descriptor_set_layout(m_kernel.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
@@ -118,8 +118,8 @@ namespace Nebula::RenderGraph
             .with_name("ScreenSpace AO")
             .create_graphics_pipeline(m_kernel.render_pass);
 
-        m_kernel.pipeline = pipeline.pipeline;
-        m_kernel.pipeline_layout = pipeline.pipeline_layout;
+        m_kernel.pipeline = pipeline;
+        m_kernel.pipeline_layout = pipeline_layout;
 
         m_kernel.uniform_camera.resize(m_kernel.frames_in_flight);
         for (auto& ub : m_kernel.uniform_camera)

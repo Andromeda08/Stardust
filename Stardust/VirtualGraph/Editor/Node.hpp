@@ -85,6 +85,19 @@ namespace Nebula::RenderGraph::Editor
             throw std::runtime_error(std::format("No resource by the id {}", id));
         }
 
+        ResourceDescription& get_resource(const std::string& name)
+        {
+            for (auto& item : m_resource_descriptions)
+            {
+                if (name == item.name)
+                {
+                    return item;
+                }
+            }
+
+            throw std::runtime_error(std::format("No resource by the name {}", name));
+        }
+
         const std::vector<ResourceDescription>& resources()
         {
             return m_resource_descriptions;
@@ -186,16 +199,14 @@ namespace Nebula::RenderGraph::Editor
             }
         }
 
+        LightingPassOptions params;
+
     protected:
         void render_options() override
         {
-            ImGui::Checkbox("With Ambient Occlusion", &m_options.include_ao);
-            ImGui::Checkbox("With Anti-Aliasing", &m_options.include_aa);
-            ImGui::Checkbox("With Shadows", &m_options.with_shadows);
+            ImGui::Checkbox("Use Ambient Occlusion", &params.ambient_occlusion);
+            ImGui::Checkbox("Raytraced Shadows", &params.enable_shadows);
         }
-
-    private:
-        LightingPassOptions m_options;
     };
 
     class DenoiseNode : public Node

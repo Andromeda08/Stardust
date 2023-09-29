@@ -2,11 +2,9 @@
 
 #include <memory>
 #include <Application/ApplicationOptions.hpp>
-#include <RenderGraph/editor/RenderGraphEditor.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Presentation/Swapchain.hpp>
-#include <Vulkan/v2/Descriptor.hpp>
 #include <Window/Window.hpp>
 #include "VirtualGraph/Editor/GraphEditor.hpp"
 #include <VirtualGraph/Common/GraphContext.hpp>
@@ -36,8 +34,6 @@ namespace sd
 
     private:
         ApplicationOptions m_options;
-
-        std::shared_ptr<rg::RenderGraphEditor> m_editor;
 
         std::shared_ptr<Nebula::RenderGraph::RenderGraphContext> m_rgctx;
         std::shared_ptr<Nebula::RenderGraph::Editor::GraphEditor> m_ge;

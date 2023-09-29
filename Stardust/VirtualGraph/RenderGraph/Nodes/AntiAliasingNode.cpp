@@ -60,8 +60,8 @@ namespace Nebula::RenderGraph
             .with_render_pass(m_renderer.render_pass)
             .execute(command_buffer, render_commands);
 
-        Nebula::Sync::ImageBarrier(aa_in, aa_in->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(aa_out, aa_out->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+//        Nebula::Sync::ImageBarrier(aa_in, aa_in->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+//        Nebula::Sync::ImageBarrier(aa_out, aa_out->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
     }
 
     void AntiAliasingNode::initialize()
@@ -96,21 +96,21 @@ namespace Nebula::RenderGraph
             .combined_image_sampler(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
             .create(m_renderer.frames_in_flight, m_context);
 
-        auto pipeline = sdvk::PipelineBuilder(m_context)
+        auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
             .add_push_constant({ vk::ShaderStageFlagBits::eFragment, 0, sizeof(AntiAliasingNodePushConstant) })
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
             .set_attachment_count(1)
-            .add_shader("rg_fxaa_hlsl.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("rg_fxaa_hlsl.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .add_shader("rg_fxaa.vert.hlsl.spv", vk::ShaderStageFlagBits::eVertex)
+            .add_shader("rg_fxaa.frag.hlsl.spv", vk::ShaderStageFlagBits::eFragment)
             .with_name("Anti-Aliasing (Mode)")
             .create_graphics_pipeline(m_renderer.render_pass);
 
         m_renderer.sampler = sdvk::SamplerBuilder().create(m_context.device());
 
-        m_renderer.pipeline = pipeline.pipeline;
-        m_renderer.pipeline_layout = pipeline.pipeline_layout;
+        m_renderer.pipeline = pipeline;
+        m_renderer.pipeline_layout = pipeline_layout;
     }
 
     void AntiAliasingNode::_update_descriptor(uint32_t current_frame)
