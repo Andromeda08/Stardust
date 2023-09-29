@@ -5,78 +5,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(PYTHON "py")
 
-## Variables
-#set(STREAMLINE_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/Streamline" CACHE STRING "SL SDK Root Directory")
-#find_path(STREAMLINE_INCLUDE_DIR sl.h HINTS "${STREAMLINE_SDK_ROOT}/include" NO_CACHE)
-#find_path(STREAMLINE_PLUGIN_DLL_DIR sl.interposer.dll HINTS "${STREAMLINE_SDK_ROOT}/bin/x64" "${STREAMLINE_SDK_ROOT}/bin/x64/development" NO_CACHE)
-#find_path(STREAMLINE_PLUGIN_JSON_DIR sl.interposer.json HINTS "${STREAMLINE_SDK_ROOT}/scripts" "${STREAMLINE_SDK_ROOT}/bin/x64" NO_CACHE)
-#find_path(STREAMLINE_SUPPORT_DLL_DIR nvngx_dlss.dll HINTS "${STREAMLINE_SDK_ROOT}/bin/x64" NO_CACHE)
-#find_library(STREAMLINE_INTERPOSER_LIB sl.interposer HINTS "${STREAMLINE_SDK_ROOT}/lib/x64" NO_CACHE)
-#find_file(STREAMLINE_INTERPOSER_DLL sl.interposer.dll HINTS "${STREAMLINE_SDK_ROOT}/bin/x64" "${STREAMLINE_SDK_ROOT}/bin/x64/development" NO_CACHE)
-#set(STREAMLINE_INSTALL_DIR "." CACHE STRING "Streamline Install Dir")
-#
-## Sort Features
-#option(STREAMLINE_FEATURE_DLSS      "Include DLSS dll"      ON)
-#option(STREAMLINE_FEATURE_NRD       "Include NRD dll"       ON)
-#option(STREAMLINE_FEATURE_IMGUI     "Include Imgui dll"     OFF)
-#option(STREAMLINE_FEATURE_REFLEX    "Include Reflex dll"    OFF)
-#option(STREAMLINE_FEATURE_NIS       "Include NIS dll"       OFF)
-#option(STREAMLINE_FEATURE_DLSSG     "Include DLSS-G dll"    OFF)
-#
-#option(STREAMLINE_IMPORT_AS_INTERFACE "Import Streamline as an Interface without lib" OFF)
-#
-#file(GLOB STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.interposer.dll" "${STREAMLINE_PLUGIN_DLL_DIR}sl.common.dll")
-#
-#if (STREAMLINE_FEATURE_DLSS)
-#    list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.dlss.dll" "${STREAMLINE_SUPPORT_DLL_DIR}nvngx_dlss.dll")
-#endif()
-
-#if (STREAMLINE_FEATURE_NRD)
-#    list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.nrd.dll" "${STREAMLINE_SUPPORT_DLL_DIR}NRD.dll")
-#endif()
-#
-#if (STREAMLINE_FEATURE_IMGUI AND EXISTS "${STREAMLINE_PLUGIN_DLL_DIR}sl.imgui.dll")
-#    list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.imgui.dll")
-#endif()
-#
-#if (STREAMLINE_FEATURE_REFLEX)
-#    list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.reflex.dll")
-#    if (EXISTS "${STREAMLINE_PLUGIN_DLL_DIR}NvLowLatencyVk.dll")
-#        list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}NvLowLatencyVk.dll")
-#    else()
-#        message(WARNING "Missing NvLowLatencyVk.dll: Reflex will fail to run with Vulkan.")
-#    endif()
-#endif()
-#
-#if (STREAMLINE_FEATURE_NIS)
-#    list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.nis.dll")
-#endif()
-#
-## ONLY DLSS-G DLSS_G Release
-#if (STREAMLINE_FEATURE_DLSSG)
-#    list (APPEND STREAMLINE_DLLS "${STREAMLINE_PLUGIN_DLL_DIR}sl.dlss_g.dll" "${STREAMLINE_SUPPORT_DLL_DIR}nvngx_dlssg.dll")
-#endif()
-## NDA ONLY DLSS-G DLSS_G Release
-#
-## We copy all the Jsons that may be present.
-#if(NOT STREAMLINE_PLUGIN_JSON_DIR)
-#    message(STATUS "No sl.interposer.json found. Cmake cannot find the json files.")
-#    file(GLOB STREAMLINE_JSONS "")
-#else()
-#    file(GLOB STREAMLINE_JSONS ${STREAMLINE_PLUGIN_JSON_DIR}/*.json)
-#endif()
-#
-##Library
-#
-#if (STREAMLINE_IMPORT_AS_INTERFACE)
-#    add_library(streamline INTERFACE)
-#else()
-#    add_library(streamline IMPORTED SHARED GLOBAL)
-#    set_target_properties(streamline PROPERTIES IMPORTED_IMPLIB ${STREAMLINE_INTERPOSER_LIB})
-#endif()
-#
-#target_include_directories(streamline INTERFACE ${STREAMLINE_INCLUDE_DIR})
-
 # Set up dependencies
 find_package(Vulkan REQUIRED)
 
@@ -199,6 +127,7 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
         Stardust/VirtualGraph/Builder/Builder.h Stardust/VirtualGraph/Builder/Builder.cpp
+        Solar/src/main.cpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
