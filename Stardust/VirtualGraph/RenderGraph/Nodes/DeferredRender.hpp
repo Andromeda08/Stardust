@@ -22,6 +22,12 @@ namespace Nebula::RenderGraph
         glm::vec4 color {0.5f};
     };
 
+    struct DeferredPassUniform
+    {
+        sd::CameraUniformData current;
+        sd::CameraUniformData previous;
+    };
+
     // TODO: Rename to DeferredPass
     class DeferredRender : public Node
     {
@@ -45,10 +51,12 @@ namespace Nebula::RenderGraph
             vk::PipelineLayout pipeline_layout;
             vk::RenderPass render_pass;
 
-            std::array<vk::ClearValue, 4> clear_values;
+            std::array<vk::ClearValue, 5> clear_values;
             uint32_t frames_in_flight;
             vk::Extent2D render_resolution;
             std::vector<std::unique_ptr<sdvk::Buffer>> uniform;
+
+            sd::CameraUniformData previous_frame_camera_state;
         } m_renderer;
 
         const sdvk::Context& m_context;

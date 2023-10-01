@@ -17,6 +17,7 @@ namespace Nebula::RenderGraph
         { "Normal Buffer", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Albedo Image", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Depth Image", ResourceRole::eOutput, ResourceType::eDepthImage },
+        { "Motion Vectors", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
     };
     #pragma endregion
 
@@ -31,11 +32,13 @@ namespace Nebula::RenderGraph
         const auto& r_normal = m_resources["Normal Buffer"];
         const auto& r_albedo = m_resources["Albedo Image"];
         const auto& r_depth = m_resources["Depth Image"];
+        const auto& r_mv = m_resources["Motion Vectors"];
 
         auto position = dynamic_cast<ImageResource&>(*r_position).get_image();
         auto normal = dynamic_cast<ImageResource&>(*r_normal).get_image();
         auto albedo = dynamic_cast<ImageResource&>(*r_albedo).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*r_depth).get_depth_image();
+        auto motion_vectors = dynamic_cast<ImageResource&>(*r_mv).get_image();
 
         m_renderer.render_resolution = sd::Application::s_extent.vk_ext();
         m_renderer.frames_in_flight = sd::Application::s_max_frames_in_flight;
@@ -43,12 +46,14 @@ namespace Nebula::RenderGraph
         m_renderer.clear_values[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
         m_renderer.clear_values[1].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
         m_renderer.clear_values[2].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
-        m_renderer.clear_values[3].setDepthStencil({ 1.0f, 0 });
+        m_renderer.clear_values[3].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
+        m_renderer.clear_values[4].setDepthStencil({ 1.0f, 0 });
 
         m_renderer.render_pass = sdvk::RenderPass::Builder()
             .add_color_attachment(position->properties().format)
             .add_color_attachment(normal->properties().format)
             .add_color_attachment(albedo->properties().format)
+            .add_color_attachment(motion_vectors->properties().format)
             .set_depth_attachment(depth->properties().format)
             .make_subpass()
             .create(m_context);
@@ -57,6 +62,7 @@ namespace Nebula::RenderGraph
             .add_attachment(position->image_view())
             .add_attachment(normal->image_view())
             .add_attachment(albedo->image_view())
+            .add_attachment(motion_vectors->image_view())
             .add_attachment(depth->image_view())
             .set_render_pass(m_renderer.render_pass)
             .set_size(m_renderer.render_resolution)
@@ -73,7 +79,7 @@ namespace Nebula::RenderGraph
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
-            .set_attachment_count(3)
+            .set_attachment_count(4)
             .add_attribute_descriptions({ sd::VertexData::attribute_descriptions() })
             .add_binding_descriptions({ sd::VertexData::binding_description() })
             .add_shader("rg_deferred_pass.vert.spv", vk::ShaderStageFlagBits::eVertex)
@@ -88,10 +94,13 @@ namespace Nebula::RenderGraph
         for (auto& ub : m_renderer.uniform)
         {
             ub = sdvk::Buffer::Builder()
-                .with_size(sizeof(sd::CameraUniformData))
+                .with_size(sizeof(DeferredPassUniform))
                 .as_uniform_buffer()
                 .create(m_context);
         }
+
+        auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
+        m_renderer.previous_frame_camera_state = camera.uniform_data();
     }
 
     void DeferredRender::execute(const vk::CommandBuffer& command_buffer)
@@ -129,15 +138,17 @@ namespace Nebula::RenderGraph
         auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
         auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
         auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
+        auto mv = dynamic_cast<ImageResource&>(*m_resources["Motion Vectors"]).get_image();
 
         Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
         Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eDepthAttachmentOptimal).apply(command_buffer);
+        Nebula::Sync::ImageBarrier(mv, mv->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
 
         auto framebuffer = m_renderer.framebuffers->get(current_frame);
         sdvk::RenderPass::Execute()
-            .with_clear_values<4>(m_renderer.clear_values)
+            .with_clear_values<5>(m_renderer.clear_values)
             .with_framebuffer(framebuffer)
             .with_render_area({{ 0, 0 }, m_renderer.render_resolution})
             .with_render_pass(m_renderer.render_pass)
@@ -148,12 +159,17 @@ namespace Nebula::RenderGraph
     {
         auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
         auto camera_data = camera.uniform_data();
-        m_renderer.uniform[current_frame]->set_data(&camera_data, m_context.device());
 
-        vk::DescriptorBufferInfo un_info { m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData) };
+        DeferredPassUniform uniform {};
+        uniform.current = camera_data;
+        uniform.previous = m_renderer.previous_frame_camera_state;
+
+        m_renderer.uniform[current_frame]->set_data(&uniform, m_context.device());
 
         m_renderer.descriptor->begin_write(current_frame)
-            .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(sd::CameraUniformData))
+            .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(DeferredPassUniform))
             .commit();
+
+        m_renderer.previous_frame_camera_state = camera_data;
     }
 }

@@ -1,12 +1,18 @@
 #version 460
 
-layout (set = 0, binding = 0) uniform CameraUniformData {
+struct CameraData
+{
     mat4 view;
     mat4 proj;
     mat4 view_inverse;
     mat4 proj_inverse;
     vec4 eye;
-} camera;
+};
+
+layout (set = 0, binding = 0) uniform PrePassUniform {
+    CameraData current_camera;
+    CameraData previous_camera;
+} ubo;
 
 layout (push_constant) uniform ObjectPushConstantData {
     mat4 model;
@@ -22,16 +28,25 @@ layout (location = 1) out vec3 o_worldNormal;
 layout (location = 2) out vec2 o_uv;
 layout (location = 3) out vec3 o_color;
 layout (location = 4) out vec3 o_viewDir;
+layout (location = 5) out vec4 o_currentPosition;
+layout (location = 6) out vec4 o_previousPosition;
 
 void main()
 {
-    vec3 origin = vec3(camera.view_inverse * vec4(0, 0, 0, 1));
+    CameraData camera = ubo.current_camera;
+    CameraData previous_camera = ubo.previous_camera;
 
-    o_worldPos = vec3(obj.model * vec4(i_position, 1.0));
+    vec3 origin = vec3(camera.view_inverse * vec4(0, 0, 0, 1));
+    vec4 currentWorldPosition = obj.model * vec4(i_position, 1.0);
+
+    o_worldPos = currentWorldPosition.xyz;
     o_worldNormal = mat3(obj.model) * i_normal;
     o_uv = i_uv;
     o_color = obj.color.xyz;
     o_viewDir = vec3(o_worldPos - origin);
 
-    gl_Position = camera.proj * camera.view * vec4(o_worldPos, 1.0);
+    o_currentPosition = camera.proj * camera.view * currentWorldPosition;
+    o_previousPosition = previous_camera.proj * previous_camera.view * obj.model * vec4(i_position, 1.0);
+
+    gl_Position = o_currentPosition;
 }
