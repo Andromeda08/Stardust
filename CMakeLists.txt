@@ -139,8 +139,7 @@ target_include_directories(${PROJECT_NAME}
         ThirdParty/stb
         ThirdParty/tinyobj
         ThirdParty/stduuid/include
-        ThirdParty/glfw/include
-        ThirdParty/Streamline/include)
+        ThirdParty/glfw/include)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         IMGUI_DEFINE_MATH_OPERATORS
