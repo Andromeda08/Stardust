@@ -130,7 +130,16 @@ add_executable(${PROJECT_NAME}
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
-target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw glm stduuid)
+add_library(ffx_fsr2_api_x64d SHARED IMPORTED)
+set_property(TARGET ffx_fsr2_api_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_x64d.dll")
+set_property(TARGET ffx_fsr2_api_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_x64d.dll")
+
+add_library(ffx_fsr2_api_vk_x64d SHARED IMPORTED)
+set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
+set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
+
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${Vulkan_LIBRARIES} glfw ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm stduuid)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -139,9 +148,11 @@ target_include_directories(${PROJECT_NAME}
         ThirdParty/stb
         ThirdParty/tinyobj
         ThirdParty/stduuid/include
-        ThirdParty/glfw/include)
+        ThirdParty/glfw/include
+        ThirdParty/FFX_FSR)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
+        GLM_ENABLE_EXPERIMENTAL
         IMGUI_DEFINE_MATH_OPERATORS
         UUID_SYSTEM_GENERATOR
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
