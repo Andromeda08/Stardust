@@ -94,6 +94,12 @@ namespace Nebula::RenderGraph
 
     void LightingPass::initialize()
     {
+        auto ao_image = std::dynamic_pointer_cast<ImageResource>(m_resources["AO Image"]);
+        if (ao_image)
+        {
+            m_params.ambient_occlusion = true;
+        }
+
         const auto& r_lighting_result = m_resources["Lighting Result"];
         auto lighting_result = dynamic_cast<ImageResource&>(*r_lighting_result).get_image();
 
