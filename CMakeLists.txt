@@ -98,8 +98,11 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/Compile/DefaultCompileStrategy.hpp Stardust/VirtualGraph/Compile/DefaultCompileStrategy.cpp
         Stardust/VirtualGraph/Compile/NodeFactory.hpp Stardust/VirtualGraph/Compile/NodeFactory.cpp
         Stardust/VirtualGraph/Compile/CompileResult.hpp
+        Stardust/VirtualGraph/Compile/OptimizedCompileStrategy.hpp Stardust/VirtualGraph/Compile/OptimizedCompileStrategy.cpp
+        Stardust/VirtualGraph/Compile/CompilerType.hpp
 
         Stardust/VirtualGraph/Compile/Algorithm/Bfs.hpp Stardust/VirtualGraph/Compile/Algorithm/Bfs.cpp
+        Stardust/VirtualGraph/Compile/Algorithm/ResourceOptimizer.hpp
         Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.hpp Stardust/VirtualGraph/Compile/Algorithm/TopologicalSort.cpp
 
         Stardust/VirtualGraph/Editor/Edge.hpp

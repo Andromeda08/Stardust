@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <imnodes.h>
 #include <VirtualGraph/Compile/DefaultCompileStrategy.hpp>
+#include <VirtualGraph/Compile/OptimizedCompileStrategy.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {
@@ -90,7 +91,12 @@ namespace Nebula::RenderGraph::Editor
 
                 if (ImGui::Button("Compile"))
                 {
-                    _handle_compile();
+                    _handle_compile(Compiler::CompilerType::eNaiive);
+                }
+
+                if (ImGui::Button("Compile Optimzed"))
+                {
+                    _handle_compile(Compiler::CompilerType::eResourceOptimized);
                 }
 
                 if (ImGui::Button("Reset"))
@@ -138,7 +144,7 @@ namespace Nebula::RenderGraph::Editor
         ImGui::PopStyleVar();
     }
 
-    void GraphEditor::_handle_compile()
+    void GraphEditor::_handle_compile(Compiler::CompilerType mode)
     {
         std::vector<node_ptr_t> nodes_vector;
         for (const auto& [k, v] : m_nodes)
@@ -146,13 +152,24 @@ namespace Nebula::RenderGraph::Editor
             nodes_vector.push_back(v);
         }
 
-        auto result = m_compiler->compile(nodes_vector, m_edges, true);
-        for (const auto& msg : result.logs)
+        Compiler::CompileResult result;
+
+        if (mode == Compiler::CompilerType::eNaiive)
         {
-            std::cout << msg << std::endl;
+            result = m_compiler->compile(nodes_vector, m_edges, true);
+            for (const auto& msg : result.logs)
+            {
+                std::cout << msg << std::endl;
+            }
+            m_context.set_render_path(result.render_path);
         }
 
-        m_context.set_render_path(result.render_path);
+        if (mode == Compiler::CompilerType::eResourceOptimized)
+        {
+            auto compiler = std::make_unique<Compiler::OptimizedCompileStrategy>(m_context);
+            result = compiler->compile(nodes_vector, m_edges, true);
+            m_context.set_render_path(result.render_path);
+        }
     }
 
     bool GraphEditor::_handle_connection()

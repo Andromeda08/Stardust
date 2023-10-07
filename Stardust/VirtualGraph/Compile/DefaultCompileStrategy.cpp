@@ -250,13 +250,12 @@ namespace Nebula::RenderGraph::Compiler
         // 5. Create real nodes
         #pragma region Create real nodes
 
-        auto node_factory = std::make_shared<NodeFactory>(m_context);
         std::vector<std::shared_ptr<RenderGraph::Node>> real_nodes;
         std::map<int32_t, int32_t> id_to_node;
         auto node_creation_time = sd::bm::measure<std::chrono::milliseconds>([&](){
             for (const auto& node : topological_ordering)
             {
-                auto n = node_factory->create(node, node->type());
+                auto n = m_node_factory->create(node, node->type());
                 if (n != nullptr)
                 {
                     real_nodes.push_back(n);

@@ -5,6 +5,7 @@
 #include <vector>
 #include <Utility.hpp>
 #include <Scene/Scene.hpp>
+#include <VirtualGraph/Compile/CompilerType.hpp>
 #include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
 #include <VirtualGraph/Common/GraphContext.hpp>
 #include <VirtualGraph/Editor/Edge.hpp>
@@ -47,7 +48,7 @@ namespace Nebula::RenderGraph::Editor
         }
 
     private:
-        void _handle_compile();
+        void _handle_compile(Compiler::CompilerType mode);
 
         bool _handle_connection();
 
