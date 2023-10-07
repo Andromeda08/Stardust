@@ -1,0 +1,30 @@
+OptimizerResult_2023-10-07_12-22_Dump
+Optimization summary:
+	Original resource count: 11
+	From which can be optimized: 8
+	Resource count post-optimization: 10
+	Reduction: 1
+========== Unoptimized resource timeline ==========
+[Objects | Objects]	            | x  x  -  -  -  - |
+[Camera | Camera]	            | x  x  x  x  -  - |
+[TLAS | Tlas]	                | x  -  x  x  -  - |
+[Position Buffer | Image]	    | -  x  x  x  -  - |
+[Normal Buffer | Image]	        | -  x  x  x  -  - |
+[Albedo Image | Image]	        | -  x  -  x  -  - |
+[Depth Image | Depth Image]	    | -  x  -  x  -  - |
+[Motion Vectors | Image]	    | -  x  -  -  -  - |
+[AO Image | Image]	            | -  -  x  x  -  - |
+[Lighting Result | Image]	    | -  -  -  x  x  - |
+[Anti-Aliasing Output | Image]	| -  -  -  -  x  x |
+========== Optimized resource timeline ==========
+[Resource 0 | Objects]	        | x  x  -  -  -  - | Objects  Objects
+[Resource 1 | Camera]	        | x  x  x  x  -  - | Camera  Camera  Camera  Camera
+[Resource 2 | Tlas]	            | x  -  x  x  -  - | TLAS  TLAS  TLAS
+[Resource 3 | Image]	        | -  x  x  x  -  - | Position Buffer  Position Buffer  Position Buffer
+[Resource 4 | Image]	        | -  x  x  x  -  - | Normal Buffer  Normal Buffer  Normal Buffer
+[Resource 5 | Image]	        | -  x  -  x  -  - | Albedo Image  Albedo Image
+[Resource 6 | Depth Image]	    | -  x  -  x  -  - | Depth Image  Depth Image
+[Resource 7 | Image]	        | -  x  -  x  x  - | Motion Vectors  Lighting Result  Anti-Aliasing Input
+[Resource 8 | Image]	        | -  -  x  x  -  - | AO Image  AO Image
+[Resource 10 | Image]	        | -  -  -  -  x  x | Anti-Aliasing Output  Final Image
+(- = not used, x = used)
