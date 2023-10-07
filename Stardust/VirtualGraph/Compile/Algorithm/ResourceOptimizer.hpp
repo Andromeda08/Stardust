@@ -138,6 +138,12 @@ namespace Nebula::RenderGraph::Algorithm
                 // Case: Add non-optimizable resource
                 if (!ri.optimizable)
                 {
+                    // Flood usage points to avoid misplacement of optimizable resources
+                    for (int32_t i = 0; i < m_nodes.size(); i++)
+                    {
+                        ior.usage_points.insert(i);
+                    }
+
                     opt_resources.push_back(ior);
                     non_optimizable_count++;
                     continue;
@@ -157,12 +163,14 @@ namespace Nebula::RenderGraph::Algorithm
                     Range current_range = opt_res.get_usage_range();
                     Range incoming_range = { *std::begin(usage_points), *std::end(usage_points) };
 
-                    bool can_accommodate = !current_range.overlaps(incoming_range)
-                                        && ri.type == ior.type
-                                        && ri.rd.spec.format == ior.format
-                                        && ri.rd.spec.extent == ior.extent
-                                        && ri.rd.spec.usage_flags == ior.usage_flags;
+                    std::vector<bool> flags = {
+                        !current_range.overlaps(incoming_range),
+                        opt_res.type == ior.type,
+                        opt_res.format == ior.format,
+                        opt_res.usage_flags == ior.usage_flags,
+                    };
 
+                    bool can_accommodate = std::none_of(std::begin(flags), std::end(flags), std::logical_not<bool>());
                     if (can_accommodate)
                     {
                         for (const auto& pt : usage_points)
