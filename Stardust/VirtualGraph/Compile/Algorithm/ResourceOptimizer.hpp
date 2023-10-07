@@ -115,6 +115,7 @@ namespace Nebula::RenderGraph::Algorithm
         int32_t original_resource_count {0};
         std::vector<OptimizerResource> resources;
         std::vector<IntResourceInfo> original_resources;
+        Range timeline_range {0, 0};
     };
 
     class ResourceOptimizer
@@ -289,6 +290,7 @@ namespace Nebula::RenderGraph::Algorithm
                 .original_resource_count = static_cast<int32_t>(R.size()),
                 .resources = opt_resources,
                 .original_resources = R,
+                .timeline_range = { 0, static_cast<int32_t>(m_nodes.size() - 1) },
             };
 
             return result;
