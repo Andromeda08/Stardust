@@ -225,13 +225,13 @@ namespace Nebula::RenderGraph::Compiler
                     sstr << " x ";
                 }
             }
+            sstr << "|";
 
             for (const auto& user : res.usage_point_meta)
             {
                 sstr << std::format(" {} ", user.used_as);
             }
 
-            sstr << "|";
             dump.push_back(sstr.str());
         }
         dump.emplace_back("(- = not used, x = used)");

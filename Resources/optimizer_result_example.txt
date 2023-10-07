@@ -26,5 +26,5 @@ Optimization summary:
 [Resource 6 | Depth Image]	    | -  x  -  x  -  - | Depth Image  Depth Image
 [Resource 7 | Image]	        | -  x  -  x  x  - | Motion Vectors  Lighting Result  Anti-Aliasing Input
 [Resource 8 | Image]	        | -  -  x  x  -  - | AO Image  AO Image
-[Resource 10 | Image]	        | -  -  -  -  x  x | Anti-Aliasing Output  Final Image
+[Resource 9 | Image]	        | -  -  -  -  x  x | Anti-Aliasing Output  Final Image
 (- = not used, x = used)
