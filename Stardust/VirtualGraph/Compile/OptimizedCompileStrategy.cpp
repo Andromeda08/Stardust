@@ -1,11 +1,12 @@
 #include "OptimizedCompileStrategy.hpp"
 #include <chrono>
+#include <fstream>
 #include <sstream>
+#include <string>
 #include <VirtualGraph/Editor/Edge.hpp>
 #include <VirtualGraph/Editor/Node.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Compile/Algorithm/Bfs.hpp>
-#include <VirtualGraph/Compile/Algorithm/ResourceOptimizer.hpp>
 #include <VirtualGraph/Compile/Algorithm/TopologicalSort.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
@@ -26,8 +27,23 @@ namespace Nebula::RenderGraph::Compiler
         auto execution_order = get_execution_order(connected_nodes);
 
         // 3. Evaluate and optimize resources
-        auto optimizer = std::make_unique<Algorithm::ResourceOptimizer>(execution_order, edges);
-        auto optimization_result = optimizer->run();
+        auto optimizer = std::make_unique<Algorithm::ResourceOptimizer>(execution_order, edges, verbose);
+        Algorithm::ResourceOptimizationResult optimization_result;
+        try
+        {
+            optimization_result = optimizer->run();
+            for (const auto& msg : optimization_result.messages)
+            {
+                logs.push_back(msg);
+            }
+        }
+        catch (const std::runtime_error& ex)
+        {
+            compile_result.failure_message = ex.what();
+            compile_result.success = false;
+            compile_result.logs = logs;
+            return compile_result;
+        }
 
         // 4. Create resources
         std::map<std::string, std::shared_ptr<Resource>> created_resources; // optimizer_id -> resource
@@ -135,13 +151,97 @@ namespace Nebula::RenderGraph::Compiler
         // 9. Write logs
         // write_logs_to_file(std::format("GraphCompile_Optimized_Log_{:%Y-%m-%d_%H-%M}_{}", start_time, compile_result.success ? "Success" : "Failed"));
 
-        // 10. If verbose mode: write graph dump
+        // 10. Write optimization result dump
+        if (verbose)
+        {
+            write_optimization_results(optimization_result, std::format("OptimizerResult_{:%Y-%m-%d_%H-%M}_Dump", start_time));
+        }
+
+        // 11. If verbose mode: write graph dump
         if (verbose)
         {
             write_graph_state_dump(*render_path, std::format("GraphCompile_Optimized_Log_{:%Y-%m-%d_%H-%M}_Dump", start_time));
         }
 
         return compile_result;
+    }
+
+    void OptimizedCompileStrategy::write_optimization_results(const Algorithm::ResourceOptimizationResult& optres, const std::string& file_name)
+    {
+        std::vector<std::string> dump;
+
+        dump.push_back(file_name);
+        dump.emplace_back("Optimization summary:");
+        dump.push_back(std::format("\tOriginal resource count: {}", optres.original_resource_count));
+        dump.push_back(std::format("\tFrom which can be optimized: {}", std::to_string(optres.original_resource_count - optres.non_optimizable_count)));
+        dump.push_back(std::format("\tResource count post-optimization: {}", optres.optimized_resource_count));
+        dump.push_back(std::format("\tReduction: {}", std::to_string(optres.original_resource_count - optres.optimized_resource_count)));
+        dump.emplace_back("========== Unoptimized resource timeline ==========");
+        int32_t res_num {0};
+        for (const auto& res : optres.original_resources)
+        {
+            std::stringstream sstr;
+            sstr << std::format("[{} | {}]\t|", res.origin_res_name, get_resource_type_str(res.type));
+
+            for (int32_t i = optres.timeline_range.start; i < optres.timeline_range.end + 1; i++)
+            {
+                auto user = std::find_if(std::begin(res.users), std::end(res.users), [&](const auto& it){
+                   return it.node_idx == i;
+                });
+
+                if (user == std::end(res.users))
+                {
+                    sstr << " - ";
+                }
+                else
+                {
+                    sstr << " x ";
+                }
+            }
+
+            sstr << "|";
+            dump.push_back(sstr.str());
+            res_num++;
+        }
+
+        dump.emplace_back("========== Optimized resource timeline ==========");
+        for (const auto& res : optres.resources)
+        {
+            std::stringstream sstr;
+            sstr << std::format("[Resource {} | {}]\t|", res.id, get_resource_type_str(res.type));
+
+            for (int32_t i = optres.timeline_range.start; i < optres.timeline_range.end + 1; i++)
+            {
+                auto user = std::find_if(std::begin(res.usage_points), std::end(res.usage_points), [&](const auto& it){
+                    return it == i;
+                });
+
+                if (user == std::end(res.usage_points))
+                {
+                    sstr << " - ";
+                }
+                else
+                {
+                    sstr << " x ";
+                }
+            }
+
+            for (const auto& user : res.usage_point_meta)
+            {
+                sstr << std::format(" {} ", user.used_as);
+            }
+
+            sstr << "|";
+            dump.push_back(sstr.str());
+        }
+        dump.emplace_back("(- = not used, x = used)");
+
+        auto path = std::format("logs/{}.txt", file_name);
+        std::fstream fs(path);
+        fs.open(path, std::ios_base::out);
+        std::ostream_iterator<std::string> os_it(fs, "\n");
+        std::copy(dump.begin(), dump.end(), os_it);
+        fs.close();
     }
 
     std::vector<std::shared_ptr<Editor::Node>>

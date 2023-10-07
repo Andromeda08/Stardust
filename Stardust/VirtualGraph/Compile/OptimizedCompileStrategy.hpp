@@ -9,6 +9,7 @@
 #include <Vulkan/Context.hpp>
 #include <VirtualGraph/Compile/CompileResult.hpp>
 #include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
+#include <VirtualGraph/Compile/Algorithm/ResourceOptimizer.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
 
 namespace Nebula::RenderGraph::Editor
@@ -29,10 +30,12 @@ namespace Nebula::RenderGraph::Compiler
                               bool verbose) override;
 
     private:
-        std::vector<std::shared_ptr<Editor::Node>>
+        static void write_optimization_results(const Algorithm::ResourceOptimizationResult& optres, const std::string& file_name);
+
+        static std::vector<std::shared_ptr<Editor::Node>>
         filter_unreachable_nodes(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
 
-        std::vector<std::shared_ptr<Editor::Node>>
+        static std::vector<std::shared_ptr<Editor::Node>>
         get_execution_order(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
     };
 }
