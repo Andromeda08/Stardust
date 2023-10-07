@@ -191,7 +191,7 @@ namespace Nebula::RenderGraph::Compiler
 
                 if (user == std::end(res.users))
                 {
-                    sstr << " - ";
+                    sstr << ((res.origin_node_idx == i) ? " x " : " - ");
                 }
                 else
                 {
