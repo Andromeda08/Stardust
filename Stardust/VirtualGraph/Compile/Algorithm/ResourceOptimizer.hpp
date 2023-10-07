@@ -179,6 +179,7 @@ namespace Nebula::RenderGraph::Algorithm
                             {
                                 auto message = std::format("[Error] Resource is already used at point {}!", pt);
                                 std::cout << message << std::endl;
+                                break;
                                 // throw std::runtime_error(message);
                             }
 
