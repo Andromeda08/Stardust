@@ -11,6 +11,8 @@
 #include <VirtualGraph/Editor/Edge.hpp>
 #include <VirtualGraph/Editor/Node.hpp>
 
+#define NEBULA_OPT_DEBUG
+
 namespace Nebula::RenderGraph::Algorithm
 {
     struct Range
@@ -18,9 +20,25 @@ namespace Nebula::RenderGraph::Algorithm
         int32_t start;
         int32_t end;
 
+        Range(int32_t a, int32_t b): start(a), end(b)
+        {
+            if (start > end)
+            {
+                std::swap(start, end);
+            }
+        }
+
         bool overlaps(const Range& other) const
         {
-            return std::max(start, other.start) <= std::min(end, other.end);
+            auto result = std::max(start, other.start) <= std::min(end, other.end);
+#ifdef NEBULA_OPT_DEBUG_VERBOSE
+            std::cout
+                << std::format("Comparing ranges [{}, {}] and [{}, {}] => {}",
+                               start, end, other.start, other.end,
+                               (result ? "Overlap" : "Distinct"))
+                << std::endl;
+#endif
+            return result;
         }
     };
 
@@ -85,26 +103,25 @@ namespace Nebula::RenderGraph::Algorithm
 
         Range get_usage_range()
         {
-            return {
-                .start = *std::begin(usage_points),
-                .end   = *std::end(usage_points),
-            };
+            return { *std::begin(usage_points), *std::end(usage_points) };
         }
     };
 
     struct ResourceOptimizationResult
     {
+        std::vector<std::string> messages;
         int32_t non_optimizable_count {0};
         int32_t optimized_resource_count {0};
         int32_t original_resource_count {0};
         std::vector<OptimizerResource> resources;
+        std::vector<IntResourceInfo> original_resources;
     };
 
     class ResourceOptimizer
     {
     public:
-        ResourceOptimizer(const std::vector<std::shared_ptr<Editor::Node>>& nodes, const std::vector<Editor::Edge>& edges)
-        : m_nodes(nodes), m_edges(edges)
+        ResourceOptimizer(const std::vector<std::shared_ptr<Editor::Node>>& nodes, const std::vector<Editor::Edge>& edges, bool verbose = false)
+        : m_nodes(nodes), m_edges(edges), m_verbose_logging(verbose)
         {
         }
 
@@ -117,7 +134,9 @@ namespace Nebula::RenderGraph::Algorithm
             for (const auto& ri : R)
             {
                 std::set<int32_t> usage_points { ri.origin_node_idx };
-                std::vector<IntOptimizerResourceUsagePoint> usage_points_meta {{ri.origin_node_idx, ri.origin_res_id, ri.origin_res_name, ri.origin_node_id, ri.origin_node_name, ri.role }};
+                std::vector<IntOptimizerResourceUsagePoint> usage_points_meta {{
+                    ri.origin_node_idx, ri.origin_res_id, ri.origin_res_name, ri.origin_node_id, ri.origin_node_name, ri.role
+                }};
                 for (const auto& user : ri.users)
                 {
                     usage_points.insert(user.node_idx);
@@ -146,12 +165,22 @@ namespace Nebula::RenderGraph::Algorithm
 
                     opt_resources.push_back(ior);
                     non_optimizable_count++;
+
+                    if (m_verbose_logging)
+                    {
+                        m_messages.push_back(std::format("[Optimizer] New, non-optimizable resource with id {} added of type {}", ior.id, get_resource_type_str(ior.type)));
+                    }
+
                     continue;
                 }
 
                 // Case: No resources
                 if (opt_resources.empty())
                 {
+                    if (m_verbose_logging)
+                    {
+                        m_messages.push_back(std::format("[Optimizer] New resource with id {} added of type {}", ior.id, get_resource_type_str(ior.type)));
+                    }
                     opt_resources.push_back(ior);
                     continue;
                 }
@@ -170,17 +199,23 @@ namespace Nebula::RenderGraph::Algorithm
                         opt_res.usage_flags == ior.usage_flags,
                     };
 
-                    bool can_accommodate = std::none_of(std::begin(flags), std::end(flags), std::logical_not<bool>());
+                    bool can_accommodate = std::none_of(std::begin(flags), std::end(flags), std::logical_not<>());
                     if (can_accommodate)
                     {
                         for (const auto& pt : usage_points)
                         {
+                            // Validation for occupied usage points
                             if (opt_res.usage_points.contains(pt))
                             {
-                                auto message = std::format("[Error] Resource is already used at point {}!", pt);
-                                std::cout << message << std::endl;
+                                auto message = std::format("[Optimizer] Resource is already used at point {}, this should never occur!", pt);
+                                if (m_verbose_logging)
+                                {
+                                    m_messages.push_back(message);
+                                }
+#ifndef NEBULA_OPT_DEBUG
+                                throw std::runtime_error(message);
+#endif
                                 break;
-                                // throw std::runtime_error(message);
                             }
 
                             opt_res.usage_points.insert(pt);
@@ -191,23 +226,69 @@ namespace Nebula::RenderGraph::Algorithm
                             opt_res.usage_point_meta.push_back(*iter);
                         }
 
+                        if (m_verbose_logging)
+                        {
+                            m_messages.push_back(std::format("[Optimizer] Resource added to {} of type {} with {} usage points.",
+                                                             opt_res.id,
+                                                             get_resource_type_str(ior.type),
+                                                             usage_points.size()));
+                        }
                         was_inserted = true;
                         break;
                     }
+#ifdef NEBULA_OPT_DEBUG_VERBOSE
+                    else
+                    {
+                        std::stringstream sstr;
+                        for (bool f : flags)
+                        {
+                            sstr << std::format("[{}]", (f ? "Y" : "N"));
+                        }
+                        std::cout
+                            << std::format("[Optimizer] Resource {} could not accommodate ({}) for resource with type of {}.",
+                                           opt_res.id,
+                                           sstr.str(),
+                                           get_resource_type_str(ri.type))
+                            << std::endl;
+                    }
+#endif
                 }
 
                 // Case: Failed to insert, add new resource
                 if (!was_inserted)
                 {
+                    if (m_verbose_logging)
+                    {
+                        m_messages.push_back(std::format("[Optimizer] New resource added with id {} of type {}", ior.id, get_resource_type_str(ior.type)));
+                    }
                     opt_resources.push_back(ior);
                 }
             }
 
+#ifdef NEBULA_OPT_DEBUG_VERBOSE
+            for (int32_t i = 3; i < opt_resources.size(); i++)
+            {
+                auto& res = opt_resources[i];
+                std::cout
+                    << std::format("Resource {}", i) << std::endl
+                    << std::format("\tFirst use: {} as: {}", res.original_desc.origin_node_name, res.original_desc.origin_res_name) << std::endl
+                    << std::format("\tLater users:") << std::endl;
+
+                for (const auto& user : res.usage_point_meta)
+                {
+                    std::cout << std::format("\t\tUser {} as {}", user.used_by, user.used_as) << std::endl;
+                }
+
+            }
+#endif
+
             ResourceOptimizationResult result {
+                .messages = m_messages,
                 .non_optimizable_count = non_optimizable_count,
                 .optimized_resource_count = static_cast<int32_t>(opt_resources.size()),
                 .original_resource_count = static_cast<int32_t>(R.size()),
                 .resources = opt_resources,
+                .original_resources = R,
             };
 
             return result;
@@ -282,6 +363,9 @@ namespace Nebula::RenderGraph::Algorithm
 
     private:
         int32_t m_id_sequence {0};
+
+        bool m_verbose_logging {false};
+        std::vector<std::string> m_messages;
 
         const std::set<ResourceType> m_optimizable_types { ResourceType::eDepthImage, ResourceType::eImage };
 
