@@ -75,13 +75,17 @@ namespace Nebula::RenderGraph
             .combined_image_sampler(0, vk::ShaderStageFlagBits::eFragment)
             .create(m_renderer.frames_in_flight, m_context);
 
+        const auto& input = dynamic_cast<ImageResource&>(*m_resources["Final Image"]).get_image();
+        auto input_format = input->properties().format;
+        std::string fragment_shader =  (input_format == vk::Format::eR32Sfloat) ? "rg_present_r32.frag.spv" : "rg_present.frag.spv";
+
         auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
             .set_attachment_count(1)
             .add_shader("rg_passthrough.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .add_shader("rg_present.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .add_shader(fragment_shader, vk::ShaderStageFlagBits::eFragment)
             .set_cull_mode(vk::CullModeFlagBits::eNone)
             .with_name("Present Pass")
             .create_graphics_pipeline(m_renderer.render_pass);
