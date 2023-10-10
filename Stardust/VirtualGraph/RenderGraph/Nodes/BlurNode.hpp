@@ -27,11 +27,13 @@ namespace Nebula::RenderGraph
         void initialize() override;
 
     private:
-        void _update_descriptor(uint32_t current_frame);
+        void _update_descriptor(uint32_t current_frame, uint32_t pass);
 
         struct ComputeKernel
         {
-            std::shared_ptr<Descriptor> descriptor;
+            std::shared_ptr<Image> intermediate_image;
+            std::shared_ptr<Descriptor> descriptor_pass_x;
+            std::shared_ptr<Descriptor> descriptor_pass_y;
             vk::Pipeline pipeline;
             vk::PipelineLayout pipeline_layout;
             std::vector<vk::Sampler> samplers;
