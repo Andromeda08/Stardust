@@ -18,11 +18,7 @@ namespace Nebula::RenderGraph::Compiler
     class GraphCompileStrategy
     {
     public:
-        explicit GraphCompileStrategy(const RenderGraphContext& context)
-        : m_context(context)
-        {
-            m_node_factory = std::make_unique<NodeFactory>(context);
-        }
+        explicit GraphCompileStrategy(const RenderGraphContext& context);
 
         virtual CompileResult compile(const std::vector<std::shared_ptr<Editor::Node>>&,
                                       const std::vector<Editor::Edge>& edges,
@@ -33,7 +29,15 @@ namespace Nebula::RenderGraph::Compiler
     protected:
         void write_logs_to_file(const std::string& file_name);
 
+        CompileResult make_failed_result(const std::string& message);
+
         static void write_graph_state_dump(const RenderPath& render_path, const std::string& file_name);
+
+        static std::vector<std::shared_ptr<Editor::Node>>
+        filter_unreachable_nodes(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
+
+        static std::vector<std::shared_ptr<Editor::Node>>
+        get_execution_order(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
 
     protected:
         std::vector<std::string> logs;
