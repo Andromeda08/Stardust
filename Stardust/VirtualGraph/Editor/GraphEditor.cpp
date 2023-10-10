@@ -23,7 +23,7 @@ namespace Nebula::RenderGraph::Editor
     void GraphEditor::render()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {16.f, 16.f});
-        ImGui::Begin("Virtual Graph Editor", nullptr, ImGuiWindowFlags_MenuBar);
+        ImGui::Begin("RenderGraph Editor", nullptr, ImGuiWindowFlags_MenuBar);
         {
             if (ImGui::BeginMenuBar())
             {
@@ -152,22 +152,28 @@ namespace Nebula::RenderGraph::Editor
             nodes_vector.push_back(v);
         }
 
+        std::unique_ptr<Compiler::GraphCompileStrategy> compiler;
         Compiler::CompileResult result;
 
         if (mode == Compiler::CompilerType::eNaiive)
         {
-            result = m_compiler->compile(nodes_vector, m_edges, true);
-            for (const auto& msg : result.logs)
-            {
-                std::cout << msg << std::endl;
-            }
-            m_context.set_render_path(result.render_path);
+            compiler = std::make_unique<Compiler::DefaultCompileStrategy>(m_context);
         }
 
         if (mode == Compiler::CompilerType::eResourceOptimized)
         {
-            auto compiler = std::make_unique<Compiler::OptimizedCompileStrategy>(m_context);
-            result = compiler->compile(nodes_vector, m_edges, true);
+            compiler = std::make_unique<Compiler::OptimizedCompileStrategy>(m_context);
+        }
+
+        result = compiler->compile(nodes_vector, m_edges, true);
+
+        for (const auto& msg : result.logs)
+        {
+            std::cout << msg << std::endl;
+        }
+
+        if (result.success)
+        {
             m_context.set_render_path(result.render_path);
         }
     }
