@@ -22,6 +22,8 @@ namespace Nebula::RenderGraph::Editor
 
         bool input_is_connected = false;
 
+        ResourceDescription() = default;
+
         ResourceDescription(std::string&& n, ResourceRole&& r): name(n), role(r) {}
 
         ResourceDescription(std::string&& n, ResourceRole&& r, ResourceType&& t): name(n), role(r), type(t) {}
