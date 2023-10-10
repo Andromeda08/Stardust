@@ -6,8 +6,6 @@
 #include <VirtualGraph/Editor/Edge.hpp>
 #include <VirtualGraph/Editor/Node.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
-#include <VirtualGraph/Compile/Algorithm/Bfs.hpp>
-#include <VirtualGraph/Compile/Algorithm/TopologicalSort.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
 
@@ -19,12 +17,57 @@ namespace Nebula::RenderGraph::Compiler
     {
         CompileResult compile_result = {};
         auto start_time = std::chrono::utc_clock::now();
+        logs.push_back(std::format("[Compiler] Compiling started at {:%Y-%m-%d %H:%M}", start_time));
+
+        if (verbose)
+        {
+            std::stringstream input_nodes;
+            input_nodes << "[Info] Received nodes as input:";
+            for (const auto& node : nodes)
+            {
+                input_nodes << std::format(" [{}]", node->name());
+            }
+            logs.push_back(input_nodes.str());
+        }
 
         // 1. Find unreachable nodes (BFS Traversal)
-        auto connected_nodes = filter_unreachable_nodes(nodes);
+        std::vector<std::shared_ptr<Editor::Node>> connected_nodes;
+        try
+        {
+            connected_nodes = filter_unreachable_nodes(nodes);
+        }
+        catch (const std::runtime_error& ex)
+        {
+            return make_failed_result(ex.what());
+        }
+
+        if (verbose)
+        {
+            logs.push_back(std::format("[Compiler] Found and culled {} unreachable node(s)", std::to_string(nodes.size() - connected_nodes.size())));
+        }
 
         // 2. To determine execution order of nodes run Topological Sort based on Logical Nodes and Connections.
-        auto execution_order = get_execution_order(connected_nodes);
+        std::vector<std::shared_ptr<Editor::Node>> execution_order;
+        try
+        {
+            execution_order = get_execution_order(connected_nodes);
+        }
+        catch (const std::runtime_error& ex)
+        {
+            return make_failed_result(ex.what());
+        }
+
+
+        if (verbose)
+        {
+            std::stringstream input_nodes;
+            input_nodes << "[Compiler] Node execution order:";
+            for (const auto& node : execution_order)
+            {
+                input_nodes << std::format(" [{}]", node->name());
+            }
+            logs.push_back(input_nodes.str());
+        }
 
         // 3. Evaluate and optimize resources
         auto optimizer = std::make_unique<Algorithm::ResourceOptimizer>(execution_order, edges, verbose);
@@ -39,11 +82,10 @@ namespace Nebula::RenderGraph::Compiler
         }
         catch (const std::runtime_error& ex)
         {
-            compile_result.failure_message = ex.what();
-            compile_result.success = false;
-            compile_result.logs = logs;
-            return compile_result;
+            return make_failed_result(ex.what());
         }
+
+        logs.push_back(std::format("[Compiler] Resource optimization finished in {} microseconds", optimization_result.time.count()));
 
         // 4. Create resources
         std::map<std::string, std::shared_ptr<Resource>> created_resources; // optimizer_id -> resource
@@ -96,7 +138,7 @@ namespace Nebula::RenderGraph::Compiler
                                                (opt_resource.type == ResourceType::eImage || opt_resource.type == ResourceType::eDepthImage) ? "GPU " : "",
                                                get_resource_type_str(opt_resource.type),
                                                resource_name);
-            std::cout << res_created_msg << std::endl;
+            logs.push_back(res_created_msg);
 
             created_resources.insert({ std::to_string(opt_resource.id), new_resource });
         }
@@ -126,7 +168,7 @@ namespace Nebula::RenderGraph::Compiler
             cnode_origin->set_resource(origin.origin_res_name, resource);
 
             // 6.2 Connect to consumer nodes
-            for (const auto& consumer : opt_resource.usage_point_meta)
+            for (const auto& consumer : opt_resource.usage_points)
             {
                 auto& cnode_consumer = created_nodes[node_mappings[consumer.user_node_id]];
                 cnode_consumer->set_resource(consumer.used_as, resource);
@@ -142,8 +184,9 @@ namespace Nebula::RenderGraph::Compiler
         auto end_time = std::chrono::utc_clock::now();
         auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
+        logs.push_back(std::format("[Compiler] Graph compiled in {} ms", compile_time.count()));
+
         compile_result.compile_time = compile_time;
-        compile_result.failure_message = "";
         compile_result.logs = logs;
         compile_result.render_path = render_path;
         compile_result.success = true;
@@ -213,7 +256,7 @@ namespace Nebula::RenderGraph::Compiler
             for (int32_t i = optres.timeline_range.start; i < optres.timeline_range.end + 1; i++)
             {
                 auto user = std::find_if(std::begin(res.usage_points), std::end(res.usage_points), [&](const auto& it){
-                    return it == i;
+                    return it.point == i;
                 });
 
                 if (user == std::end(res.usage_points))
@@ -227,7 +270,7 @@ namespace Nebula::RenderGraph::Compiler
             }
             sstr << "|";
 
-            for (const auto& user : res.usage_point_meta)
+            for (const auto& user : res.usage_points)
             {
                 sstr << std::format(" {} ", user.used_as);
             }
@@ -242,55 +285,5 @@ namespace Nebula::RenderGraph::Compiler
         std::ostream_iterator<std::string> os_it(fs, "\n");
         std::copy(dump.begin(), dump.end(), os_it);
         fs.close();
-    }
-
-    std::vector<std::shared_ptr<Editor::Node>>
-    OptimizedCompileStrategy::filter_unreachable_nodes(const std::vector<std::shared_ptr<Editor::Node>>& nodes)
-    {
-        std::vector<std::shared_ptr<Editor::Node>> result;
-
-        std::shared_ptr<Editor::Node> root_node;
-        for (const auto& node : nodes)
-        {
-            if (node->type() == NodeType::eSceneProvider)
-            {
-                root_node = node;
-            }
-        }
-
-        if (!root_node)
-        {
-            throw std::runtime_error("[Error] Graph must contain a SceneProvider node");
-        }
-
-        auto bfs = std::make_unique<Algorithm::Bfs>(nodes);
-        auto reachable_node_ids = bfs->execute(root_node);
-        for (const auto& node : nodes)
-        {
-            if (reachable_node_ids.contains(node->id()))
-            {
-                result.push_back(node);
-            }
-        }
-
-        return result;
-    }
-
-    std::vector<std::shared_ptr<Editor::Node>>
-    OptimizedCompileStrategy::get_execution_order(const std::vector<std::shared_ptr<Editor::Node>>& nodes)
-    {
-        std::vector<std::shared_ptr<Editor::Node>> result;
-
-        auto tsort = std::make_unique<Algorithm::TopologicalSort>(nodes);
-        try
-        {
-            result = tsort->execute();
-        }
-        catch (const std::runtime_error& ex)
-        {
-            throw ex;
-        }
-
-        return result;
     }
 }

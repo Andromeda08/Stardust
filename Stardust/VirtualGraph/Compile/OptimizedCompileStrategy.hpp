@@ -31,11 +31,5 @@ namespace Nebula::RenderGraph::Compiler
 
     private:
         static void write_optimization_results(const Algorithm::ResourceOptimizationResult& optres, const std::string& file_name);
-
-        static std::vector<std::shared_ptr<Editor::Node>>
-        filter_unreachable_nodes(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
-
-        static std::vector<std::shared_ptr<Editor::Node>>
-        get_execution_order(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
     };
 }
