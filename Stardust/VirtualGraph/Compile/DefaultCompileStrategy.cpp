@@ -229,6 +229,11 @@ namespace Nebula::RenderGraph::Compiler
                         const auto& tlas = m_context.scene()->acceleration_structure();
                         new_res = std::make_shared<TlasResource>(tlas, resource_name);
                     }
+                    else if (resource.type == ResourceType::eBuffer)
+                    {
+                        const auto& buffer = m_context.scene()->object_descriptions();
+                        new_res = std::make_shared<BufferResource>(buffer, resource_name);
+                    }
                     else
                     {
                         continue;

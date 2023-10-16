@@ -12,35 +12,6 @@
 
 namespace Nebula::RenderGraph::Compiler
 {
-    std::string to_string(NodeType type)
-    {
-        switch (type)
-        {
-            case NodeType::eAmbientOcclusion:
-                return "Ambient Occlusion";
-            case NodeType::eAntiAliasing:
-                return "Anti-Aliasing";
-            case NodeType::eDeferredRender:
-                return "Deferred Pass";
-            case NodeType::eDenoise:
-                return "Denoise";
-            case NodeType::eGaussianBlur:
-                return "Blur";
-            case NodeType::eLightingPass:
-                return "Lighting Pass";
-            case NodeType::eRayTracing:
-                return "Ray Tracing";
-            case NodeType::ePresent:
-                return "Present";
-            case NodeType::eSceneProvider:
-                return "Scene Provider";
-            case NodeType::eUnknown:
-                // Falls Through
-            default:
-                return "Unknown";
-        }
-    }
-
     GraphCompileStrategy::GraphCompileStrategy(const RenderGraphContext& context)
     : m_context(context)
     {
@@ -86,7 +57,7 @@ namespace Nebula::RenderGraph::Compiler
         for (const auto& node : render_path.nodes)
         {
             dump.push_back(std::format("[Node] {}", node->name()));
-            dump.push_back(std::format("\tType: {}", to_string(node->type())));
+            dump.push_back(std::format("\tType: {}", get_node_type_str(node->type())));
             dump.emplace_back("\tResources:");
 
             auto& resources = node->resources();
