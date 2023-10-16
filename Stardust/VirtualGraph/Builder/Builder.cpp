@@ -7,12 +7,11 @@ namespace Nebula::RenderGraph
     Builder::Builder(const std::shared_ptr<RenderGraphContext>& rgctx)
     : m_ctx(rgctx)
     {
-        m_factory = std::make_unique<Editor::VirtualNodeFactory>();
     }
 
     std::shared_ptr<Editor::Node>& Builder::add_pass(NodeType pass_type)
     {
-        auto node = m_factory->create(pass_type);
+        auto node = Editor::Node::Factory::create(pass_type);
         m_nodes.insert({ node->id(), std::shared_ptr<Editor::Node>(node) });
         return m_nodes[node->id()];
     }

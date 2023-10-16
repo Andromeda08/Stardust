@@ -40,8 +40,7 @@ namespace Nebula::RenderGraph
 
     private:
         std::shared_ptr<RenderGraphContext> m_ctx;
-        std::vector<Editor::Edge> m_edges;
-        std::unique_ptr<Editor::VirtualNodeFactory> m_factory;
-        std::map<int32_t, node_ptr> m_nodes;
+        std::vector<Editor::Edge>           m_edges;
+        std::map<int32_t, node_ptr>         m_nodes;
     };
 }
