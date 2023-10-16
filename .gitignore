@@ -8,9 +8,10 @@
 /Lib/
 
 # Shader binary directory
-Resources/Shaders/RenderGraph/bin
+Resources/Shaders/.vs
 Resources/Shaders/out
 Resources/Shaders/Reflection/out
+Resources/Shaders/RenderGraph/bin
 
 # macOS
 .DS_Store
