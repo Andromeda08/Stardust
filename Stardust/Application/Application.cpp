@@ -59,7 +59,7 @@ namespace sd
         auto graph_builder = Nebula::RenderGraph::Builder(m_rgctx);
         {
             using namespace Nebula::RenderGraph;
-            auto pass_a = graph_builder.add_pass(NodeType::eDeferredRender);
+            auto pass_a = graph_builder.add_pass(NodeType::ePrePass);
             auto pass_b = graph_builder.add_pass(NodeType::eLightingPass);
             auto pass_c = graph_builder.add_pass(NodeType::eSceneProvider);
             auto pass_d = graph_builder.add_pass(NodeType::ePresent);
