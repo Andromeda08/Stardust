@@ -115,9 +115,10 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Nodes/BlurNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/BlurNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.cpp
-        Stardust/VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp Stardust/VirtualGraph/RenderGraph/Nodes/DeferredRender.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/PrePass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/PrePass.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/RayTracingNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/AmbientOcclusionMode.hpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusion/AmbientOcclusionOptions.hpp
@@ -130,6 +131,7 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
         Stardust/VirtualGraph/Builder/Builder.h Stardust/VirtualGraph/Builder/Builder.cpp
+        Stardust/VirtualGraph/Common/NodeType.cpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
@@ -161,3 +163,35 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
         SD_DEBUG
         -DImTextureID=ImU64)
+
+add_subdirectory(ThirdParty/VulkanMemoryAllocator)
+
+add_executable(Solar
+        Solar/Source/Device.cpp
+        Solar/Source/Device.h
+        Solar/Source/Instance.cpp
+        Solar/Source/Instance.h
+        Solar/Source/PhysicalDevice.cpp
+        Solar/Source/PhysicalDevice.h
+        Solar/Source/RenderContext.cpp
+        Solar/Source/RenderContext.h
+        Solar/Source/Common/RenderAPI.h
+        Solar/Source/RenderContextCreateInfo.h
+        Solar/main.cpp
+        Solar/Source/Queue.h
+        Solar/Source/Upscaling/UpscalingContext.h
+        Solar/Source/Common/Dimensions2D.h
+        Solar/Source/Buffer.cpp
+        Solar/Source/Buffer.h
+        Solar/Source/Allocator.cpp
+        Solar/Source/Allocator.h
+        Solar/Impl/VulkanMemoryAllocator.cpp)
+
+target_link_libraries(Solar PRIVATE GPUOpen::VulkanMemoryAllocator)
+target_link_libraries(Solar LINK_PUBLIC ${Vulkan_LIBRARIES} ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
+target_compile_definitions(Solar PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SOLAR_DEBUG)
+target_include_directories(Solar PUBLIC
+        ${Vulkan_INCLUDE_DIRS}
+        Solar/Source
+        ThirdParty/VulkanMemoryAllocator/include
+        ThirdParty/FFX_FSR)

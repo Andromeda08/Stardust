@@ -67,7 +67,7 @@ namespace sdvk
 
         std::tuple<vk::Pipeline, vk::PipelineLayout> create_compute_pipeline();
 
-        Pipeline create_ray_tracing_pipeline(int ray_recursion_depth);
+        std::tuple<vk::Pipeline, vk::PipelineLayout> create_ray_tracing_pipeline(int ray_recursion_depth);
 
     private:
         std::vector<vk::DescriptorSetLayout> descriptor_set_layouts;

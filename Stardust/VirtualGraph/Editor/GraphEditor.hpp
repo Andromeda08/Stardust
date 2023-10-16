@@ -23,9 +23,7 @@ namespace Nebula::RenderGraph::Editor
         std::map<id_t, node_ptr_t> m_nodes;
         std::vector<Edge>          m_edges;
 
-        std::vector<std::string>              m_messages;
-        std::unique_ptr<VirtualNodeFactory>   m_factory;
-        std::unique_ptr<Compiler::GraphCompileStrategy> m_compiler;
+        std::vector<std::string>   m_messages;
 
         // Flags for root and sink nodes
         bool m_has_scene_provider { false };
@@ -34,7 +32,6 @@ namespace Nebula::RenderGraph::Editor
         RenderGraphContext& m_context;
 
     public:
-        // TODO: Should replace Scene with a new representation
         static std::shared_ptr<Scene_t> s_selected_scene;
 
     public:

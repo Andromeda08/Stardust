@@ -15,8 +15,6 @@ namespace Nebula::RenderGraph::Editor
     GraphEditor::GraphEditor(RenderGraphContext& context)
     : m_context(context)
     {
-        m_factory = std::make_unique<VirtualNodeFactory>();
-        m_compiler = std::make_unique<Compiler::DefaultCompileStrategy>(m_context);
         _add_default_nodes();
     }
 
@@ -43,7 +41,7 @@ namespace Nebula::RenderGraph::Editor
                     }
                     if (ImGui::MenuItem("Deferred Pass"))
                     {
-                        _handle_add_node(NodeType::eDeferredRender);
+                        _handle_add_node(NodeType::ePrePass);
                     }
                     if (ImGui::MenuItem("Denoiser"))
                     {
@@ -65,6 +63,10 @@ namespace Nebula::RenderGraph::Editor
                         {
                             _handle_add_node(NodeType::ePresent);
                         }
+                    }
+                    if (ImGui::MenuItem("Ray Tracing"))
+                    {
+                        _handle_add_node(NodeType::eRayTracing);
                     }
                     if (ImGui::MenuItem("Scene Provider"))
                     {
@@ -291,7 +293,7 @@ namespace Nebula::RenderGraph::Editor
 
     void GraphEditor::_handle_add_node(NodeType type)
     {
-        auto node = m_factory->create(type);
+        auto node = Node::Factory::create(type);
         m_nodes.insert({ node->id(), std::shared_ptr<Node>(node) });
     }
 
@@ -306,7 +308,7 @@ namespace Nebula::RenderGraph::Editor
 
     void GraphEditor::_add_default_nodes()
     {
-        std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent, NodeType::eDeferredRender };
+        std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent, NodeType::ePrePass };
 
         for (auto t : to_create)
         {
@@ -322,7 +324,7 @@ namespace Nebula::RenderGraph::Editor
                     break;
             }
 
-            auto node = m_factory->create(t);
+            auto node = Node::Factory::create(t);
             m_nodes.insert(std::pair<id_t, node_ptr_t>{
                 node->id(),
                 std::shared_ptr<Node>(node)

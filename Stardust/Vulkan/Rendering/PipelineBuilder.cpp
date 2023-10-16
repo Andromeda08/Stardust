@@ -155,7 +155,7 @@ namespace sdvk
         return *this;
     }
 
-    Pipeline PipelineBuilder::create_ray_tracing_pipeline(int ray_recursion_depth)
+    std::tuple<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::create_ray_tracing_pipeline(int ray_recursion_depth)
     {
         if (!pipeline.pipeline_layout)
         {
@@ -173,7 +173,7 @@ namespace sdvk
 
         auto result = _context.device().createRayTracingPipelinesKHR(nullptr, nullptr, 1, &create_info, nullptr, &pipeline.pipeline);
 
-        return pipeline;
+        return { pipeline.pipeline, pipeline.pipeline_layout };
     }
 
     std::tuple<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::create_compute_pipeline()
@@ -190,6 +190,6 @@ namespace sdvk
             sdvk::util::name_vk_object(_name + " PipelineLayout", (uint64_t) static_cast<VkPipelineLayout>(pipeline.pipeline_layout), vk::ObjectType::ePipelineLayout, _context.device());
         }
 
-        return std::tuple<vk::Pipeline, vk::PipelineLayout>(pipeline.pipeline, pipeline.pipeline_layout);
+        return { pipeline.pipeline, pipeline.pipeline_layout };
     }
 }

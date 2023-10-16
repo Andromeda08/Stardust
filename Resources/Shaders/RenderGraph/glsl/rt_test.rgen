@@ -1,0 +1,51 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "include/common.glsl"
+
+layout(binding = 0, set = 0)          uniform accelerationStructureEXT tlas;
+layout(binding = 1, set = 0, rgba32f) uniform image2D output_image;
+layout(binding = 2, set = 0)          uniform Camera { CameraData camera; };
+
+layout(location = 0) rayPayloadEXT RTPayload payload;
+
+void traceRay(RayDescription ray)
+{
+    traceRayEXT(tlas, ray.ray_flags, 0xff, 0, 0, 0, ray.origin.xyz, ray.t_min, ray.direction.xyz, ray.t_max, 0);
+}
+
+void main()
+{
+    const vec2 pixel_center = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
+    const vec2 uv = pixel_center / vec2(gl_LaunchSizeEXT.xy);
+    const vec2 d = uv * 2.0 - 1.0;
+
+    vec4 target     = camera.proj_inverse * vec4(d.x, d.y, 1, 1);
+
+    // Ray Description
+    RayDescription ray_desc;
+    ray_desc.origin    = camera.view_inverse * vec4(0, 0, 0, 1);
+    ray_desc.direction = camera.view_inverse * vec4(normalize(target.xyz), 0);
+    ray_desc.t_min     = 0.001;
+    ray_desc.t_max     = 10000.0;
+    ray_desc.ray_flags = gl_RayFlagsOpaqueEXT;
+
+    // Initial payload
+    payload.hit_value     = vec3(0.0);
+    payload.ray_origin    = ray_desc.origin.xyz;
+    payload.ray_direction = ray_desc.direction.xyz;
+    payload.attenuation   = vec3(1, 1, 1);
+    payload.depth         = 0;
+    payload.done          = 0;
+
+    vec3 color = vec3(0.0);
+
+    traceRay(ray_desc);
+
+    color += payload.hit_value;
+
+    imageStore(output_image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
+}

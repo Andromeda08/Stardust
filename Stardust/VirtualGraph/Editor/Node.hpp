@@ -16,6 +16,7 @@
 #include <VirtualGraph/RenderGraph/Nodes/PrePass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
 namespace Nebula::RenderGraph::Editor
