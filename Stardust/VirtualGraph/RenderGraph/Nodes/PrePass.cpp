@@ -1,8 +1,7 @@
-#include "DeferredRender.hpp"
+#include "PrePass.hpp"
 #include <Application/Application.hpp>
 #include <Nebula/Barrier.hpp>
 #include <Nebula/Image.hpp>
-#include <Resources/CameraUniformData.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
 #include <Vulkan/Context.hpp>
@@ -10,7 +9,7 @@
 namespace Nebula::RenderGraph
 {
     #pragma region Resource Specifications
-     const std::vector<ResourceSpecification> DeferredRender::s_resource_specs = {
+     const std::vector<ResourceSpecification> PrePass::s_resource_specs = {
         { "Objects", ResourceRole::eInput, ResourceType::eObjects },
         { "Camera", ResourceRole::eInput, ResourceType::eCamera },
         { "Position Buffer", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
@@ -21,12 +20,12 @@ namespace Nebula::RenderGraph
     };
     #pragma endregion
 
-    DeferredRender::DeferredRender(const sdvk::Context& context)
-    : Node("Deferred Pass", NodeType::eDeferredRender), m_context(context)
+    PrePass::PrePass(const sdvk::Context& context)
+    : Node("PrePass", NodeType::ePrePass), m_context(context)
     {
     }
 
-    void DeferredRender::initialize()
+    void PrePass::initialize()
     {
         const auto& r_position = m_resources["Position Buffer"];
         const auto& r_normal = m_resources["Normal Buffer"];
@@ -67,7 +66,7 @@ namespace Nebula::RenderGraph
             .set_render_pass(m_renderer.render_pass)
             .set_size(m_renderer.render_resolution)
             .set_count(m_renderer.frames_in_flight)
-            .set_name("DeferredPass Framebuffer")
+            .set_name("PrePass Framebuffer")
             .create(m_context);
 
         m_renderer.descriptor = Descriptor::Builder()
@@ -75,7 +74,7 @@ namespace Nebula::RenderGraph
             .create(m_renderer.frames_in_flight, m_context);
 
         auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
-            .add_push_constant({ vk::ShaderStageFlagBits::eVertex, 0, sizeof(DeferredPassPushConstant) })
+            .add_push_constant({ vk::ShaderStageFlagBits::eVertex, 0, sizeof(PrePassPushConstant) })
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
@@ -84,7 +83,7 @@ namespace Nebula::RenderGraph
             .add_binding_descriptions({ sd::VertexData::binding_description() })
             .add_shader("rg_deferred_pass.vert.spv", vk::ShaderStageFlagBits::eVertex)
             .add_shader("rg_deferred_pass.frag.spv", vk::ShaderStageFlagBits::eFragment)
-            .with_name("DeferredPass")
+            .with_name("PrePass")
             .create_graphics_pipeline(m_renderer.render_pass);
 
         m_renderer.pipeline = pipeline;
@@ -94,7 +93,7 @@ namespace Nebula::RenderGraph
         for (auto& ub : m_renderer.uniform)
         {
             ub = sdvk::Buffer::Builder()
-                .with_size(sizeof(DeferredPassUniform))
+                .with_size(sizeof(PrePassUniform))
                 .as_uniform_buffer()
                 .create(m_context);
         }
@@ -103,7 +102,7 @@ namespace Nebula::RenderGraph
         m_renderer.previous_frame_camera_state = camera.uniform_data();
     }
 
-    void DeferredRender::execute(const vk::CommandBuffer& command_buffer)
+    void PrePass::execute(const vk::CommandBuffer& command_buffer)
     {
         uint32_t current_frame = sd::Application::s_current_frame;
 
@@ -119,14 +118,14 @@ namespace Nebula::RenderGraph
 
             for (const auto& obj : objects)
             {
-                DeferredPassPushConstant pc {};
+                PrePassPushConstant pc {};
                 pc.model_matrix = obj.transform.model();
                 pc.color = obj.color;
 
                 cmd.pushConstants(m_renderer.pipeline_layout,
                                   vk::ShaderStageFlagBits::eVertex,
                                   0,
-                                  sizeof(DeferredPassPushConstant),
+                                  sizeof(PrePassPushConstant),
                                   &pc);
 
                 obj.mesh->draw(cmd);
@@ -155,19 +154,19 @@ namespace Nebula::RenderGraph
             .execute(command_buffer, render_commands);
     }
 
-    void DeferredRender::_update_descriptor(uint32_t current_frame)
+    void PrePass::_update_descriptor(uint32_t current_frame)
     {
         auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
         auto camera_data = camera.uniform_data();
 
-        DeferredPassUniform uniform {};
+        PrePassUniform uniform {};
         uniform.current = camera_data;
         uniform.previous = m_renderer.previous_frame_camera_state;
 
         m_renderer.uniform[current_frame]->set_data(&uniform, m_context.device());
 
         m_renderer.descriptor->begin_write(current_frame)
-            .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(DeferredPassUniform))
+            .uniform_buffer(0, m_renderer.uniform[current_frame]->buffer(), 0, sizeof(PrePassUniform))
             .commit();
 
         m_renderer.previous_frame_camera_state = camera_data;

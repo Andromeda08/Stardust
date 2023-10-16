@@ -8,10 +8,10 @@ namespace Nebula::RenderGraph
     {
         eAmbientOcclusion,
         eAntiAliasing,
-        eDeferredRender,
         eDenoise,
         eGaussianBlur,
         eLightingPass,
+        ePrePass,
         eRayTracing,
 
         // Special Types
@@ -19,4 +19,6 @@ namespace Nebula::RenderGraph
         eSceneProvider,
         eUnknown,
     };
+
+    std::string get_node_type_str(NodeType role);
 }

@@ -13,19 +13,15 @@
 #include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/DeferredRender.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/PrePass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {
-    /**
-     * Node colors from the Catppuccin theme
-     * https://github.com/catppuccin/catppuccin
-     */
-
-    class Node : public Nebula::Graph::Vertex
+    // Zinc
+    class Node: public Nebula::Graph::Vertex
     {
     public:
         struct Builder
@@ -63,45 +59,22 @@ namespace Nebula::RenderGraph::Editor
             std::vector<ResourceDescription> _resources;
         };
 
+        struct Factory
+        {
+            static Node* create(NodeType type);
+        };
+
         Node(const std::string& name, const glm::ivec4& color, const glm::ivec4& hover, NodeType type = NodeType::eUnknown);
 
         virtual void render();
 
-        NodeType type() const
-        {
-            return m_type;
-        }
+        NodeType type() const;
 
-        ResourceDescription& get_resource(int32_t id)
-        {
-            for (auto& item : m_resource_descriptions)
-            {
-                if (id == item.id)
-                {
-                    return item;
-                }
-            }
+        ResourceDescription& get_resource(int32_t id);
 
-            throw std::runtime_error(std::format("No resource by the id {}", id));
-        }
+        ResourceDescription& get_resource(const std::string& name);
 
-        ResourceDescription& get_resource(const std::string& name)
-        {
-            for (auto& item : m_resource_descriptions)
-            {
-                if (name == item.name)
-                {
-                    return item;
-                }
-            }
-
-            throw std::runtime_error(std::format("No resource by the name {}", name));
-        }
-
-        const std::vector<ResourceDescription>& resources()
-        {
-            return m_resource_descriptions;
-        }
+        const std::vector<ResourceDescription>& resources();
 
     protected:
         std::vector<ResourceDescription> m_resource_descriptions;
@@ -109,183 +82,64 @@ namespace Nebula::RenderGraph::Editor
         virtual void render_options() {}
 
     private:
-        glm::ivec4 m_color { 128, 128, 128, 255 };
-        glm::ivec4 m_hover { 200, 200, 200, 255 };
+        glm::ivec4 m_color { 82, 82, 91, 255 };  // zinc-600
+        glm::ivec4 m_hover { 161, 161, 170, 255 };  // zinc-400
         NodeType   m_type = NodeType::eUnknown;
     };
 
-    class AmbientOcclusionNode : public Node
+    class AmbientOcclusionNode: public Node
     {
     public:
-        AmbientOcclusionNode()
-        : Node("Ambient Occlusion",
-               { 254, 100, 11, 255 },
-               { 250, 179, 135, 255 },
-               NodeType::eAmbientOcclusion)
-        {
-            const auto& specs = RenderGraph::AmbientOcclusionNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        AmbientOcclusionNode();
     };
 
-    class AntiAliasingNode : public Node {
+    class AntiAliasingNode: public Node
+    {
     public:
-        AntiAliasingNode()
-        : Node("Anti-Aliasing",
-               { 254, 100, 11, 255 },
-               { 250, 179, 135, 255 },
-               NodeType::eAntiAliasing)
-        {
-            const auto& specs = RenderGraph::AntiAliasingNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        AntiAliasingNode();
     };
 
-    class BlurNode : public Node {
+    class BlurNode: public Node
+    {
     public:
-        BlurNode()
-            : Node("Gaussian Blur",
-                   { 221, 120, 120, 255 },
-                   { 242, 205, 205, 255 },
-                   NodeType::eGaussianBlur)
-        {
-            const auto& specs = RenderGraph::BlurNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        BlurNode();
     };
 
-    class DeferredPassNode : public Node {
+    class PrePassNode: public Node {
     public:
-        DeferredPassNode()
-        : Node("Deferred Pass",
-               { 230, 69, 83, 255 },
-               { 235, 160, 172, 255 },
-               NodeType::eDeferredRender)
-        {
-            const auto& specs = RenderGraph::DeferredRender::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        PrePassNode();
     };
 
     class LightingPassNode : public Node {
     public:
-        LightingPassNode()
-        : Node("Lighting Pass",
-               { 23, 146, 153, 255 },
-               { 148, 226, 213, 255 },
-               NodeType::eLightingPass)
-        {
-            const auto& specs = RenderGraph::LightingPass::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        LightingPassNode();
 
         LightingPassOptions params;
 
     protected:
-        void render_options() override
-        {
-            ImGui::Checkbox("Use Ambient Occlusion", &params.ambient_occlusion);
-            ImGui::Checkbox("Raytraced Shadows", &params.enable_shadows);
-        }
-    };
-
-    class DenoiseNode : public Node
-    {
-    public:
-        DenoiseNode()
-            : Node("Denoiser",
-                   { 23, 146, 153, 255 },
-                   { 148, 226, 213, 255 },
-                   NodeType::eDenoise)
-        {
-            m_resource_descriptions.emplace_back("Input Image", ResourceRole::eInput, ResourceType::eImage);
-            m_resource_descriptions.emplace_back("De-noised Image", ResourceRole::eOutput, ResourceType::eImage);
-        }
+        void render_options() override;
     };
 
     class PresentNode : public Node
     {
     public:
-        PresentNode()
-        : Node("Present",
-               { 221, 120, 120, 255 },
-               { 242, 205, 205, 255 },
-               NodeType::ePresent)
-        {
+        PresentNode();
 
-            const auto& specs = RenderGraph::PresentNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        PresentNodeOptions params;
+
+    protected:
+        void render_options() override;
     };
 
     class SceneProviderNode : public Node
     {
     public:
-        SceneProviderNode()
-            : Node("Scene Provider",
-                   { 4, 165, 229, 255 },
-                   { 137, 220, 235, 255 },
-                   NodeType::eSceneProvider)
-        {
-            const auto& specs = RenderGraph::SceneProviderNode::s_resource_specs;
-            for (const auto& spec : specs)
-            {
-                m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
-                m_resource_descriptions.back().spec = spec;
-            }
-        }
+        SceneProviderNode();
     };
 
-    class VirtualNodeFactory
+    class RayTracingNode : public Node
     {
     public:
-        static Node* create(NodeType type)
-        {
-            switch (type)
-            {
-                case NodeType::eAmbientOcclusion:
-                    return new AmbientOcclusionNode();
-                case NodeType::eAntiAliasing:
-                    return new AntiAliasingNode();
-                case NodeType::eGaussianBlur:
-                    return new BlurNode();
-                case NodeType::eDeferredRender:
-                    return new DeferredPassNode();
-                case NodeType::eDenoise:
-                    return new DenoiseNode();
-                case NodeType::eLightingPass:
-                    return new LightingPassNode();
-                case NodeType::ePresent:
-                    return new PresentNode();
-                case NodeType::eSceneProvider:
-                    return new SceneProviderNode();
-                default:
-                    throw std::runtime_error("Invalid or not implemented node type.");
-            }
-        }
+        RayTracingNode();
     };
 }

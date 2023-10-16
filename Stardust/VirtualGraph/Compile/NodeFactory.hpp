@@ -30,7 +30,7 @@ namespace Nebula::RenderGraph::Compiler
         : m_context(context)
         {}
 
-        std::shared_ptr<Node> create(const std::shared_ptr<Editor::Node>& enode, NodeType type);
+        std::shared_ptr<Node> create(const std::shared_ptr<Editor::Node>& editor_node, NodeType type);
 
     private:
         const RenderGraphContext& m_context;

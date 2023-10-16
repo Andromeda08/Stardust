@@ -16,29 +16,28 @@ namespace sdvk
 
 namespace Nebula::RenderGraph
 {
-    struct DeferredPassPushConstant
+    struct PrePassPushConstant
     {
         glm::mat4 model_matrix {1.0f};
         glm::vec4 color {0.5f};
     };
 
-    struct DeferredPassUniform
+    struct PrePassUniform
     {
         sd::CameraUniformData current;
         sd::CameraUniformData previous;
     };
 
-    // TODO: Rename to DeferredPass
-    class DeferredRender : public Node
+    class PrePass : public Node
     {
     public:
-        explicit DeferredRender(const sdvk::Context& context);
+        explicit PrePass(const sdvk::Context& context);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void initialize() override;
 
-        ~DeferredRender() override = default;
+        ~PrePass() override = default;
 
     private:
         void _update_descriptor(uint32_t current_frame);
