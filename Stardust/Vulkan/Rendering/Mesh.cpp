@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+#include <format>
 
 namespace sdvk
 {
@@ -6,25 +7,25 @@ namespace sdvk
     : m_geometry(p_geometry), m_name(name)
     {
         m_vertex_buffer = sdvk::Buffer::Builder()
-            .with_name("[Mesh] " + name + " - Vertex buffer")
+            .with_name(std::format("[Mesh] {} - Vertex Buffer", name))
             .with_size(sizeof(sd::VertexData) * m_geometry->vertices().size())
             .as_vertex_buffer()
             .create_with_data(m_geometry->vertices().data(), command_buffers, context);
 
         m_index_buffer = sdvk::Buffer::Builder()
-            .with_name("[Mesh] " + name + " - Index buffer")
+            .with_name(std::format("[Mesh] {} - Index Buffer", name))
             .with_size(sizeof(uint32_t) * m_geometry->indices().size())
             .as_index_buffer()
             .create_with_data(m_geometry->indices().data(), command_buffers, context);
 
         if (context.is_raytracing_capable())
         {
-          m_blas = Blas::Builder()
-              .with_geometry(m_geometry)
-              .with_vertex_buffer(m_vertex_buffer)
-              .with_index_buffer(m_index_buffer)
-              .with_name("[Mesh] " + name + " - Bottom Level AS")
-              .create(command_buffers, context);
+            m_blas = Blas::Builder()
+                .with_geometry(m_geometry)
+                .with_vertex_buffer(m_vertex_buffer)
+                .with_index_buffer(m_index_buffer)
+                .with_name(std::format("[Mesh] {} - BLAS", name))
+                .create(command_buffers, context);
         }
     }
 
