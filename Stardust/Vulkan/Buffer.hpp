@@ -82,6 +82,8 @@ namespace sdvk
 
         const vk::DeviceMemory& memory() const { return m_memory; }
 
+        const vk::DeviceSize& size() const { return m_size; }
+
         static void copy_to_buffer(Buffer const& src, Buffer const& dst, CommandBuffers const& command_buffers);
 
         void copy_to_buffer(Buffer const& dst, vk::CommandBuffer const& command_buffer);
