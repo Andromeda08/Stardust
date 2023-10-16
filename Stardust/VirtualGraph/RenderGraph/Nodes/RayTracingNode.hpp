@@ -17,10 +17,28 @@ namespace sdvk
 
 namespace Nebula::RenderGraph
 {
+    struct RayTracingNodeOptions
+    {
+        int32_t reflection_count {0};
+
+        const glm::ivec2 reflection_bounds { 0, 5 };
+    };
+    
+    struct RayTracingPushConstant
+    {
+        glm::ivec4 options;
+
+        explicit RayTracingPushConstant(const RayTracingNodeOptions& _options)
+        {
+            options = glm::ivec4(0);
+            options[0] = 1 + std::clamp(_options.reflection_count, _options.reflection_bounds.x, _options.reflection_bounds.y);
+        }
+    };
+
     class RayTracingNode : public Node
     {
     public:
-        explicit RayTracingNode(const sdvk::Context& context);
+        explicit RayTracingNode(const sdvk::Context& context, const RayTracingNodeOptions& options);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
@@ -31,6 +49,8 @@ namespace Nebula::RenderGraph
 
         void update_descriptor(uint32_t index);
 
+        RayTracingNodeOptions m_options;
+        
         struct Renderer {
             uint32_t                    frames_in_flight;
             vk::Extent2D                render_resolution;

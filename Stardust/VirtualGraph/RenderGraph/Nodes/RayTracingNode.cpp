@@ -18,9 +18,10 @@ namespace Nebula::RenderGraph
     };
     #pragma endregion
 
-    RayTracingNode::RayTracingNode(const sdvk::Context& context)
+    RayTracingNode::RayTracingNode(const sdvk::Context& context, const RayTracingNodeOptions& options)
     : Node("RayTracingNode", NodeType::eRayTracing)
     , m_context(context)
+    , m_options(options)
     {
     }
 
@@ -35,7 +36,10 @@ namespace Nebula::RenderGraph
 
         auto& sbt = *m_renderer.sbt;
 
+        RayTracingPushConstant push_constant(m_options);
+
         command_buffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_renderer.pipeline);
+        command_buffer.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(RayTracingPushConstant), &push_constant);
         command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_renderer.pipeline_layout, 0, 1, &m_renderer.descriptor->set(current_frame), 0, nullptr);
         command_buffer.traceRaysKHR(
             sbt.rgen_region(),
@@ -60,6 +64,7 @@ namespace Nebula::RenderGraph
             .create(m_renderer.frames_in_flight, m_context);
 
         auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
+            .add_push_constant({ vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(RayTracingPushConstant)})
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .add_shader("rt_test.rgen.spv", vk::ShaderStageFlagBits::eRaygenKHR)

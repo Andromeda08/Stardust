@@ -269,4 +269,14 @@ namespace Nebula::RenderGraph::Editor
             m_resource_descriptions.back().spec = spec;
         }
     }
+
+    void RayTracingNode::render_options()
+    {
+        ImGui::PushItemWidth(128);
+        {
+            ImGui::SliderScalar("Ray Bounces", ImGuiDataType_S32, &params.reflection_count, &params.reflection_bounds.x,
+                                &params.reflection_bounds.y, "%d");
+        }
+        ImGui::PopItemWidth();
+    }
 }

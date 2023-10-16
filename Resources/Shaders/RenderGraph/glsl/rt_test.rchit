@@ -90,10 +90,10 @@ void main()
         specular = compute_specular(color, gl_WorldRayDirectionEXT, L, world_normal);
     }
 
-    // prd.ray_origin   = world_pos;
-    // prd.ray_dir      = reflect(gl_WorldRayDirectionEXT, world_normal);
-    // payload.attenuation *= vec3(0.5, 0.5, 0.5);
-    // prd.done         = 0;
+    payload.ray_origin    = world_pos;
+    payload.ray_direction = reflect(gl_WorldRayDirectionEXT, world_normal);
+    payload.attenuation  *= vec3(0.45);
+    payload.done          = 0;
 
     payload.hit_value = vec3(diffuse + specular) * attenuation;
 }

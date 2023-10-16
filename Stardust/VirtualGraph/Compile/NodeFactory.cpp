@@ -30,7 +30,8 @@ namespace Nebula::RenderGraph::Compiler
             case NodeType::eSceneProvider:
                 return std::make_shared<SceneProviderNode>(m_context.scene());
             case NodeType::eRayTracing:
-                return std::make_shared<RayTracingNode>(m_context.context());
+                return std::make_shared<RayTracingNode>(m_context.context(),
+                                                        dynamic_cast<Editor::RayTracingNode&>(*editor_node).params);
             case NodeType::ePresent:
                 return std::make_shared<PresentNode>(m_context.context(), m_context.swapchain(),
                                                      dynamic_cast<Editor::PresentNode&>(*editor_node).params);

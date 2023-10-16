@@ -142,5 +142,10 @@ namespace Nebula::RenderGraph::Editor
     {
     public:
         RayTracingNode();
+
+        RayTracingNodeOptions params;
+
+    protected:
+        void render_options() override;
     };
 }
