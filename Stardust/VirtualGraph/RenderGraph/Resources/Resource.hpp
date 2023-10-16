@@ -14,6 +14,9 @@
  */
 namespace Nebula::RenderGraph
 {
+    using Buffer_t = sdvk::Buffer;
+    using Buffer_ptr = std::shared_ptr<Buffer_t>;
+
     using Camera_t = sd::Camera;
     using Camera_ptr = std::shared_ptr<Camera_t>;
 
@@ -57,6 +60,29 @@ namespace Nebula::RenderGraph
     private:
         std::string  m_name = "Unknown Resource";
         ResourceType m_type = ResourceType::eUnknown;
+    };
+
+    class BufferResource : public Resource
+    {
+    public:
+        explicit BufferResource(const Buffer_ptr& buffer, const std::string& name = "Buffer Resource")
+        : Resource(name, ResourceType::eBuffer)
+        , m_buffer(buffer)
+        {
+        }
+
+        bool is_valid() override
+        {
+            return m_buffer != nullptr;
+        }
+
+        const Buffer_ptr& get_buffer() const
+        {
+            return m_buffer;
+        }
+
+    private:
+        Buffer_ptr m_buffer;
     };
 
     class CameraResource : public Resource
