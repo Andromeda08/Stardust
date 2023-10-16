@@ -15,10 +15,11 @@ namespace Nebula::RenderGraph
     };
     #pragma endregion
 
-    PresentNode::PresentNode(const sdvk::Context& context, const sdvk::Swapchain& swapchain)
+    PresentNode::PresentNode(const sdvk::Context& context, const sdvk::Swapchain& swapchain, const PresentNodeOptions& options)
     : Node("Present Node", NodeType::ePresent)
     , m_context(context)
     , m_swapchain(swapchain)
+    , m_options(options)
     {
     }
 
@@ -30,7 +31,10 @@ namespace Nebula::RenderGraph
         auto input_barrier = Sync::ImageBarrier(input, input->state().layout, vk::ImageLayout::eGeneral);
 
         auto render_commands = [&](const vk::CommandBuffer& cmd){
+            PresentNodePushConstant push_constant(m_options);
+
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
+            cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(PresentNodePushConstant), &push_constant);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                    m_renderer.pipeline_layout, 0, 1,
                                    &m_renderer.descriptor->set(current_frame),
@@ -80,6 +84,7 @@ namespace Nebula::RenderGraph
         std::string fragment_shader =  (input_format == vk::Format::eR32Sfloat) ? "rg_present_r32.frag.spv" : "rg_present.frag.spv";
 
         auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
+            .add_push_constant({vk::ShaderStageFlagBits::eFragment, 0, sizeof(PresentNodePushConstant)})
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
             .create_pipeline_layout()
             .set_sample_count(vk::SampleCountFlagBits::e1)
