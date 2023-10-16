@@ -1,5 +1,6 @@
 #include "Scene.hpp"
 
+#include <format>
 #include <Application/Application.hpp>
 #include <Resources/Primitives/Cube.hpp>
 #include <Resources/Primitives/Sphere.hpp>
@@ -17,6 +18,7 @@ namespace sd
     {
         add_defaults();
         default_init();
+        create_object_description_buffer(command_buffers);
         create_acceleration_structure();
     }
 
@@ -78,7 +80,13 @@ namespace sd
         plane.mesh = m_meshes["cube"];
         plane.name = "Object 1";
         plane.transform.scale = { 192.f, 0.05f, 192.f };
+
         m_objects.push_back(plane);
+
+        ObjDescription plane_desc;
+        plane_desc.vertex_buffer = plane.mesh->vertex_buffer().address();
+        plane_desc.index_buffer  = plane.mesh->index_buffer().address();
+        m_obj_descriptions.push_back(plane_desc);
 
         for (uint32_t i = 0; i < 612; i++)
         {
@@ -98,10 +106,14 @@ namespace sd
             auto idx = std::rand() % color_pool.size();
             obj.color = (rand() % 2 == 0) ? color_pool[idx].first : color_pool[idx].second;
             obj.mesh = m_meshes["cube"];
-            obj.name = "Object " + std::to_string(m_objects.size() + 1);
+            obj.name = std::format("Object {}", std::to_string(m_objects.size() + 1));
             obj.transform = transform;
-
             m_objects.push_back(obj);
+
+            ObjDescription obj_desc;
+            obj_desc.vertex_buffer = obj.mesh->vertex_buffer().address();
+            obj_desc.index_buffer  = obj.mesh->index_buffer().address();
+            m_obj_descriptions.push_back(obj_desc);
         }
     }
 
@@ -113,5 +125,14 @@ namespace sd
     void Scene::mouse_handler(const Window& window)
     {
         m_camera->register_mouse(window.handle());
+    }
+
+    void Scene::create_object_description_buffer(const sdvk::CommandBuffers& command_buffers)
+    {
+        m_obj_desc_buffer = sdvk::Buffer::Builder()
+            .with_name("Scene: Object Description Buffer")
+            .with_size(sizeof(ObjDescription) * m_obj_descriptions.size())
+            .as_storage_buffer()
+            .create_with_data(m_obj_descriptions.data(), command_buffers, m_context);
     }
 }

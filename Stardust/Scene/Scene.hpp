@@ -23,6 +23,12 @@ namespace sd
     class Camera;
     class Window;
 
+    struct ObjDescription
+    {
+        uint64_t  vertex_buffer;
+        uint64_t  index_buffer;
+    };
+
     class Scene
     {
     public:
@@ -41,6 +47,8 @@ namespace sd
 
         const std::shared_ptr<sdvk::Tlas>& acceleration_structure() const { return m_acceleration_structure; }
 
+        const std::shared_ptr<sdvk::Buffer>& object_descriptions() const { return m_obj_desc_buffer; }
+
         const std::string& name() const { return m_name; }
 
     private:
@@ -48,15 +56,19 @@ namespace sd
 
         void create_acceleration_structure();
 
+        void create_object_description_buffer(const sdvk::CommandBuffers& command_buffers);
+
         void default_init();
 
     private:
-        std::shared_ptr<Camera> m_camera;
-        std::vector<Object>     m_objects;
-        std::vector<Light>      m_lights;
+        std::shared_ptr<Camera>     m_camera;
+        std::vector<Object>         m_objects;
+        std::vector<Light>          m_lights;
+        std::vector<ObjDescription> m_obj_descriptions;
 
         std::map<std::string, std::shared_ptr<sdvk::Mesh>> m_meshes;
         std::shared_ptr<sdvk::Tlas> m_acceleration_structure;
+        std::shared_ptr<sdvk::Buffer> m_obj_desc_buffer;
 
         const std::string m_name = "Unnamed Scene";
         const sdvk::CommandBuffers& m_command_buffers;
