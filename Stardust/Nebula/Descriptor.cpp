@@ -297,6 +297,25 @@ namespace Nebula
         }
     }
 
+    Descriptor::Write&
+    Descriptor::Write::storage_buffer(uint32_t binding, const vk::Buffer& buffer, size_t offset, size_t range,
+                                      uint32_t count)
+    {
+        auto info = _buffer_infos.emplace_back(buffer, offset, range);
+
+        vk::WriteDescriptorSet write;
+        write.setDstBinding(binding);
+        write.setDstSet(_descriptor[_set_index]);
+        write.setDescriptorCount(count);
+        write.setDescriptorType(vk::DescriptorType::eStorageBuffer);
+        write.setDstArrayElement(0);
+        write.setPBufferInfo(&_buffer_infos.back());
+
+        _writes.push_back(write);
+
+        return *this;
+    }
+
     // Builder
 
     vk::DescriptorSetLayoutBinding
