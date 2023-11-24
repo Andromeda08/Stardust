@@ -16,6 +16,7 @@ namespace sdvk
         vk::PhysicalDeviceSynchronization2FeaturesKHR synchronization2;
         vk::PhysicalDeviceRayQueryFeaturesKHR ray_query;
         vk::PhysicalDeviceTimelineSemaphoreFeatures timeline_semaphores;
+        vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader;
 
         DeviceFeatures() = default;
 
@@ -24,14 +25,10 @@ namespace sdvk
             ray_query.setRayQuery(true);
             synchronization2.setSynchronization2(true);
             synchronization2.setPNext(&ray_query);
-            maintenance4.setMaintenance4(true);
-            maintenance4.setPNext(&synchronization2);
             descriptor_indexing.setRuntimeDescriptorArray(true);
-            descriptor_indexing.setPNext(&maintenance4);
-            buffer_device_address.setBufferDeviceAddress(true);
-            buffer_device_address.setPNext(&descriptor_indexing);
+            descriptor_indexing.setPNext(&synchronization2);
             acceleration_structure.setAccelerationStructure(true);
-            acceleration_structure.setPNext(&buffer_device_address);
+            acceleration_structure.setPNext(&descriptor_indexing);
             ray_tracing_pipeline.setRayTracingPipeline(true);
             ray_tracing_pipeline.setPNext(&acceleration_structure);
         }
