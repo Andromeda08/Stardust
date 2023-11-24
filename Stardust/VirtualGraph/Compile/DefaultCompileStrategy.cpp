@@ -16,31 +16,6 @@
 
 namespace Nebula::RenderGraph::Compiler
 {
-    std::string res_to_string(RenderGraph::ResourceType type)
-    {
-        switch (type)
-        {
-            case RenderGraph::ResourceType::eBuffer:
-                return "Buffer";
-            case RenderGraph::ResourceType::eCamera:
-                return "Camera";
-            case RenderGraph::ResourceType::eDepthImage:
-                return "Depth Image";
-            case RenderGraph::ResourceType::eImage:
-                return "Image";
-            case RenderGraph::ResourceType::eImageArray:
-                return "Image Array";
-            case RenderGraph::ResourceType::eObjects:
-                return "Objects";
-            case RenderGraph::ResourceType::eTlas:
-                return "Tlas";
-            case RenderGraph::ResourceType::eUnknown:
-                // Falls through
-            default:
-                return "Unknown";
-        }
-    }
-
     CompileResult DefaultCompileStrategy::compile(const std::vector<std::shared_ptr<Editor::Node>>& nodes,
                                                   const std::vector<Editor::Edge>& edges,
                                                   bool verbose)
@@ -165,7 +140,7 @@ namespace Nebula::RenderGraph::Compiler
         std::map<std::string, std::shared_ptr<Resource>> created_resources;
 
         std::set<ResourceType> gpu_types = {
-            ResourceType::eImage, ResourceType::eDepthImage, ResourceType::eImageArray
+            ResourceType::eImage, ResourceType::eDepthImage
         };
 
         create_time = sd::bm::measure<std::chrono::milliseconds>([&](){
@@ -234,6 +209,10 @@ namespace Nebula::RenderGraph::Compiler
                         const auto& buffer = m_context.scene()->object_descriptions();
                         new_res = std::make_shared<BufferResource>(buffer, resource_name);
                     }
+                    else if (resource.type == ResourceType::eScene)
+                    {
+                        new_res = std::make_shared<SceneResource>(m_context.scene(), resource_name);
+                    }
                     else
                     {
                         continue;
@@ -241,7 +220,7 @@ namespace Nebula::RenderGraph::Compiler
 
                     if (verbose)
                     {
-                        logs.push_back(std::format("[Verbose] Created {} resource: {}", res_to_string(resource.type), resource_name));
+                        logs.push_back(std::format("[Verbose] Created {} resource: {}", get_resource_type_str(resource.type), resource_name));
                     }
                 }
 
