@@ -44,13 +44,13 @@ namespace Nebula::RenderGraph::Editor
                     {
                         _handle_add_node(NodeType::ePrePass);
                     }
-                    if (ImGui::MenuItem("Denoiser"))
-                    {
-                        _handle_add_node(NodeType::eDenoise);
-                    }
                     if (ImGui::MenuItem("Lighting Pass"))
                     {
                         _handle_add_node(NodeType::eLightingPass);
+                    }
+                    if (ImGui::MenuItem("Mesh Shader G-Buffer Pass"))
+                    {
+                        _handle_add_node(NodeType::eMeshShaderGBufferPass);
                     }
                     if (ImGui::MenuItem("Present"))
                     {

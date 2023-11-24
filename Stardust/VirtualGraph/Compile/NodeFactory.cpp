@@ -9,6 +9,7 @@
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.hpp>
 
 namespace Nebula::RenderGraph::Compiler
 {
@@ -27,6 +28,8 @@ namespace Nebula::RenderGraph::Compiler
             case NodeType::eLightingPass:
                 return std::make_shared<LightingPass>(m_context.context(),
                                                       dynamic_cast<Editor::LightingPassNode&>(*editor_node).params);
+            case NodeType::eMeshShaderGBufferPass:
+                return std::make_shared<MeshGBufferPass>(m_context.context());
             case NodeType::eSceneProvider:
                 return std::make_shared<SceneProviderNode>(m_context.scene());
             case NodeType::eRayTracing:

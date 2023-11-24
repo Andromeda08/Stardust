@@ -11,6 +11,7 @@ namespace Nebula::RenderGraph
         eDenoise,
         eGaussianBlur,
         eLightingPass,
+        eMeshShaderGBufferPass,
         ePrePass,
         eRayTracing,
 

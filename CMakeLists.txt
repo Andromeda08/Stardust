@@ -13,6 +13,8 @@ add_subdirectory(ThirdParty/glfw)
 
 add_subdirectory(ThirdParty/stduuid)
 
+add_subdirectory(ThirdParty/json)
+
 add_subdirectory(ThirdParty/glm)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
@@ -117,6 +119,7 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/GBufferPass.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/RayTracingNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/SceneProviderNode.cpp
@@ -132,6 +135,8 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
         Stardust/VirtualGraph/Builder/Builder.h Stardust/VirtualGraph/Builder/Builder.cpp
         Stardust/VirtualGraph/Common/NodeType.cpp
+        Stardust/Application/MeshShaderApp.cpp
+        Stardust/Application/MeshShaderApp.hpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
@@ -144,7 +149,7 @@ set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CUR
 set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
 
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${Vulkan_LIBRARIES} glfw ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
-target_link_libraries(${PROJECT_NAME} PUBLIC glm stduuid)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm stduuid nlohmann_json::nlohmann_json)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -153,8 +158,10 @@ target_include_directories(${PROJECT_NAME}
         ThirdParty/stb
         ThirdParty/tinyobj
         ThirdParty/stduuid/include
+        ThirdParty/glm
         ThirdParty/glfw/include
-        ThirdParty/FFX_FSR)
+        ThirdParty/FFX_FSR
+        ThirdParty/json/include)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         GLM_ENABLE_EXPERIMENTAL
@@ -162,36 +169,62 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         UUID_SYSTEM_GENERATOR
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
         SD_DEBUG
+        RENDER_GRAPH_NAMESPACE=Nebula::RG
         -DImTextureID=ImU64)
 
 add_subdirectory(ThirdParty/VulkanMemoryAllocator)
 
-add_executable(Solar
-        Solar/Source/Device.cpp
-        Solar/Source/Device.h
-        Solar/Source/Instance.cpp
-        Solar/Source/Instance.h
-        Solar/Source/PhysicalDevice.cpp
-        Solar/Source/PhysicalDevice.h
-        Solar/Source/RenderContext.cpp
-        Solar/Source/RenderContext.h
-        Solar/Source/Common/RenderAPI.h
-        Solar/Source/RenderContextCreateInfo.h
-        Solar/main.cpp
-        Solar/Source/Queue.h
-        Solar/Source/Upscaling/UpscalingContext.h
-        Solar/Source/Common/Dimensions2D.h
-        Solar/Source/Buffer.cpp
-        Solar/Source/Buffer.h
-        Solar/Source/Allocator.cpp
-        Solar/Source/Allocator.h
-        Solar/Impl/VulkanMemoryAllocator.cpp)
-
-target_link_libraries(Solar PRIVATE GPUOpen::VulkanMemoryAllocator)
-target_link_libraries(Solar LINK_PUBLIC ${Vulkan_LIBRARIES} ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
-target_compile_definitions(Solar PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SOLAR_DEBUG)
-target_include_directories(Solar PUBLIC
-        ${Vulkan_INCLUDE_DIRS}
-        Solar/Source
-        ThirdParty/VulkanMemoryAllocator/include
-        ThirdParty/FFX_FSR)
+#add_executable(Solar
+#        Solar/Source/Device.cpp
+#        Solar/Source/Device.h
+#        Solar/Source/Instance.cpp
+#        Solar/Source/Instance.h
+#        Solar/Source/PhysicalDevice.cpp
+#        Solar/Source/PhysicalDevice.h
+#        Solar/Source/RenderContext.cpp
+#        Solar/Source/RenderContext.h
+#        Solar/Source/Common/RenderAPI.h
+#        Solar/Source/RenderContextCreateInfo.h
+#        Solar/main.cpp
+#        Solar/Source/Queue.h
+#        Solar/Source/Upscaling/UpscalingContext.h
+#        Solar/Source/Common/Dimensions2D.h
+#        Solar/Source/Resource/Buffer.cpp
+#        Solar/Source/Resource/Buffer.h
+#        Solar/Source/Allocator.cpp
+#        Solar/Source/Allocator.h
+#        Solar/Impl/VulkanMemoryAllocator.cpp
+#        Solar/Source/Utility.h
+#        Solar/Source/Utility.cpp
+#        Solar/Source/Pipeline/Shader.cpp
+#        Solar/Source/DebugUtils.cpp
+#        Solar/Source/DebugUtils.h
+#        Solar/Source/Pipeline/Pipeline.h
+#        Solar/Source/Pipeline/Shader.h
+#        Solar/Source/Pipeline/Pipeline.cpp
+#        Solar/Source/Pipeline/PipelineState.h
+#        Solar/Source/Pipeline/PipelineState.cpp
+#        Solar/Source/Common/Vertex.h
+#        Solar/Source/Resource/Descriptor.h
+#        Solar/Source/Resource/Image.h
+#        Solar/Source/Resource/Descriptor.cpp
+#        Solar/Source/Pipeline/Rendering.h
+#        Solar/Source/Pipeline/Rendering.cpp
+#        Solar/Source/Resource/Image.cpp
+#        Solar/Source/Resource/Operations.h
+#        Solar/Source/Resource/Operations.cpp
+#        Solar/Source/Presentation/Swapchain.cpp
+#        Solar/Source/Presentation/Swapchain.h
+#        Solar/Source/Presentation/Surface.h
+#        Solar/Source/Presentation/Surface.cpp)
+#
+#target_link_libraries(Solar PRIVATE GPUOpen::VulkanMemoryAllocator glm)
+#target_link_libraries(Solar LINK_PUBLIC ${Vulkan_LIBRARIES} glfw ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
+#target_compile_definitions(Solar PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 SOLAR_DEBUG)
+#target_include_directories(Solar PUBLIC
+#        ${Vulkan_INCLUDE_DIRS}
+#        Solar/Source
+#        ThirdParty/glfw/include
+#        ThirdParty/glm
+#        ThirdParty/VulkanMemoryAllocator/include
+#        ThirdParty/FFX_FSR)

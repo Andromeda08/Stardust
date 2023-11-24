@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include <imnodes.h>
+#include <VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {
@@ -113,6 +114,8 @@ namespace Nebula::RenderGraph::Editor
                 return new PrePassNode();
             case NodeType::eLightingPass:
                 return new LightingPassNode();
+            case NodeType::eMeshShaderGBufferPass:
+                return new MeshGBufferPassEditorNode();
             case NodeType::ePresent:
                 return new PresentNode();
             case NodeType::eRayTracing:

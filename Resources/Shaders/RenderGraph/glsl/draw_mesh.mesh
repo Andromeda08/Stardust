@@ -1,0 +1,94 @@
+#version 460
+#extension GL_EXT_mesh_shader : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : enable
+
+struct CameraData {
+    mat4 view;
+    mat4 proj;
+    mat4 view_inverse;
+    mat4 proj_inverse;
+    vec4 eye;
+};
+
+#define MAX_VERTICES 64
+#define MAX_INDICES 126
+struct Meshlet {
+    uint vertex[MAX_VERTICES];
+    uint index[MAX_INDICES];
+    uint vertex_count;
+    uint index_count;
+};
+
+struct Vertex {
+    vec3 position;
+    vec3 normal;
+    vec2 uv;
+};
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(triangles, max_vertices = MAX_VERTICES, max_primitives = MAX_INDICES / 3) out;
+
+layout(push_constant) uniform PushConstant {
+    mat4     model;
+    vec4     color;
+    uint64_t vertex_address;
+    uint64_t meshlet_address;
+} push_constant;
+
+layout(binding = 0) uniform UniformBufferCamera { CameraData data; } camera;
+
+layout(buffer_reference, scalar) buffer Meshlets { Meshlet meshlets[]; };
+layout(buffer_reference, scalar) buffer Vertices { Vertex  vertices[]; };
+
+layout(location = 0) out MeshOutput {
+    vec4 color;
+    vec4 world_position;
+    vec4 world_normal;
+} m_out[];
+
+const int MESHLET_COLOR_COUNT = 10;
+const vec3 meshlet_colors[MESHLET_COLOR_COUNT] = {
+    vec3(1,0,0), vec3(0,1,0), vec3(0,0,1), vec3(1,1,0), vec3(1,0,1),
+    vec3(0,1,1), vec3(1,0.5,0), vec3(0.5,1,0), vec3(0,0.5,1), vec3(1,1,1)
+};
+
+vec4 get_meshlet_color(uint i)
+{
+    return vec4(meshlet_colors[i % MESHLET_COLOR_COUNT], 1.0);
+}
+
+void main()
+{
+    uint mi  = gl_LocalInvocationID.x;
+    uint gid = gl_GlobalInvocationID.x;
+    mat4 mvp = camera.data.proj * camera.data.view * push_constant.model;
+
+    Meshlets _meshlets = Meshlets(push_constant.meshlet_address);
+    Vertices _vertices = Vertices(push_constant.vertex_address);
+
+    Meshlet meshlet = _meshlets.meshlets[gid];
+
+    const uint primitive_count = uint(meshlet.index_count) / 3;
+    SetMeshOutputsEXT(meshlet.vertex_count, primitive_count);
+
+    for (uint i = 0; i < meshlet.vertex_count; i++)
+    {
+        uint vi = meshlet.vertex[i];
+        Vertex vertex = _vertices.vertices[vi];
+
+        gl_MeshVerticesEXT[i].gl_Position = mvp * vec4(vertex.position, 1.0);
+
+        m_out[i].color          = push_constant.color;
+        m_out[i].world_position = push_constant.model * vec4(vertex.position, 1.0);
+        m_out[i].world_normal   = push_constant.model * vec4(vertex.normal, 1.0);
+    }
+
+    uint primitive = 0;
+    for (uint i = 0; i < meshlet.index_count; i += 3)
+    {
+        gl_PrimitiveTriangleIndicesEXT[primitive] = uvec3(meshlet.index[i + 0], meshlet.index[i + 1], meshlet.index[i + 2]);
+        primitive++;
+    }
+}

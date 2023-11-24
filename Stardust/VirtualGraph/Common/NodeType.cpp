@@ -18,6 +18,8 @@ namespace Nebula::RenderGraph
                 return "Blur";
             case NodeType::eLightingPass:
                 return "Lighting Pass";
+            case NodeType::eMeshShaderGBufferPass:
+                return "Mesh Shader G-Buffer Pass";
             case NodeType::eRayTracing:
                 return "Ray Tracing";
             case NodeType::ePresent:

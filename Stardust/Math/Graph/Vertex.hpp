@@ -20,6 +20,8 @@ namespace Nebula::Graph
         std::vector<vtx_ptr> m_outgoing_edges;
 
     public:
+        virtual ~Vertex() = default;
+
         explicit Vertex(const std::string& name): m_name(name) {}
 
         const uuids::uuid& uuid() const { return m_uuid; }
