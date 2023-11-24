@@ -30,11 +30,14 @@ namespace sd
             .set_debug_utils(true)
             .with_surface(m_window->handle())
             .add_device_extensions({
-                                       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                                       VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-                                       VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-                                       VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-                                   })
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+                VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
+                VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+                VK_EXT_MESH_SHADER_EXTENSION_NAME,
+            })
             .add_raytracing_extensions(true)
             .create_context();
 
@@ -88,6 +91,35 @@ namespace sd
 
     void Application::run()
     {
+        static auto convert_memory = [&](uint64_t input_memory){
+            std::tuple<float, std::string> result;
+
+            const static float kilobyte_coefficient = 1024.0f;
+            const static float megabyte_coefficient = kilobyte_coefficient * 1024.0f;
+            const static float gigabyte_coefficient = megabyte_coefficient * 1024.0f;
+
+            auto memory = static_cast<float>(input_memory);
+
+            if (memory < kilobyte_coefficient)
+            {
+                result = { memory, "B" };
+            }
+            else if (memory < megabyte_coefficient)
+            {
+                result = { memory / kilobyte_coefficient, "KB" };
+            }
+            else if (memory < gigabyte_coefficient)
+            {
+                result = { memory / megabyte_coefficient, "MB" };
+            }
+            else
+            {
+                result = { memory / gigabyte_coefficient, "GB" };
+            }
+
+            return result;
+        };
+
         auto render_command = [&](){
             ImGuiIO& io = ImGui::GetIO();
             if (!io.WantCaptureMouse)
@@ -98,6 +130,22 @@ namespace sd
             {
                 g_rgs->key_handler(*m_window);
             }
+
+            vk::PhysicalDeviceMemoryProperties2 mem_props;
+            vk::PhysicalDeviceMemoryBudgetPropertiesEXT mem_budget;
+            mem_props.pNext = &mem_budget;
+            m_context->physical_device().getMemoryProperties2(&mem_props);
+
+            uint64_t memory_usage {0};
+            uint64_t memory_budget {0};
+            for (int32_t i = 0; i < mem_props.memoryProperties.memoryHeapCount; i++)
+            {
+                memory_usage += mem_budget.heapUsage[i];
+                memory_budget += mem_budget.heapBudget[i];
+            }
+
+            auto [ mu, mu_m] = convert_memory(memory_usage);
+            auto [ mb, mb_m ] = convert_memory(memory_budget);
 
             auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
 
@@ -129,6 +177,8 @@ namespace sd
                         {
                             ImGui::Begin("Metrics");
                             ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
+                            ImGui::Text("Total Memory Usage: %.2f %s", mu, mu_m.c_str());
+                            ImGui::Text("Available Memory Budget: %.2f %s", mb, mb_m.c_str());
                             ImGui::End();
 
                             m_ge->render();
