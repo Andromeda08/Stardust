@@ -106,13 +106,34 @@ namespace Nebula::RenderGraph
         auto camera_data = camera->uniform_data();
         m_renderer.uniform[index]->set_data(&camera_data, m_context.device());
 
-        vk::DescriptorImageInfo output_image_info { m_renderer.sampler, output_image.image_view(), output_image.state().layout };
+        vk::WriteDescriptorSetAccelerationStructureKHR as_info { 1, &tlas->tlas() };
+        vk::WriteDescriptorSet as_write {
+            m_renderer.descriptor->set(index), 0, 0, 1, vk::DescriptorType::eAccelerationStructureKHR,
+            nullptr, nullptr, nullptr, &as_info
+        };
+        vk::DescriptorImageInfo image_info { m_renderer.sampler, output_image.image_view(), output_image.state().layout };
+        vk::WriteDescriptorSet image_write {
+            m_renderer.descriptor->set(index), 1, 0, 1, vk::DescriptorType::eStorageImage,
+            &image_info, nullptr, nullptr, nullptr
+        };
+        vk::DescriptorBufferInfo ub_info { m_renderer.uniform[index]->buffer(), 0, sizeof(sd::CameraUniformData) };
+        vk::WriteDescriptorSet ub_write {
+            m_renderer.descriptor->set(index), 2, 0, 1, vk::DescriptorType::eUniformBuffer,
+            nullptr, &ub_info, nullptr, nullptr
+        };
+        vk::DescriptorBufferInfo sb_info { obj_buffer->buffer(), 0, obj_buffer->size() };
+        vk::WriteDescriptorSet sb_write {
+            m_renderer.descriptor->set(index), 3, 0, 1, vk::DescriptorType::eStorageBuffer,
+            nullptr, &sb_info, nullptr, nullptr
+        };
+        std::vector writes = { as_write, image_write, ub_write, sb_write };
+        m_context.device().updateDescriptorSets(writes.size(), writes.data(), 0, nullptr);
 
-        m_renderer.descriptor->begin_write(index)
-            .acceleration_structure(0, 1, &tlas->tlas())
-            .storage_image(1, output_image_info)
-            .uniform_buffer(2, m_renderer.uniform[index]->buffer(), 0, sizeof(sd::CameraUniformData))
-            .storage_buffer(3, obj_buffer->buffer(), 0, obj_buffer->size())
-            .commit();
+        // m_renderer.descriptor->begin_write(index)
+        //     .acceleration_structure(0, 1, &tlas->tlas())
+        //     .storage_image(1, output_image_info)
+        //     .uniform_buffer(2, m_renderer.uniform[index]->buffer(), 0, sizeof(sd::CameraUniformData))
+        //     .storage_buffer(3, obj_buffer->buffer(), 0, obj_buffer->size())
+        //     .commit();
     }
 }
