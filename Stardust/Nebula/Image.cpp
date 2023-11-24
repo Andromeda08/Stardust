@@ -13,7 +13,7 @@ namespace Nebula
                  vk::ImageAspectFlags aspect_flags,
                  vk::ImageTiling tiling,
                  vk::MemoryPropertyFlags memory_property_flags,
-                 const std::string& name)
+                 const std::string& name) : m_context(context)
     {
         m_properties = ImageProperties {
             .format = format,

@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vulkan/vulkan.hpp>
+#include <Vulkan/Context.hpp>
 
 namespace sdvk
 {
@@ -63,5 +64,7 @@ namespace Nebula
         vk::DeviceMemory m_device_memory;
         ImageProperties  m_properties {};
         ImageState       m_state {};
+
+        const sdvk::Context& m_context;
     };
 }
