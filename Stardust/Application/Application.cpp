@@ -66,14 +66,13 @@ namespace sd
             auto pass_e = graph_builder.add_pass(NodeType::eAmbientOcclusion);
 
             auto compile_result = graph_builder
-                .make_connection(pass_c, pass_a, "Objects")
-                .make_connection(pass_c, pass_a, "Camera")
+                .make_connection(pass_c, pass_a, "Scene Data")
                 .make_connection(pass_c, pass_b, "Camera")
                 .make_connection(pass_c, pass_b, "TLAS")
                 .make_connection(pass_a, pass_b, "Position Buffer")
                 .make_connection(pass_a, pass_b, "Normal Buffer")
-                .make_connection(pass_a, pass_b, "Albedo Image")
-                .make_connection(pass_a, pass_b, "Depth Image")
+                .make_connection(pass_a, pass_b, "Albedo Buffer")
+                .make_connection(pass_a, pass_b, "Depth Buffer")
                 .make_connection(pass_e, pass_b, "AO Image")
                 .make_connection(pass_c, pass_e, "Camera")
                 .make_connection(pass_c, pass_e, "TLAS")

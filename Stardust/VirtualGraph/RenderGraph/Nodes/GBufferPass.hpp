@@ -28,37 +28,43 @@ namespace Nebula::RenderGraph
         sd::CameraUniformData previous;
     };
 
-    class PrePass : public Node
+    class GBufferPass final : public Node
     {
     public:
-        explicit PrePass(const sdvk::Context& context);
+        explicit GBufferPass(const sdvk::Context& context);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
         void initialize() override;
 
-        ~PrePass() override = default;
+        ~GBufferPass() override = default;
 
     private:
         void _update_descriptor(uint32_t current_frame);
 
         struct Renderer
         {
-            std::shared_ptr<Descriptor> descriptor;
-            std::shared_ptr<Framebuffer> framebuffers;
-            vk::Pipeline pipeline;
-            vk::PipelineLayout pipeline_layout;
-            vk::RenderPass render_pass;
-
+            std::shared_ptr<Descriptor>   descriptor;
+            std::shared_ptr<Framebuffer>  framebuffers;
+            vk::Pipeline                  pipeline;
+            vk::PipelineLayout            pipeline_layout;
+            vk::RenderPass                render_pass;
             std::array<vk::ClearValue, 5> clear_values;
-            uint32_t frames_in_flight;
-            vk::Extent2D render_resolution;
-            std::vector<std::unique_ptr<sdvk::Buffer>> uniform;
+            uint32_t                      frames_in_flight;
+            vk::Extent2D                  render_resolution;
 
+            std::vector<std::unique_ptr<sdvk::Buffer>> uniform;
             sd::CameraUniformData previous_frame_camera_state;
         } m_renderer;
 
         const sdvk::Context& m_context;
+
+        static constexpr std::string id_scene_data      = "Scene Data";
+        static constexpr std::string id_position_buffer = "Position Buffer";
+        static constexpr std::string id_normal_buffer   = "Normal Buffer";
+        static constexpr std::string id_albedo_buffer   = "Albedo Buffer";
+        static constexpr std::string id_depth_buffer    = "Depth Buffer";
+        static constexpr std::string id_motion_vectors  = "Motion Vectors";
 
     public:
         const std::vector<ResourceSpecification>& get_resource_specs() const override

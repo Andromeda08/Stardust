@@ -12,8 +12,8 @@ namespace Nebula::RenderGraph
     const std::vector<ResourceSpecification> LightingPass::s_resource_specs = {
         { "Position Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Normal Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
-        { "Albedo Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
-        { "Depth Image", ResourceRole::eInput, ResourceType::eDepthImage },
+        { "Albedo Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
+        { "Depth Buffer", ResourceRole::eInput, ResourceType::eDepthImage },
         { "AO Image", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32Sfloat },
         { "Camera", ResourceRole::eInput, ResourceType::eCamera },
         { "TLAS", ResourceRole::eInput, ResourceType::eTlas },
@@ -65,8 +65,8 @@ namespace Nebula::RenderGraph
 
         auto position = dynamic_cast<ImageResource&>(*m_resources["Position Buffer"]).get_image();
         auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
-        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
-        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
+        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Buffer"]).get_image();
+        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Buffer"]).get_depth_image();
         auto lr = dynamic_cast<ImageResource&>(*m_resources["Lighting Result"]).get_image();
 
         if (m_params.ambient_occlusion)
@@ -173,8 +173,8 @@ namespace Nebula::RenderGraph
     {
         auto position = dynamic_cast<ImageResource&>(*m_resources["Position Buffer"]).get_image();
         auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
-        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Image"]).get_image();
-        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Image"]).get_depth_image();
+        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Buffer"]).get_image();
+        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Buffer"]).get_depth_image();
 
         auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
         auto camera_data = camera.uniform_data();

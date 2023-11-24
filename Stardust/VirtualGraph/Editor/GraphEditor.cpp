@@ -5,6 +5,7 @@
 #include <iostream>
 #include <imgui.h>
 #include <imnodes.h>
+#include <Application/Application.hpp>
 #include <VirtualGraph/Compile/DefaultCompileStrategy.hpp>
 #include <VirtualGraph/Compile/OptimizedCompileStrategy.hpp>
 
@@ -39,7 +40,7 @@ namespace Nebula::RenderGraph::Editor
                     {
                         _handle_add_node(NodeType::eGaussianBlur);
                     }
-                    if (ImGui::MenuItem("Deferred Pass"))
+                    if (ImGui::MenuItem("G-Buffer Pass"))
                     {
                         _handle_add_node(NodeType::ePrePass);
                     }

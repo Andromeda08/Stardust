@@ -5,8 +5,18 @@
 #include <Nebula/Image.hpp>
 #include <Scene/Camera.hpp>
 #include <Scene/Object.hpp>
+#include <Scene/Scene.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
+
+#define PTR_RESOURCE_BODY(T, ResTypeEnum, ResT, GetName)                                                                                                                                                                                           \
+public:                                                                                              \
+    explicit T(const std::shared_ptr<ResT>& p_##GetName, const std::string& name = #T)               \
+    : Resource(name, ResTypeEnum), m_resource(p_##GetName) {}                                        \
+    [[nodiscard]] bool is_valid() override { return m_resource != nullptr; }                         \
+    [[nodiscard]] const std::shared_ptr<ResT>& get_##GetName() const noexcept { return m_resource; } \
+private:                                                                                             \
+    std::shared_ptr<ResT> m_resource;
 
 /**
  * This file contains all resource type definitions.
@@ -14,172 +24,82 @@
  */
 namespace Nebula::RenderGraph
 {
+#pragma region Resource types
     using Buffer_t = sdvk::Buffer;
     using Buffer_ptr = std::shared_ptr<Buffer_t>;
 
     using Camera_t = sd::Camera;
     using Camera_ptr = std::shared_ptr<Camera_t>;
 
-    using Image_t = Nebula::Image;
+    using Image_t = Image;
     using Image_ptr = std::shared_ptr<Image_t>;
-    using ImageArray_t = std::vector<Image_ptr>;
 
     using Object_t = sd::Object;
     using ObjectArray_t = std::vector<Object_t>;
 
+    using Scene_t = sd::Scene;
+    using Scene_ptr = std::shared_ptr<Scene_t>;
+
     using Tlas_t = sdvk::Tlas;
     using Tlas_ptr = std::shared_ptr<Tlas_t>;
+#pragma endregion
 
     class Resource
     {
     public:
-        Resource(const std::string& name, ResourceType type)
-        : m_name(name)
-        , m_type(type)
+        Resource(const std::string& name, const ResourceType type): m_name(name), m_type(type) {}
+
+        template <typename T>
+        T& as()
         {
+            static_assert(std::is_base_of_v<Resource, T>, "Template parameter T must be a valid Resource type");
+            return dynamic_cast<T&>(*this);
         }
 
-        /**
-         * Allows for custom "validation" logic for specific Resource Types.
-         * The most basic example: Is the resource a nullptr or not?
-         */
         virtual bool is_valid() = 0;
 
         virtual ~Resource() = default;
 
-        const std::string& name() const
-        {
-            return m_name;
-        }
+        [[nodiscard]] const std::string& name() const noexcept { return m_name; }
 
-        ResourceType type() const
-        {
-            return m_type;
-        }
+        [[nodiscard]] ResourceType type() const noexcept { return m_type; }
 
     private:
         std::string  m_name = "Unknown Resource";
         ResourceType m_type = ResourceType::eUnknown;
     };
 
-    class BufferResource : public Resource
+    class BufferResource final : public Resource
     {
-    public:
-        explicit BufferResource(const Buffer_ptr& buffer, const std::string& name = "Buffer Resource")
-        : Resource(name, ResourceType::eBuffer)
-        , m_buffer(buffer)
-        {
-        }
-
-        bool is_valid() override
-        {
-            return m_buffer != nullptr;
-        }
-
-        const Buffer_ptr& get_buffer() const
-        {
-            return m_buffer;
-        }
-
-    private:
-        Buffer_ptr m_buffer;
+        PTR_RESOURCE_BODY(BufferResource, ResourceType::eBuffer, Buffer_t, buffer);
     };
 
-    class CameraResource : public Resource
+    class CameraResource final : public Resource
     {
-    public:
-        explicit CameraResource(const Camera_ptr& camera, const std::string& name = "Camera Resource")
-        : Resource(name, ResourceType::eCamera)
-        , m_camera(camera)
-        {
-        }
-
-        bool is_valid() override
-        {
-            return m_camera != nullptr;
-        }
-
-        const Camera_ptr& get_camera() const
-        {
-            return m_camera;
-        }
-
-    private:
-         Camera_ptr m_camera;
+        PTR_RESOURCE_BODY(CameraResource, ResourceType::eCamera, Camera_t, camera);
     };
 
-    class DepthImageResource : public Resource
+    class DepthImageResource final : public Resource
     {
-    public:
-        explicit DepthImageResource(const Image_ptr& depth_image, const std::string& name = "Depth Image Resource")
-        : Resource(name, ResourceType::eDepthImage)
-        , m_depth_image(depth_image)
-        {
-        }
-
-        bool is_valid() override
-        {
-            return m_depth_image != nullptr;
-        }
-
-        const Image_ptr& get_depth_image() const
-        {
-            return m_depth_image;
-        }
-
-    private:
-        Image_ptr m_depth_image;
+        PTR_RESOURCE_BODY(DepthImageResource, ResourceType::eDepthImage, Image_t, depth_image);
     };
 
-    class ImageResource : public Resource
+    class ImageResource final : public Resource
     {
-        using Image_t = Nebula::Image;
-        using Image_ptr = std::shared_ptr<Image_t>;
-    public:
-        explicit ImageResource(const Image_ptr& image, const std::string& name = "Image Resource")
-        : Resource(name, ResourceType::eImage)
-        , m_image(image)
-        {
-        }
-
-        bool is_valid() override
-        {
-            return m_image != nullptr;
-        }
-
-        const Image_ptr& get_image() const
-        {
-            return m_image;
-        }
-
-    private:
-        Image_ptr m_image;
+        PTR_RESOURCE_BODY(ImageResource, ResourceType::eImage, Image_t, image);
     };
 
-    class ImageArrayResource : public Resource
+    class SceneResource final : public Resource
     {
-    public:
-        explicit ImageArrayResource(const ImageArray_t& images, const std::string& name = "Image Array Resource")
-        : Resource(name, ResourceType::eImageArray)
-        , m_images(images)
-        {
-        }
-
-        bool is_valid() override
-        {
-            return m_images.empty();
-        }
-
-        const ImageArray_t& get_image_array() const
-        {
-            return m_images;
-        }
-
-    private:
-        ImageArray_t m_images;
+        PTR_RESOURCE_BODY(SceneResource, ResourceType::eScene, Scene_t, scene);
     };
 
-    class ObjectsResource : public Resource
+    class TlasResource final : public Resource
+    {
+        PTR_RESOURCE_BODY(TlasResource, ResourceType::eTlas, Tlas_t, tlas);
+    };
+
+    class ObjectsResource final : public Resource
     {
     public:
         explicit ObjectsResource(const ObjectArray_t& objects, const std::string& name = "Objects Resource")
@@ -200,28 +120,5 @@ namespace Nebula::RenderGraph
 
     private:
         const ObjectArray_t& m_objects;
-    };
-
-    class TlasResource : public Resource
-    {
-    public:
-        explicit TlasResource(const Tlas_ptr& tlas, const std::string& name = "Tlas Resource")
-        : Resource(name, ResourceType::eTlas)
-        , m_tlas(tlas)
-        {
-        }
-
-        bool is_valid() override
-        {
-            return m_tlas != nullptr;
-        }
-
-        const Tlas_ptr& get_tlas() const
-        {
-            return m_tlas;
-        }
-
-    private:
-        Tlas_ptr m_tlas;
     };
 }

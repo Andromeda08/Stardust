@@ -202,9 +202,9 @@ namespace Nebula::RenderGraph::Editor
 
 
     PrePassNode::PrePassNode()
-    : Node("PrePass", pre_pass_color, pre_pass_hover, NodeType::ePrePass)
+    : Node("G-Buffer Pass", pre_pass_color, pre_pass_hover, NodeType::ePrePass)
     {
-        const auto& specs = RenderGraph::PrePass::s_resource_specs;
+        const auto& specs = RenderGraph::GBufferPass::s_resource_specs;
         for (const auto& spec : specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
@@ -257,8 +257,6 @@ namespace Nebula::RenderGraph::Editor
         }
     }
 
-    #pragma endregion
-
     RayTracingNode::RayTracingNode()
     : Node("Ray Tracing", rt_color, rt_hover, NodeType::eRayTracing)
     {
@@ -279,4 +277,6 @@ namespace Nebula::RenderGraph::Editor
         }
         ImGui::PopItemWidth();
     }
+
+    #pragma endregion
 }

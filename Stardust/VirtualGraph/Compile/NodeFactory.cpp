@@ -5,7 +5,7 @@
 #include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/PrePass.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
@@ -23,7 +23,7 @@ namespace Nebula::RenderGraph::Compiler
             case NodeType::eGaussianBlur:
                 return std::make_shared<BlurNode>(m_context.context());
             case NodeType::ePrePass:
-                return std::make_shared<PrePass>(m_context.context());
+                return std::make_shared<GBufferPass>(m_context.context());
             case NodeType::eLightingPass:
                 return std::make_shared<LightingPass>(m_context.context(),
                                                       dynamic_cast<Editor::LightingPassNode&>(*editor_node).params);

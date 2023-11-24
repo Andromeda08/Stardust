@@ -13,7 +13,7 @@
 #include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/PrePass.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp>

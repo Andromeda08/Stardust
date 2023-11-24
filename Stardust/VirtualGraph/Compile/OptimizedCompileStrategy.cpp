@@ -114,6 +114,10 @@ namespace Nebula::RenderGraph::Compiler
                 const auto& buffer = m_context.scene()->object_descriptions();
                 new_resource = std::make_shared<BufferResource>(buffer, resource_name);
             }
+            else if (opt_resource.type == ResourceType::eScene)
+            {
+                new_resource = std::make_shared<SceneResource>(m_context.scene(), resource_name);
+            }
             else if (opt_resource.type == ResourceType::eImage)
             {
                 auto image = std::make_shared<Nebula::Image>(m_context.context(),
