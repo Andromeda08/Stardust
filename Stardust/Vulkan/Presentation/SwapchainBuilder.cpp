@@ -34,6 +34,7 @@ namespace sdvk
 
     SwapchainBuilder& SwapchainBuilder::with_defaults()
     {
+        query_swapchain_support();
         set_preferred_format();
         set_preferred_color_space();
         set_present_mode();
@@ -79,7 +80,7 @@ namespace sdvk
         {
             if (f.format == preferred_format) // vk::Format::eB8G8R8A8Srgb /*&& f.colorSpace == preferred_color_space*/)
             {
-                format = f;
+                result.selected_format = f;
                 return;
             }
         }
