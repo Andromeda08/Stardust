@@ -10,7 +10,6 @@
 #include <Vulkan/Rendering/RenderPass.hpp>
 
 #include <Scene/Scene.hpp>
-#include <Nebula/Image.hpp>
 #include <VirtualGraph/Builder/Builder.h>
 
 std::shared_ptr<sd::Scene> g_rgs;
@@ -44,10 +43,10 @@ namespace sd
         m_swapchain = sdvk::SwapchainBuilder(*m_window, *m_context)
                 .with_defaults()
                 .set_preferred_color_space(vk::ColorSpaceKHR::eSrgbNonlinear)
-                .set_preferred_format(vk::Format::eR8G8B8A8Srgb)
+                .set_preferred_format(vk::Format::eB8G8R8A8Unorm)
                 .create();
 
-        g_rgs = std::make_shared<sd::Scene>(*m_command_buffers, *m_context);
+        g_rgs = std::make_shared<Scene>(*m_command_buffers, *m_context);
 
         m_rgctx = std::make_shared<Nebula::RenderGraph::RenderGraphContext>(*m_command_buffers, *m_context, *m_swapchain);
         m_rgctx->set_scene(g_rgs);
@@ -109,8 +108,8 @@ namespace sd
             command_buffer.setViewport(0, 1, &vp);
             command_buffer.setScissor(0, 1, &sc);
 
-            const auto& render_path = m_rgctx->get_render_path();
-            render_path->execute(command_buffer);
+            //const auto& render_path = m_rgctx->get_render_path();
+            m_rgctx->get_render_path()->execute(command_buffer);
 
             std::array<vk::ClearValue, 1> clear_value;
             clear_value[0].color = std::array<float, 4>({ 0.f, 0.f, 0.f, 0.f });
@@ -202,15 +201,17 @@ namespace sd
 
         auto r = m_context->device().createDescriptorPool(&pool_info, nullptr, &m_pool);
 
+        auto [ui_scale, font_size] = get_ui_scale(s_extent);
+
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
-        // io.FontGlobalScale = 1.5f;
-        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", 16);
+        io.FontGlobalScale = ui_scale;
+        io.Fonts->AddFontFromFileTTF("JetBrainsMono-Regular.ttf", font_size);
 
         ImGui::StyleColorsDark();
         ImGuiStyle& style = ImGui::GetStyle();
-        // style.ScaleAllSizes(1.5f);
+        style.ScaleAllSizes(ui_scale);
 
         ImGui_ImplGlfw_InitForVulkan(m_window->handle(), true);
         ImGui_ImplVulkan_InitInfo init_info = {};
@@ -236,5 +237,20 @@ namespace sd
 
         ImNodes::CreateContext();
         ImNodes::StyleColorsDark();
+    }
+
+    std::tuple<float, float> Application::get_ui_scale(const Extent& resolution)
+    {
+        if (resolution.width <= 1920 && resolution.height <= 1080)
+        {
+            return { 1.0f, 16.0f };
+        }
+
+        return { 1.5f, 18.0f };
+    }
+
+    std::tuple<float, float> Application::get_ui_scale()
+    {
+        return get_ui_scale(s_extent);
     }
 }

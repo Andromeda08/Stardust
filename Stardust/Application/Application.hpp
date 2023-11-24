@@ -6,7 +6,7 @@
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Presentation/Swapchain.hpp>
 #include <Window/Window.hpp>
-#include "VirtualGraph/Editor/GraphEditor.hpp"
+#include <VirtualGraph/Editor/GraphEditor.hpp>
 #include <VirtualGraph/Common/GraphContext.hpp>
 
 namespace sd
@@ -24,8 +24,13 @@ namespace sd
         static uint32_t s_current_frame;
         static sd::Extent s_extent;
 
+    public:
+        static std::tuple<float, float> get_ui_scale();
+
     private:
         void init_imgui();
+
+        static std::tuple<float, float> get_ui_scale(const Extent& resolution);
 
         vk::DescriptorPool m_pool;
         vk::PipelineCache m_pipeline_cache { nullptr };

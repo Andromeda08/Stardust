@@ -112,6 +112,8 @@ namespace Nebula::RenderGraph::Editor
 
             ImNodes::BeginNodeEditor();
             {
+                auto [scale, font] = sd::Application::get_ui_scale();
+                ImNodes::PushStyleVar(ImNodesStyleVar_PinCircleRadius, 4.0f * scale);
                 for (const auto& node: m_nodes)
                 {
                     node.second->render();
