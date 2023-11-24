@@ -286,7 +286,15 @@ namespace sdvk
         m_device_features.device_features.setFillModeNonSolid(true);
         m_device_features.device_features.setSampleRateShading(true);
         m_device_features.device_features.setShaderStorageImageMultisample(true);
+
         m_device_features.timeline_semaphores.setTimelineSemaphore(true);
+        m_device_features.timeline_semaphores.setPNext(&m_device_features.maintenance4);
+        m_device_features.maintenance4.setMaintenance4(true);
+        m_device_features.maintenance4.setPNext(&m_device_features.buffer_device_address);
+        m_device_features.buffer_device_address.setBufferDeviceAddress(true);
+        m_device_features.buffer_device_address.setPNext(&m_device_features.mesh_shader);
+        m_device_features.mesh_shader.setMeshShader(true);
+        m_device_features.mesh_shader.setTaskShader(true);
 
         vk::DeviceCreateInfo create_info;
         create_info.setEnabledLayerCount(validation_layers.size());
@@ -301,7 +309,7 @@ namespace sdvk
         if (options.raytracing)
         {
             m_device_features.with_ray_tracing();
-            m_device_features.timeline_semaphores.setPNext(&m_device_features.ray_tracing_pipeline);
+            m_device_features.mesh_shader.setPNext(&m_device_features.ray_tracing_pipeline);
         }
 
         vk::Result result = m_physical_device.createDevice(&create_info, nullptr, &m_device);
@@ -337,9 +345,13 @@ namespace sdvk
                                   vk::MemoryPropertyFlags memory_property_flags,
                                   vk::DeviceMemory* memory) const
     {
-        auto type_index = find_memory_type_index(memory_requirements.memoryTypeBits, memory_property_flags);
-        vk::MemoryAllocateInfo alloc_info { memory_requirements.size, type_index };
-        auto result = m_device.allocateMemory(&alloc_info, nullptr, memory);
+        const uint32_t type_index = find_memory_type_index(memory_requirements.memoryTypeBits, memory_property_flags);
+        const vk::MemoryAllocateInfo alloc_info { memory_requirements.size, type_index };
+        if (const vk::Result result = m_device.allocateMemory(&alloc_info, nullptr, memory);
+            result != vk::Result::eSuccess)
+        {
+            throw std::runtime_error("Failed to allocate memory");
+        }
     }
 
     uint32_t Context::find_memory_type_index(uint32_t filter, vk::MemoryPropertyFlags flags) const
