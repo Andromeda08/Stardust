@@ -115,7 +115,7 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/RenderGraph/Nodes/BlurNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/BlurNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.cpp
-        Stardust/VirtualGraph/RenderGraph/Nodes/PrePass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/PrePass.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/GBufferPass.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.hpp Stardust/VirtualGraph/RenderGraph/Nodes/LightingPass.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/PresentNode.cpp
         Stardust/VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp Stardust/VirtualGraph/RenderGraph/Nodes/RayTracingNode.cpp
