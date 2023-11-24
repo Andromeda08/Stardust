@@ -157,11 +157,20 @@ namespace Nebula
     
     Descriptor::Write& Descriptor::Write::uniform_buffer(uint32_t binding,
                                                          const vk::Buffer& buffer,
-                                                         size_t offset,
-                                                         size_t range,
+                                                         vk::DeviceSize offset,
+                                                         vk::DeviceSize range,
                                                          uint32_t count)
     {
-        auto info = _buffer_infos.emplace_back(buffer, offset, range);
+        vk::DescriptorBufferInfo dbi;
+        dbi.setBuffer(buffer);
+        dbi.setRange(range);
+        dbi.setOffset(offset);
+
+        _buffer_infos.emplace_back(dbi);
+
+        const auto* dbiptr = &_buffer_infos.back();
+        assert(dbiptr->offset == offset);
+        assert(dbiptr->range == range);
 
         vk::WriteDescriptorSet write;
         write.setDstBinding(binding);
@@ -169,7 +178,7 @@ namespace Nebula
         write.setDescriptorCount(count);
         write.setDescriptorType(vk::DescriptorType::eUniformBuffer);
         write.setDstArrayElement(0);
-        write.setPBufferInfo(&_buffer_infos.back());
+        write.setPBufferInfo(dbiptr);
 
         _writes.push_back(write);
 
