@@ -3,7 +3,6 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include <Utility.hpp>
 #include <Scene/Scene.hpp>
 #include <VirtualGraph/Compile/CompilerType.hpp>
 #include <VirtualGraph/Compile/GraphCompileStrategy.hpp>
@@ -15,24 +14,7 @@ namespace Nebula::RenderGraph::Editor
 {
     class GraphEditor
     {
-    private:
-        using id_t = int32_t;
-        using node_ptr_t = std::shared_ptr<Node>;
         using Scene_t = sd::Scene;
-
-        std::map<id_t, node_ptr_t> m_nodes;
-        std::vector<Edge>          m_edges;
-
-        std::vector<std::string>   m_messages;
-
-        // Flags for root and sink nodes
-        bool m_has_scene_provider { false };
-        bool m_has_presenter { false };
-
-        RenderGraphContext& m_context;
-
-    public:
-        static std::shared_ptr<Scene_t> s_selected_scene;
 
     public:
         explicit GraphEditor(RenderGraphContext& context);
@@ -41,7 +23,7 @@ namespace Nebula::RenderGraph::Editor
 
         static void set_scene(const std::shared_ptr<Scene_t>& scene)
         {
-            s_selected_scene = std::shared_ptr<Scene_t>(scene);
+            s_selected_scene = std::shared_ptr(scene);
         }
 
     private:
@@ -56,5 +38,18 @@ namespace Nebula::RenderGraph::Editor
         void _handle_reset();
 
         void _add_default_nodes();
+
+    public:
+        static std::shared_ptr<Scene_t> s_selected_scene;
+
+    private:
+        std::map<int32_t, std::shared_ptr<Node>> m_nodes;
+        std::vector<Edge>                        m_edges;
+        std::vector<std::string>                 m_messages;
+
+        bool m_has_scene_provider { false };
+        bool m_has_presenter { false };
+
+        RenderGraphContext& m_context;
     };
 }

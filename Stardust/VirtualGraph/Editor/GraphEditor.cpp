@@ -5,6 +5,7 @@
 #include <iostream>
 #include <imgui.h>
 #include <imnodes.h>
+#include <Utility.hpp>
 #include <Application/Application.hpp>
 #include <VirtualGraph/Compile/DefaultCompileStrategy.hpp>
 #include <VirtualGraph/Compile/OptimizedCompileStrategy.hpp>
@@ -28,29 +29,12 @@ namespace Nebula::RenderGraph::Editor
             {
                 if (ImGui::BeginMenu("Add Node"))
                 {
-                    if (ImGui::MenuItem("Ambient Occlusion"))
+                    for (const auto& node_type : get_node_types())
                     {
-                        _handle_add_node(NodeType::eAmbientOcclusion);
-                    }
-                    if (ImGui::MenuItem("Anti-Aliasing"))
-                    {
-                        _handle_add_node(NodeType::eAntiAliasing);
-                    }
-                    if (ImGui::MenuItem("Gaussian Blur"))
-                    {
-                        _handle_add_node(NodeType::eGaussianBlur);
-                    }
-                    if (ImGui::MenuItem("G-Buffer Pass"))
-                    {
-                        _handle_add_node(NodeType::ePrePass);
-                    }
-                    if (ImGui::MenuItem("Lighting Pass"))
-                    {
-                        _handle_add_node(NodeType::eLightingPass);
-                    }
-                    if (ImGui::MenuItem("Mesh Shader G-Buffer Pass"))
-                    {
-                        _handle_add_node(NodeType::eMeshShaderGBufferPass);
+                        if (ImGui::MenuItem(get_node_type_str(node_type).c_str()))
+                        {
+                                _handle_add_node(node_type);
+                        }
                     }
                     if (ImGui::MenuItem("Present"))
                     {
@@ -64,10 +48,6 @@ namespace Nebula::RenderGraph::Editor
                         {
                             _handle_add_node(NodeType::ePresent);
                         }
-                    }
-                    if (ImGui::MenuItem("Ray Tracing"))
-                    {
-                        _handle_add_node(NodeType::eRayTracing);
                     }
                     if (ImGui::MenuItem("Scene Provider"))
                     {
@@ -85,7 +65,7 @@ namespace Nebula::RenderGraph::Editor
                     ImGui::EndMenu();
                 }
 
-                auto select_scene_text = std::format("Select Scene (Current: \"{}\")", s_selected_scene->name());
+                const auto select_scene_text = std::format("Select Scene (Current: \"{}\")", s_selected_scene->name());
                 if (ImGui::BeginMenu(select_scene_text.c_str()))
                 {
                     if (ImGui::MenuItem("Default")) {}
@@ -114,13 +94,14 @@ namespace Nebula::RenderGraph::Editor
             {
                 auto [scale, font] = sd::Application::get_ui_scale();
                 ImNodes::PushStyleVar(ImNodesStyleVar_PinCircleRadius, 4.0f * scale);
-                for (const auto& node: m_nodes)
+                ImNodes::PushStyleVar(ImNodesStyleVar_LinkThickness, 3.0f * scale);
+                for (const auto& [ id, node ] : m_nodes)
                 {
-                    node.second->render();
+                    node->render();
                 }
                 for (const auto& edge : m_edges)
                 {
-                    auto link_color = get_resource_type_color(edge.attr_type);
+                    const auto link_color = get_resource_type_color(edge.attr_type);
                     ImNodes::PushColorStyle(ImNodesCol_Link, IM_COL32(link_color.r, link_color.g, link_color.b, 255));
                     ImNodes::Link(edge.id, edge.start.res_id, edge.end.res_id);
                     ImNodes::PopColorStyle();
@@ -147,16 +128,15 @@ namespace Nebula::RenderGraph::Editor
         ImGui::PopStyleVar();
     }
 
-    void GraphEditor::_handle_compile(Compiler::CompilerType mode)
+    void GraphEditor::_handle_compile(const Compiler::CompilerType mode)
     {
-        std::vector<node_ptr_t> nodes_vector;
+        std::vector<std::shared_ptr<Node>> nodes_vector;
         for (const auto& [k, v] : m_nodes)
         {
             nodes_vector.push_back(v);
         }
 
         std::unique_ptr<Compiler::GraphCompileStrategy> compiler;
-        Compiler::CompileResult result;
 
         if (mode == Compiler::CompilerType::eNaiive)
         {
@@ -168,7 +148,7 @@ namespace Nebula::RenderGraph::Editor
             compiler = std::make_unique<Compiler::OptimizedCompileStrategy>(m_context);
         }
 
-        result = compiler->compile(nodes_vector, m_edges, true);
+        const auto result = compiler->compile(nodes_vector, m_edges, true);
 
         for (const auto& msg : result.logs)
         {
@@ -288,9 +268,8 @@ namespace Nebula::RenderGraph::Editor
 
     void GraphEditor::_add_default_nodes()
     {
-        std::vector<NodeType> to_create = { NodeType::eSceneProvider, NodeType::ePresent, NodeType::ePrePass };
-
-        for (auto t : to_create)
+        for (const std::vector to_create = { NodeType::eSceneProvider, NodeType::ePresent };
+            const auto t : to_create)
         {
             switch (t)
             {
@@ -304,11 +283,8 @@ namespace Nebula::RenderGraph::Editor
                     break;
             }
 
-            auto node = Node::Factory::create(t);
-            m_nodes.insert(std::pair<id_t, node_ptr_t>{
-                node->id(),
-                std::shared_ptr<Node>(node)
-            });
+            const auto node = Node::Factory::create(t);
+            m_nodes.insert(std::pair { node->id(), std::shared_ptr<Node>(node) });
         }
     }
 }
