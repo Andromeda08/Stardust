@@ -27,8 +27,8 @@ namespace Nebula::RenderGraph::Editor
 
                 for (const auto& resource : m_resource_descriptions)
                 {
-                    auto id = resource.id;
-                    auto pin_color = resource.pin_color();
+                    const auto id = resource.id;
+                    const auto pin_color = resource.pin_color();
                     ImNodes::PushColorStyle(ImNodesCol_Pin, IM_COL32(pin_color.r, pin_color.g, pin_color.b, 255));
                     switch (resource.role)
                     {
@@ -100,7 +100,7 @@ namespace Nebula::RenderGraph::Editor
         return m_resource_descriptions;
     }
 
-    Node* Node::Factory::create(NodeType type)
+    Node* Node::Factory::create(const NodeType type)
     {
         switch (type)
         {
