@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace Nebula::RenderGraph
 {
@@ -8,6 +9,7 @@ namespace Nebula::RenderGraph
     {
         eAmbientOcclusion,
         eAntiAliasing,
+        eBloom,
         eDenoise,
         eGaussianBlur,
         eLightingPass,
@@ -22,4 +24,6 @@ namespace Nebula::RenderGraph
     };
 
     std::string get_node_type_str(NodeType role);
+
+    std::vector<NodeType> get_node_types();
 }

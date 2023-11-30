@@ -10,6 +10,8 @@ namespace Nebula::RenderGraph
                 return "Ambient Occlusion";
             case NodeType::eAntiAliasing:
                 return "Anti-Aliasing";
+            case NodeType::eBloom:
+                return "Bloom";
             case NodeType::ePrePass:
                 return "Deferred Pass";
             case NodeType::eDenoise:
@@ -31,5 +33,16 @@ namespace Nebula::RenderGraph
             default:
                 return "Unknown";
         }
+    }
+
+    std::vector<NodeType> get_node_types()
+    {
+        static std::vector nodes = {
+            NodeType::eAmbientOcclusion, NodeType::eAntiAliasing, NodeType::eBloom,
+            NodeType::ePrePass, NodeType::eGaussianBlur, NodeType::eLightingPass,
+            NodeType::eMeshShaderGBufferPass, NodeType::eRayTracing,
+        };
+
+        return nodes;
     }
 }
