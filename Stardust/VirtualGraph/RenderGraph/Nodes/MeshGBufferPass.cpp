@@ -19,7 +19,7 @@ namespace Nebula::RenderGraph
 #pragma endregion
 
     Editor::MeshGBufferPassEditorNode::MeshGBufferPassEditorNode()
-    : Node("MeshShader G-Buffer", { 124, 58, 237, 255 }, { 167, 139, 250, 255 }, NodeType::eMeshShaderGBufferPass)
+    : Node("MeshShader G-Buffer Pass", { 124, 58, 237, 255 }, { 167, 139, 250, 255 }, NodeType::eMeshShaderGBufferPass)
     {
         for (const auto& spec : MeshGBufferPass::s_resource_specs)
         {
@@ -28,9 +28,14 @@ namespace Nebula::RenderGraph
         }
     }
 
-    MeshGBufferPass::MeshGBufferPass(const sdvk::Context& context)
-    : Node("MeshShader G-Buffer", NodeType::eMeshShaderGBufferPass)
-    , m_context(context)
+    void Editor::MeshGBufferPassEditorNode::render_options()
+    {
+        ImGui::Checkbox("Color Meshlets", &m_params.use_meshlet_colors);
+    }
+
+    MeshGBufferPass::MeshGBufferPass(const sdvk::Context& context, const MShGBufferPassParams& params)
+    : Node("MeshShader G-Buffer Pass", NodeType::eMeshShaderGBufferPass)
+    , m_renderer(), m_params(params), m_context(context)
     {
     }
 
@@ -140,6 +145,7 @@ namespace Nebula::RenderGraph
                         object.color,
                         meshes.at(mesh_name)->vertex_buffer().address(),
                         meshes.at(mesh_name)->meshlet_buffer().address(),
+                        glm::ivec4(m_params.use_meshlet_colors ? 1 : 0, 0, 0, 0),
                     };
 
                     cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eMeshEXT, 0, sizeof(MShGBufferPushConstant), &push_constant);

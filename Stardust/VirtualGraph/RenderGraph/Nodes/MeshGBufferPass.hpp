@@ -8,15 +8,6 @@
 
 namespace Nebula::RenderGraph
 {
-    namespace Editor
-    {
-        class MeshGBufferPassEditorNode final : public Node
-        {
-        public:
-            MeshGBufferPassEditorNode();
-        };
-    }
-
     struct Meshlet
     {
         uint32_t vertex[64]{};
@@ -27,10 +18,16 @@ namespace Nebula::RenderGraph
 
     struct MShGBufferPushConstant
     {
-        glm::mat4 model;
-        glm::vec4 color;
-        uint64_t  vertex_address;
-        uint64_t  meshlets_address;
+        glm::mat4  model;
+        glm::vec4  color;
+        uint64_t   vertex_address;
+        uint64_t   meshlets_address;
+        glm::ivec4 shader_params;       // [0: bool] use meshlet colors
+    };
+
+    struct MShGBufferPassParams
+    {
+        bool use_meshlet_colors {false};
     };
 
     struct CameraDataUniform
@@ -39,11 +36,24 @@ namespace Nebula::RenderGraph
         sd::CameraUniformData previous;
     };
 
+    namespace Editor
+    {
+        class MeshGBufferPassEditorNode final : public Node
+        {
+        public:
+            MeshGBufferPassEditorNode();
+
+            MShGBufferPassParams m_params;
+
+        protected:
+            void render_options() override;
+        };
+    }
 
     class MeshGBufferPass final : public Node
     {
     public:
-        explicit MeshGBufferPass(const sdvk::Context& context);
+        explicit MeshGBufferPass(const sdvk::Context& context, const MShGBufferPassParams& params);
 
         void execute(const vk::CommandBuffer& command_buffer) override;
 
@@ -74,6 +84,8 @@ namespace Nebula::RenderGraph
             std::vector<BufferPtr>        camera_uniform;
             sd::CameraUniformData         previous_frame_camera_state;
         } m_renderer;
+
+        MShGBufferPassParams m_params;
 
         const sdvk::Context& m_context;
 

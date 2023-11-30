@@ -13,7 +13,7 @@
 
 namespace Nebula::RenderGraph::Compiler
 {
-    std::shared_ptr<Node> NodeFactory::create(const std::shared_ptr<Editor::Node>& editor_node, NodeType type)
+    std::shared_ptr<Node> NodeFactory::create(const std::shared_ptr<Editor::Node>& editor_node, const NodeType type)
     {
         switch (type)
         {
@@ -29,7 +29,8 @@ namespace Nebula::RenderGraph::Compiler
                 return std::make_shared<LightingPass>(m_context.context(),
                                                       dynamic_cast<Editor::LightingPassNode&>(*editor_node).params);
             case NodeType::eMeshShaderGBufferPass:
-                return std::make_shared<MeshGBufferPass>(m_context.context());
+                return std::make_shared<MeshGBufferPass>(m_context.context(),
+                                                         dynamic_cast<Editor::MeshGBufferPassEditorNode&>(*editor_node).m_params);
             case NodeType::eSceneProvider:
                 return std::make_shared<SceneProviderNode>(m_context.scene());
             case NodeType::eRayTracing:
