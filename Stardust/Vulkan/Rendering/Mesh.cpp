@@ -3,7 +3,8 @@
 
 namespace sdvk
 {
-    Mesh::Mesh(sd::Geometry* p_geometry, const CommandBuffers& command_buffers, const Context& context, const std::string& name)
+    Mesh::Mesh(sd::Geometry* p_geometry, const CommandBuffers& command_buffers, const Context& context,
+               const std::string& name, uint32_t meshlet_max_vertices, uint32_t meshlet_max_indices)
     : m_geometry(p_geometry), m_name(name)
     {
         m_vertex_buffer = Buffer::Builder()
@@ -28,7 +29,7 @@ namespace sdvk
                 .create(command_buffers, context);
         }
 
-        create_meshlets();
+        create_meshlets(meshlet_max_vertices, meshlet_max_indices);
         m_meshlets_size = m_meshlets.size();
         m_meshlet_buffer = Buffer::Builder()
             .with_size(sizeof(Meshlet) * m_meshlets.size())

@@ -45,14 +45,18 @@ namespace sd
             new primitives::Cube(),
             m_command_buffers,
             m_context,
-            "cube"
+            "cube",
+            3,
+            3
         );
 
         m_meshes["sphere"] = std::make_shared<sdvk::Mesh>(
             new primitives::Sphere(1.0f, 250),
             m_command_buffers,
             m_context,
-            "sphere"
+            "sphere",
+            64,
+            126
         );
     }
 

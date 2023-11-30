@@ -18,7 +18,12 @@ namespace sdvk
     class Mesh
     {
     public:
-        Mesh(sd::Geometry* p_geometry, const CommandBuffers& command_buffers, const Context& context, const std::string& name = "");
+        Mesh(sd::Geometry* p_geometry,
+             const CommandBuffers& command_buffers,
+             const Context& context,
+             const std::string& name = "",
+             uint32_t meshlet_max_vertices = 64,
+             uint32_t meshlet_max_indices = 126);
 
         void draw(const vk::CommandBuffer& command_buffer) const;
 
