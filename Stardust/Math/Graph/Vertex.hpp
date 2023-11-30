@@ -9,49 +9,11 @@ namespace Nebula::Graph
 {
     class Vertex
     {
-    private:
         using vtx_ptr = std::shared_ptr<Vertex>;
-
-        int32_t     m_id   = sd::util::gen_id();
-        uuids::uuid m_uuid = uuids::uuid_system_generator{}();
-        std::string m_name = "Unknown Node";
-
-        std::vector<vtx_ptr> m_incoming_edges;
-        std::vector<vtx_ptr> m_outgoing_edges;
-
     public:
-        virtual ~Vertex() = default;
-
-        explicit Vertex(const std::string& name): m_name(name) {}
-
-        const uuids::uuid& uuid() const { return m_uuid; }
-
-        int32_t id() const { return m_id; }
-
-        const std::string& name() const { return m_name; }
-
-        std::vector<vtx_ptr>& get_incoming_edges()
-        {
-            return m_incoming_edges;
-        }
-
-        [[nodiscard]] int32_t in_degree() const
-        {
-            return static_cast<int32_t>(m_incoming_edges.size());
-        }
-
-        std::vector<vtx_ptr>& get_outgoing_edges()
-        {
-            return m_outgoing_edges;
-        }
-
-        [[nodiscard]] int32_t out_degree() const
-        {
-            return static_cast<int32_t>(m_outgoing_edges.size());
-        }
-
         /**
          * Create a directed edge from A to B
+         * \return success bool
          */
         static bool make_directed_edge(const vtx_ptr& a, const vtx_ptr& b)
         {
@@ -66,36 +28,64 @@ namespace Nebula::Graph
             return true;
         }
 
-        static bool remove_directed_edge(const vtx_ptr& a, const vtx_ptr& b)
+        /**
+         * Remove directed edge from A to B
+         * \return success bool
+         */
+        static bool delete_directed_edge(const vtx_ptr& a, const vtx_ptr& b)
         {
-            auto find_a = std::find_if(a->m_outgoing_edges.begin(), a->m_outgoing_edges.end(), [&](const auto& v){
-                return v->id() == b->id();
-            });
-            if (find_a == std::end(a->m_outgoing_edges))
-            {
-                return false;
-            }
+            if (a->uuid() == b->uuid()) return false;
 
-            auto find_b = std::find_if(b->m_incoming_edges.begin(), b->m_incoming_edges.end(), [&](const auto& v){
-                return v->id() == a->id();
-            });
-            if (find_b == std::end(b->m_incoming_edges))
-            {
-                return false;
-            }
+            auto& a_out = a->get_outgoing_edges();
+            const auto b_find = std::ranges::find_if(a_out, [&](auto& v){ return v->id() == b->id(); });
+            if (b_find == std::end(a_out)) return false;
 
-            auto erased_a = a->m_outgoing_edges.erase(find_a);
-            auto erased_b = b->m_incoming_edges.erase(find_b);
+            auto& b_in = b->get_incoming_edges();
+            const auto a_find = std::ranges::find_if(b_in, [&](auto& v){ return v->id() == a->id(); });
+            if (a_find == std::end(b_in)) return false;
+
+            a_out.erase(b_find);
+            b_in.erase(a_find);
 
             return true;
         }
 
-        /**
-         * Remove directed edge from A to B
-         */
-        static bool delete_directed_edge(const vtx_ptr& a, const vtx_ptr& b)
+        virtual ~Vertex() = default;
+
+        explicit Vertex(const std::string& name): m_name(name) {}
+
+        [[nodiscard]] const uuids::uuid& uuid() const { return m_uuid; }
+
+        [[nodiscard]] int32_t id() const { return m_id; }
+
+        [[nodiscard]] const std::string& name() const { return m_name; }
+
+        [[nodiscard]] std::vector<vtx_ptr>& get_incoming_edges()
         {
-            return false;
+            return m_incoming_edges;
         }
+
+        [[nodiscard]] int32_t in_degree() const
+        {
+            return static_cast<int32_t>(m_incoming_edges.size());
+        }
+
+        [[nodiscard]] std::vector<vtx_ptr>& get_outgoing_edges()
+        {
+            return m_outgoing_edges;
+        }
+
+        [[nodiscard]] int32_t out_degree() const
+        {
+            return static_cast<int32_t>(m_outgoing_edges.size());
+        }
+
+    private:
+        int32_t     m_id   = sd::util::gen_id();
+        uuids::uuid m_uuid = uuids::uuid_system_generator{}();
+        std::string m_name = "Unknown Node";
+
+        std::vector<vtx_ptr> m_incoming_edges;
+        std::vector<vtx_ptr> m_outgoing_edges;
     };
 }

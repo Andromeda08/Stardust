@@ -131,10 +131,8 @@ namespace Nebula::RenderGraph::Editor
 
         _handle_connection();
 
-        // _handle_link_delete();
-
-        const int num_selected = ImNodes::NumSelectedLinks();
-        if (num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
+        if (const int num_selected = ImNodes::NumSelectedLinks();
+            num_selected > 0 && ImGui::IsKeyReleased(ImGuiKey_X))
         {
             std::vector<int32_t> selected_links;
             selected_links.resize(static_cast<size_t>(num_selected));
@@ -248,40 +246,19 @@ namespace Nebula::RenderGraph::Editor
         return true;
     }
 
-    void GraphEditor::_handle_link_delete()
+    void GraphEditor::_erase_edge(int32_t edge_id)
     {
-        id_t link_id;
-        if (ImNodes::IsLinkDestroyed(&link_id))
+        if (const auto edge = std::ranges::find_if(m_edges, [edge_id](const auto& e){ return e.id == edge_id; });
+            edge != m_edges.end())
         {
-            _erase_edge(link_id);
-        }
-    }
-
-    void GraphEditor::_erase_edge(id_t edge_id)
-    {
-        auto edge = std::find_if(m_edges.begin(), m_edges.end(), [edge_id](const auto& edge){
-            return edge.id == edge.id;
-        });
-
-        if (edge != m_edges.end())
-        {
-            auto& s_node = m_nodes[edge->start.node_id];
+            const auto& s_node = m_nodes[edge->start.node_id];
             auto& s_attr = s_node->get_resource(edge->start.res_id);
 
-            auto& e_node = m_nodes[edge->end.node_id];
+            const auto& e_node = m_nodes[edge->end.node_id];
             auto& e_attr = e_node->get_resource(edge->end.res_id);
             e_attr.input_is_connected = false;
 
-            auto find_a = std::find_if(s_node->get_outgoing_edges().begin(), s_node->get_outgoing_edges().end(), [&](const auto& v){
-                return v->id() == e_node->id();
-            });
-
-            auto find_b = std::find_if(e_node->get_incoming_edges().begin(), e_node->get_incoming_edges().end(), [&](const auto& v){
-                return v->id() == s_node->id();
-            });
-
-            auto erased_a = s_node->get_outgoing_edges().erase(find_a);
-            auto erased_b = e_node->get_incoming_edges().erase(find_b);
+            Node::delete_directed_edge(s_node, e_node);
 
             m_edges.erase(edge);
 

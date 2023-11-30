@@ -49,9 +49,7 @@ namespace Nebula::RenderGraph::Editor
 
         bool _handle_connection();
 
-        void _handle_link_delete();
-
-        void _erase_edge(id_t edge_id);
+        void _erase_edge(int32_t edge_id);
 
         void _handle_add_node(NodeType type);
 
