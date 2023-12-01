@@ -67,4 +67,24 @@ namespace Nebula::Sync
         m_dependency_info.setPImageMemoryBarriers(&m_anti_barrier);
         command_buffer.pipelineBarrier2(&m_dependency_info);
     }
+
+    void ImageBarrierBatch::apply(const vk::CommandBuffer& command_buffer)
+    {
+        std::vector<vk::ImageMemoryBarrier2> barriers;
+        for (auto& barrier : m_barriers)
+        {
+            auto image = barrier.m_image.lock();
+            if (image == nullptr)
+            {
+                throw std::runtime_error("Image no longer exists.");
+            }
+            image->update_state({ barrier.m_barrier.dstAccessMask, barrier.m_barrier.newLayout });
+            barriers.push_back(barrier.m_barrier);
+        }
+
+        m_dependency_info.setImageMemoryBarrierCount(m_barriers.size());
+        m_dependency_info.setPImageMemoryBarriers(barriers.data());
+
+        command_buffer.pipelineBarrier2(&m_dependency_info);
+    }
 }

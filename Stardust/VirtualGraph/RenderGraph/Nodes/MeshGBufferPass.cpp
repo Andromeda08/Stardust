@@ -1,4 +1,5 @@
 #include "MeshGBufferPass.hpp"
+#include <imgui.h>
 #include <Application/Application.hpp>
 #include <Nebula/Barrier.hpp>
 #include <Nebula/Image.hpp>
@@ -113,18 +114,20 @@ namespace Nebula::RenderGraph
 
         update_descriptor(current_frame);
 
-        const auto& scene   = m_resources[id_scene_data]->as<SceneResource>().get_scene();
+        const auto scene          = m_resources[id_scene_data]->as<SceneResource>().get_scene();
         const auto position       = m_resources[id_position_buffer]->as<ImageResource>().get_image();
         const auto normal         = m_resources[id_normal_buffer]->as<ImageResource>().get_image();
         const auto albedo         = m_resources[id_albedo_buffer]->as<ImageResource>().get_image();
         const auto depth          = m_resources[id_depth_buffer]->as<DepthImageResource>().get_depth_image();
         const auto motion_vectors = m_resources[id_motion_vectors]->as<ImageResource>().get_image();
 
-        Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
-        Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
-        Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
-        Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eDepthAttachmentOptimal).apply(command_buffer);
-        Sync::ImageBarrier(motion_vectors, motion_vectors->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
+        Sync::ImageBarrierBatch({
+            Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eColorAttachmentOptimal),
+            Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eColorAttachmentOptimal),
+            Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eColorAttachmentOptimal),
+            Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eDepthAttachmentOptimal),
+            Sync::ImageBarrier(motion_vectors, motion_vectors->state().layout, vk::ImageLayout::eColorAttachmentOptimal),
+        }).apply(command_buffer);
 
         sdvk::RenderPass::Execute()
             .with_clear_values<5>(m_renderer.clear_values)
@@ -145,7 +148,7 @@ namespace Nebula::RenderGraph
                         object.color,
                         meshes.at(mesh_name)->vertex_buffer().address(),
                         meshes.at(mesh_name)->meshlet_buffer().address(),
-                        glm::ivec4(m_params.use_meshlet_colors ? 1 : 0, 0, 0, 0),
+                        glm::ivec4(m_params.use_meshlet_colors ? 1 : 0),
                     };
 
                     cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eMeshEXT, 0, sizeof(MShGBufferPushConstant), &push_constant);

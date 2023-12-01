@@ -11,6 +11,8 @@ namespace Nebula
 
 namespace Nebula::Sync
 {
+    class ImageBarrierBatch;
+
     class Barrier
     {
     public:
@@ -24,10 +26,11 @@ namespace Nebula::Sync
         void wrap(const vk::CommandBuffer& command_buffer, const std::function<void()>& lambda);
 
         Barrier() = default;
-        ~Barrier() = default;
+
+        virtual ~Barrier() = default;
     };
 
-    class ImageBarrier : public Barrier
+    class ImageBarrier final : public Barrier
     {
     public:
         ImageBarrier(const std::shared_ptr<Image>& image,
@@ -38,17 +41,31 @@ namespace Nebula::Sync
                      vk::PipelineStageFlags2 src_stage = vk::PipelineStageFlagBits2::eNone,
                      vk::PipelineStageFlags2 dst_stage = vk::PipelineStageFlagBits2::eNone);
 
-        ~ImageBarrier() = default;
+        ~ImageBarrier() override = default;
 
         void apply(const vk::CommandBuffer& command_buffer) override;
 
         void revert(const vk::CommandBuffer& command_buffer) override;
 
     private:
+        friend ImageBarrierBatch;
+
         vk::DependencyInfo m_dependency_info {};
         vk::ImageMemoryBarrier2 m_barrier {};
         vk::ImageMemoryBarrier2 m_anti_barrier {};
 
         std::weak_ptr<Image> m_image;
+    };
+
+    class ImageBarrierBatch
+    {
+    public:
+        ImageBarrierBatch(const std::initializer_list<ImageBarrier>& barriers): m_barriers(barriers) {}
+
+        void apply(const vk::CommandBuffer& command_buffer);
+
+    private:
+        std::vector<ImageBarrier> m_barriers;
+        vk::DependencyInfo        m_dependency_info {};
     };
 }
