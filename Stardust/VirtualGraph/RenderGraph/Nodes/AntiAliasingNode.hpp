@@ -28,7 +28,7 @@ namespace Nebula::RenderGraph
         bool debug_show_edges {false};
     };
 
-    class AntiAliasingNode : public Node
+    class AntiAliasingNode final : public Node
     {
     public:
         explicit AntiAliasingNode(const sdvk::Context& context);
@@ -59,12 +59,6 @@ namespace Nebula::RenderGraph
 
         const sdvk::Context& m_context;
 
-    public:
-        const std::vector<ResourceSpecification>& get_resource_specs() const override
-        {
-            return s_resource_specs;
-        }
-
-        static const std::vector<ResourceSpecification> s_resource_specs;
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

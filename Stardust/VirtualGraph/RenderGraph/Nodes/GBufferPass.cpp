@@ -20,7 +20,7 @@ namespace Nebula::RenderGraph
 #pragma endregion
 
     GBufferPass::GBufferPass(const sdvk::Context& context)
-    : Node("G-Buffer Pass", NodeType::ePrePass), m_context(context)
+    : Node("G-Buffer Pass", NodeType::eGBufferPass), m_context(context)
     {
     }
 

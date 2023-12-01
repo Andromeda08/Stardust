@@ -23,7 +23,7 @@ namespace Nebula::RenderGraph
 
     struct PresentNodePushConstant
     {
-        glm::ivec4 options;
+        glm::ivec4 options {};
 
         explicit PresentNodePushConstant(const PresentNodeOptions& _options)
         {
@@ -32,7 +32,7 @@ namespace Nebula::RenderGraph
         }
     };
 
-    class PresentNode : public Node
+    class PresentNode final : public Node
     {
     public:
         explicit PresentNode(const sdvk::Context& context, const sdvk::Swapchain& swapchain, const PresentNodeOptions& options);
@@ -62,8 +62,6 @@ namespace Nebula::RenderGraph
         const sdvk::Context& m_context;
         const sdvk::Swapchain& m_swapchain;
 
-    public:
-        static const std::vector<ResourceSpecification> s_resource_specs;
-        const std::vector<ResourceSpecification>& get_resource_specs() const override { return s_resource_specs; }
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

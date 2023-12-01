@@ -8,19 +8,16 @@
 
 namespace Nebula::RenderGraph
 {
-    class SceneProviderNode : public Node
+    class SceneProviderNode final : public Node
     {
     public:
-        static std::vector<ResourceSpecification> s_resource_specs;
-
-    public:
         explicit SceneProviderNode(const std::shared_ptr<sd::Scene>& scene);
-
-        const std::vector<ResourceSpecification>& get_resource_specs() const override { return s_resource_specs; }
 
         ~SceneProviderNode() override = default;
 
     private:
         std::shared_ptr<sd::Scene> m_scene;
+
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

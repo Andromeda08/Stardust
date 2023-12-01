@@ -61,11 +61,6 @@ namespace Nebula::RenderGraph
 
         ~MeshGBufferPass() override = default;
 
-        const std::vector<ResourceSpecification>& get_resource_specs() const override
-        {
-            return s_resource_specs;
-        }
-
     private:
         void update_descriptor(uint32_t current_frame);
 
@@ -97,8 +92,8 @@ namespace Nebula::RenderGraph
         static constexpr std::string id_depth_buffer    = "Depth Buffer";
         static constexpr std::string id_motion_vectors  = "Motion Vectors";
 
-
         friend Editor::MeshGBufferPassEditorNode;
-        static const std::vector<ResourceSpecification> s_resource_specs;
+
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

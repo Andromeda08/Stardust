@@ -16,16 +16,16 @@ namespace sdvk
 
         if (m_ctx.is_debug())
         {
-            std::cout
-                << "Swapchain format: " << string_VkFormat(static_cast<VkFormat>(m_format.format))
-                << std::endl
-                << "Swapchain color space: " << string_VkColorSpaceKHR(static_cast<VkColorSpaceKHR>(m_format.colorSpace))
-                << std::endl;
+            // std::cout
+            //     << "Swapchain format: " << string_VkFormat(static_cast<VkFormat>(m_format.format))
+            //     << std::endl
+            //     << "Swapchain color space: " << string_VkColorSpaceKHR(static_cast<VkColorSpaceKHR>(m_format.colorSpace))
+            //     << std::endl;
 
             for (auto i = 0; i < m_image_count; i++)
             {
                 vk::Result result;
-                std::string name = "[SC] Image " + std::to_string(i);
+                std::string name = "[Swapchain] Image " + std::to_string(i);
 
                 vk::DebugUtilsObjectNameInfoEXT name_info;
                 name_info.setObjectHandle((uint64_t) static_cast<VkImage>(m_images[i]));

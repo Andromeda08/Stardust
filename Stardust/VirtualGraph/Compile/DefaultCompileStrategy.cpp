@@ -1,17 +1,18 @@
 #include "DefaultCompileStrategy.hpp"
-
+#include <cstdint>
 #include <chrono>
+#include <map>
 #include <set>
 #include <sstream>
+#include <string>
 #include <Benchmarking.hpp>
 #include <Nebula/Image.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
+#include <VirtualGraph/Compile/Algorithm/Bfs.hpp>
+#include <VirtualGraph/Compile/Algorithm/TopologicalSort.hpp>
 #include <VirtualGraph/Editor/Edge.hpp>
 #include <VirtualGraph/Editor/Node.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
-#include <VirtualGraph/Compile/NodeFactory.hpp>
-#include <VirtualGraph/Compile/Algorithm/Bfs.hpp>
-#include <VirtualGraph/Compile/Algorithm/TopologicalSort.hpp>
-#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
 
 namespace Nebula::RenderGraph::Compiler
@@ -20,10 +21,17 @@ namespace Nebula::RenderGraph::Compiler
                                                   const std::vector<Editor::Edge>& edges,
                                                   bool verbose)
     {
+        std::cout
+            << "// ----------------------------------------------------------------------\n"
+            << "// You are using the legacy compiler strategy with no optimizations,\n"
+            << "// consider using the optimized compiler instead.\n"
+            << "// ----------------------------------------------------------------------"
+            << std::endl;
+
         CompileResult result = {};
 
         auto begin_time = std::chrono::utc_clock::now();
-        logs.push_back(std::format("[Info] Compiling started at {:%Y-%m-%d %H:%M}", begin_time));
+        m_logs.push_back(std::format("[Info] Compiling started at {:%Y-%m-%d %H:%M}", begin_time));
 
         if (verbose)
         {
@@ -33,7 +41,7 @@ namespace Nebula::RenderGraph::Compiler
             {
                 input_nodes << std::format(" [{}]", node->name());
             }
-            logs.push_back(input_nodes.str());
+            m_logs.push_back(input_nodes.str());
         }
 
         // 1. Find unreachable nodes (BFS Traversal)
@@ -53,15 +61,15 @@ namespace Nebula::RenderGraph::Compiler
         if (root_node == nullptr)
         {
             result.success = false;
-            logs.emplace_back("[Error] Graph must contain a SceneProvider node.");
-            result.failure_message = logs.back();
+            m_logs.emplace_back("[Error] Graph must contain a SceneProvider node.");
+            result.failure_message = m_logs.back();
             write_logs_to_file(std::format("GraphCompile_Log_{:%Y-%m-%d_%H:%M}_{}", begin_time, result.success ? "Success" : "Failed"));
             return result;
         }
 
         filter_time = sd::bm::measure([&](){
-            auto bfs = std::make_unique<Algorithm::Bfs>(nodes);
-            auto reachable_node_ids = bfs->execute(root_node);
+            const auto bfs = std::make_unique<Algorithm::Bfs>(nodes);
+            const auto reachable_node_ids = bfs->execute(root_node);
             for (const auto& node : nodes)
             {
                 if (reachable_node_ids.contains(node->id()))
@@ -70,7 +78,7 @@ namespace Nebula::RenderGraph::Compiler
                 }
             }
         });
-        logs.push_back(std::format("[Info] Found {} unreachable node(s). ({}ms)",
+        m_logs.push_back(std::format("[Info] Found {} unreachable node(s). ({}ms)",
                                    std::to_string(nodes.size() - connected_nodes.size()),
                                    filter_time.count()));
 
@@ -92,7 +100,7 @@ namespace Nebula::RenderGraph::Compiler
         {
             result.success = false;
             result.logs.emplace_back(ex.what());
-            result.failure_message = logs.back();
+            result.failure_message = m_logs.back();
             write_logs_to_file(std::format("GraphCompile_Log_{:%Y-%m-%d_%H:%M}_{}", begin_time, result.success ? "Success" : "Failed"));
             return result;
         }
@@ -103,7 +111,7 @@ namespace Nebula::RenderGraph::Compiler
         {
             tsort_log << std::format(" [{}]", node->name());
         }
-        logs.push_back(tsort_log.str());
+        m_logs.push_back(tsort_log.str());
 
         #pragma endregion
 
@@ -112,10 +120,12 @@ namespace Nebula::RenderGraph::Compiler
 
         std::chrono::milliseconds resource_eval_time;
         std::map<int32_t, Editor::ResourceDescription> required_resources;
-        resource_eval_time = sd::bm::measure<std::chrono::milliseconds>([&]() {
-            for (const auto& node: topological_ordering) {
-                const auto& resources = node->resources();
-                for (const auto& resource: resources) {
+        resource_eval_time = sd::bm::measure<std::chrono::milliseconds>([&] {
+            for (const auto& node: topological_ordering)
+            {
+                for (const auto& resources = node->resources();
+                     const auto& resource: resources)
+                {
                     if (required_resources.contains(resource.id))
                     {
                         continue;
@@ -129,7 +139,7 @@ namespace Nebula::RenderGraph::Compiler
                 }
             }
         });
-        logs.push_back(std::format("[Info] Required resource count: {} ({}ms)", std::to_string(required_resources.size()), resource_eval_time.count()));
+        m_logs.push_back(std::format("[Info] Required resource count: {} ({}ms)", std::to_string(required_resources.size()), resource_eval_time.count()));
 
         #pragma endregion
 
@@ -138,12 +148,9 @@ namespace Nebula::RenderGraph::Compiler
 
         std::chrono::milliseconds create_time;
         std::map<std::string, std::shared_ptr<Resource>> created_resources;
+        std::set gpu_types = { ResourceType::eImage, ResourceType::eDepthImage };
 
-        std::set<ResourceType> gpu_types = {
-            ResourceType::eImage, ResourceType::eDepthImage
-        };
-
-        create_time = sd::bm::measure<std::chrono::milliseconds>([&](){
+        create_time = sd::bm::measure<std::chrono::milliseconds>([&]{
             for (const auto& [id, resource] : required_resources)
             {
                 if (resource.role == ResourceRole::eInput)
@@ -159,22 +166,15 @@ namespace Nebula::RenderGraph::Compiler
                 {
                     if (resource.type == ResourceType::eImage)
                     {
-                        auto image = std::make_shared<Nebula::Image>(m_context.context(),
-                                                                     res_spec.format,
-                                                                     m_context.render_resolution(),
-                                                                     res_spec.sample_count,
-                                                                     res_spec.usage_flags | vk::ImageUsageFlagBits::eColorAttachment,
-                                                                     res_spec.aspect_flags,
-                                                                     res_spec.tiling,
-                                                                     res_spec.memory_flags,
-                                                                     resource_name);
+                        auto image = std::make_shared<Image>(m_context.context(), res_spec.format, m_context.render_resolution(),
+                                                             res_spec.sample_count, res_spec.usage_flags | vk::ImageUsageFlagBits::eColorAttachment,
+                                                             res_spec.aspect_flags, res_spec.tiling, res_spec.memory_flags,
+                                                             resource_name);
                         new_res = std::make_shared<ImageResource>(image, resource_name);
                     }
                     else if (resource.type == ResourceType::eDepthImage)
                     {
-                        auto image = Nebula::Image::make_depth_image(m_context.render_resolution(),
-                                                                     m_context.context(),
-                                                                     resource_name);
+                        auto image = Image::make_depth_image(m_context.render_resolution(), m_context.context(), resource_name);
                         new_res = std::make_shared<DepthImageResource>(image, resource_name);
                     }
                     else
@@ -184,7 +184,7 @@ namespace Nebula::RenderGraph::Compiler
 
                     if (verbose)
                     {
-                        logs.push_back(std::format("[Verbose] Created GPU resource: {}", resource_name));
+                        m_logs.push_back(std::format("[Verbose] Created GPU resource: {}", resource_name));
                     }
                 }
                 else
@@ -220,27 +220,27 @@ namespace Nebula::RenderGraph::Compiler
 
                     if (verbose)
                     {
-                        logs.push_back(std::format("[Verbose] Created {} resource: {}", get_resource_type_str(resource.type), resource_name));
+                        m_logs.push_back(std::format("[Verbose] Created {} resource: {}", get_resource_type_str(resource.type), resource_name));
                     }
                 }
 
                 created_resources.insert({resource.name, new_res });
             }
         });
-        logs.push_back(std::format("[Info] Created {} resource(s) ({}ms)", std::to_string(created_resources.size()), create_time.count()));
+        m_logs.push_back(std::format("[Info] Created {} resource(s) ({}ms)", std::to_string(created_resources.size()), create_time.count()));
 
         #pragma endregion
 
         // 5. Create real nodes
         #pragma region Create real nodes
 
-        std::vector<std::shared_ptr<RenderGraph::Node>> real_nodes;
+        std::vector<std::shared_ptr<Node>> real_nodes;
         std::map<int32_t, int32_t> id_to_node;
         auto node_creation_time = sd::bm::measure<std::chrono::milliseconds>([&](){
             for (const auto& node : topological_ordering)
             {
-                auto n = m_node_factory->create(node, node->type());
-                if (n != nullptr)
+                if (const auto n = m_node_factory->create(node, node->type());
+                    n != nullptr)
                 {
                     real_nodes.push_back(n);
                     id_to_node.insert({ node->id(), real_nodes.size() - 1 });
@@ -252,7 +252,8 @@ namespace Nebula::RenderGraph::Compiler
 
         // 6. Connect resources to nodes
         #pragma region Connect resources to nodes
-        auto resource_connection_time = sd::bm::measure<std::chrono::milliseconds>([&](){
+
+        auto resource_connection_time = sd::bm::measure<std::chrono::milliseconds>([&]{
             // Set Outputs
             for (const auto& node : real_nodes)
             {
@@ -280,7 +281,7 @@ namespace Nebula::RenderGraph::Compiler
                 auto& resource = created_resources[edge.start.res_name];
 
                 // Set resource
-                auto& end_node = real_nodes[id_to_node[edge.end.node_id]];
+                const auto& end_node = real_nodes[id_to_node[edge.end.node_id]];
                 end_node->set_resource(edge.end.res_name, resource);
             }
         });
@@ -291,14 +292,14 @@ namespace Nebula::RenderGraph::Compiler
         #pragma region Finalize
 
         auto compile_time = filter_time + tsort_time + resource_eval_time + create_time + node_creation_time + resource_connection_time;
-        logs.push_back(std::format("[Info] Graph compiled in {} ms", compile_time.count()));
+        m_logs.push_back(std::format("[Info] Graph compiled in {} ms", compile_time.count()));
 
         auto render_path = std::make_shared<RenderPath>();
         render_path->resources = created_resources;
         render_path->nodes = real_nodes;
 
         result.compile_time = compile_time;
-        result.logs = logs;
+        result.logs = m_logs;
         result.success = true;
         result.render_path = render_path;
 

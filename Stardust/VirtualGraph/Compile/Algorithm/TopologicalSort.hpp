@@ -11,9 +11,9 @@ namespace Nebula::RenderGraph::Algorithm
     class TopologicalSort
     {
     public:
-        TopologicalSort(const std::vector<std::shared_ptr<Editor::Node>>& nodes): m_nodes(nodes) {}
+        explicit TopologicalSort(const std::vector<std::shared_ptr<Editor::Node>>& nodes): m_nodes(nodes) {}
 
-        std::vector<std::shared_ptr<Editor::Node>> execute();
+        std::vector<std::shared_ptr<Editor::Node>> execute() const;
 
     private:
         const std::vector<std::shared_ptr<Editor::Node>>& m_nodes;

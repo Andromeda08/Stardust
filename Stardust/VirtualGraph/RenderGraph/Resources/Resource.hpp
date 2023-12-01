@@ -7,7 +7,7 @@
 #include <Scene/Object.hpp>
 #include <Scene/Scene.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
-#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
 
 #define PTR_RESOURCE_BODY(T, ResTypeEnum, ResT, GetName)                                                                                                                                                                                           \
 public:                                                                                              \
@@ -18,10 +18,6 @@ public:                                                                         
 private:                                                                                             \
     std::shared_ptr<ResT> m_resource;
 
-/**
- * This file contains all resource type definitions.
- * All resource types inherit the "Resource" class.
- */
 namespace Nebula::RenderGraph
 {
 #pragma region Resource types

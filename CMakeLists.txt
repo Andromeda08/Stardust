@@ -93,12 +93,13 @@ add_executable(${PROJECT_NAME}
 
         Stardust/Math/Graph/Vertex.hpp
 
-        Stardust/VirtualGraph/Compile/GraphCompileStrategy.hpp Stardust/VirtualGraph/Compile/GraphCompileStrategy.cpp
         Stardust/VirtualGraph/Common/GraphContext.hpp Stardust/VirtualGraph/Common/GraphContext.cpp
-        Stardust/VirtualGraph/Common/NodeType.hpp
+        Stardust/VirtualGraph/Common/NodeType.hpp Stardust/VirtualGraph/Common/NodeType.cpp
+        Stardust/VirtualGraph/Common/ResourceType.hpp Stardust/VirtualGraph/Common/ResourceType.cpp
         Stardust/VirtualGraph/Common/RenderPath.hpp
+
+        Stardust/VirtualGraph/Compile/GraphCompileStrategy.hpp Stardust/VirtualGraph/Compile/GraphCompileStrategy.cpp
         Stardust/VirtualGraph/Compile/DefaultCompileStrategy.hpp Stardust/VirtualGraph/Compile/DefaultCompileStrategy.cpp
-        Stardust/VirtualGraph/Compile/NodeFactory.hpp Stardust/VirtualGraph/Compile/NodeFactory.cpp
         Stardust/VirtualGraph/Compile/CompileResult.hpp
         Stardust/VirtualGraph/Compile/OptimizedCompileStrategy.hpp Stardust/VirtualGraph/Compile/OptimizedCompileStrategy.cpp
         Stardust/VirtualGraph/Compile/CompilerType.hpp
@@ -131,12 +132,16 @@ add_executable(${PROJECT_NAME}
 
         Stardust/VirtualGraph/RenderGraph/Resources/Resource.hpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp
-        Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceType.cpp
         Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.hpp Stardust/VirtualGraph/RenderGraph/Resources/ResourceRole.cpp
         Stardust/VirtualGraph/Builder/Builder.h Stardust/VirtualGraph/Builder/Builder.cpp
-        Stardust/VirtualGraph/Common/NodeType.cpp
+
         Stardust/Application/MeshShaderApp.cpp
         Stardust/Application/MeshShaderApp.hpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/BloomNode.cpp
+        Stardust/VirtualGraph/RenderGraph/Nodes/BloomNode.hpp
+        Stardust/VirtualGraph/Common/NodeFactory.hpp
+        Stardust/VirtualGraph/Common/NodeFactory.cpp
+        Stardust/Nebula/Utility.hpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)

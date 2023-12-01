@@ -5,36 +5,35 @@
 #include <format>
 #include <string>
 #include <VirtualGraph/Common/NodeType.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
 #include <VirtualGraph/Compile/Algorithm/Bfs.hpp>
 #include <VirtualGraph/Compile/Algorithm/TopologicalSort.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
-#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 
 namespace Nebula::RenderGraph::Compiler
 {
-    GraphCompileStrategy::GraphCompileStrategy(const RenderGraphContext& context)
-    : m_context(context)
+    GraphCompileStrategy::GraphCompileStrategy(const RenderGraphContext& context): m_context(context)
     {
         m_node_factory = std::make_unique<NodeFactory>(context);
     }
 
     void GraphCompileStrategy::write_logs_to_file(const std::string& file_name)
     {
-        auto path = std::format("logs/{}.txt", file_name);
+        const auto path = std::format("logs/{}.txt", file_name);
         std::fstream fs(path);
         fs.open(path, std::ios_base::out);
-        std::ostream_iterator<std::string> os_it(fs, "\n");
-        std::copy(logs.begin(), logs.end(), os_it);
+        const std::ostream_iterator<std::string> os_it(fs, "\n");
+        std::ranges::copy(m_logs, os_it);
         fs.close();
     }
 
-    CompileResult GraphCompileStrategy::make_failed_result(const std::string& message)
+    CompileResult GraphCompileStrategy::make_failed_result(const std::string& message) const
     {
-        CompileResult result;
+        CompileResult result = {};
 
         result.success = false;
         result.failure_message = message;
-        result.logs = logs;
+        result.logs = m_logs;
 
         return result;
     }
@@ -74,11 +73,11 @@ namespace Nebula::RenderGraph::Compiler
         }
         dump.emplace_back("[=====[End Nodes]=====]");
 
-        auto path = std::format("logs/{}.txt", file_name);
+        const auto path = std::format("logs/{}.txt", file_name);
         std::fstream fs(path);
         fs.open(path, std::ios_base::out);
-        std::ostream_iterator<std::string> os_it(fs, "\n");
-        std::copy(dump.begin(), dump.end(), os_it);
+        const std::ostream_iterator<std::string> os_it(fs, "\n");
+        std::ranges::copy(dump, os_it);
         fs.close();
     }
 
@@ -101,8 +100,8 @@ namespace Nebula::RenderGraph::Compiler
             throw std::runtime_error("[Error] Graph must contain a SceneProvider node");
         }
 
-        auto bfs = std::make_unique<Algorithm::Bfs>(nodes);
-        auto reachable_node_ids = bfs->execute(root_node);
+        const auto bfs = std::make_unique<Algorithm::Bfs>(nodes);
+        const auto reachable_node_ids = bfs->execute(root_node);
         for (const auto& node : nodes)
         {
             if (reachable_node_ids.contains(node->id()))
@@ -119,22 +118,16 @@ namespace Nebula::RenderGraph::Compiler
     {
         std::vector<std::shared_ptr<Editor::Node>> result;
 
-        auto tsort = std::make_unique<Algorithm::TopologicalSort>(nodes);
-        try
-        {
-            result = tsort->execute();
-        }
-        catch (const std::runtime_error& ex)
-        {
-            throw ex;
-        }
+        const auto tsort = std::make_unique<Algorithm::TopologicalSort>(nodes);
+        try { result = tsort->execute(); }
+        catch (const std::runtime_error& e) { throw; }
 
         // !!! Important !!!
         // An execution order must always end with a "Present" node
-        auto last_node = result.back();
-        if (last_node->type() != NodeType::ePresent)
+        if (const auto last_node = result.back();
+            last_node->type() != NodeType::ePresent)
         {
-            auto present_node = std::find_if(std::begin(result), std::end(result), [](const auto& n){
+            const auto present_node = std::ranges::find_if(result, [](const auto& n){
                 return n->type() == NodeType::ePresent;
             });
             std::rotate(present_node, present_node + 1, std::end(result));

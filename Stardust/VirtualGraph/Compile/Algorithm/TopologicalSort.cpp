@@ -6,7 +6,7 @@
 
 namespace Nebula::RenderGraph::Algorithm
 {
-    std::vector<std::shared_ptr<Editor::Node>> TopologicalSort::execute()
+    std::vector<std::shared_ptr<Editor::Node>> TopologicalSort::execute() const
     {
         std::map<int32_t, int32_t> in_degrees;
         for (const auto& node : m_nodes)
@@ -38,7 +38,7 @@ namespace Nebula::RenderGraph::Algorithm
                 in_degrees[w_id]--;
                 if (in_degrees[w_id] == 0)
                 {
-                    auto i = std::find_if(m_nodes.begin(), m_nodes.end(), [w_id](const auto& i){ return i->id() == w_id; });
+                    auto i = std::ranges::find_if(m_nodes, [w_id](const auto& it){ return it->id() == w_id; });
                     Q.push(*i);
                 }
             }

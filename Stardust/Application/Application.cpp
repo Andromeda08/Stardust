@@ -4,11 +4,9 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <imnodes.h>
-
 #include <Vulkan/ContextBuilder.hpp>
 #include <Vulkan/Presentation/SwapchainBuilder.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
-
 #include <Scene/Scene.hpp>
 #include <VirtualGraph/Builder/Builder.h>
 
@@ -58,48 +56,22 @@ namespace sd
         m_ge->set_scene(g_rgs);
 
         // Build initial graph
-        auto graph_builder = Nebula::RenderGraph::Builder(m_rgctx);
-        {
-            using namespace Nebula::RenderGraph;
-            auto pass_a = graph_builder.add_pass(NodeType::ePrePass);
-            auto pass_b = graph_builder.add_pass(NodeType::eLightingPass);
-            auto pass_c = graph_builder.add_pass(NodeType::eSceneProvider);
-            auto pass_d = graph_builder.add_pass(NodeType::ePresent);
-            auto pass_e = graph_builder.add_pass(NodeType::eAmbientOcclusion);
-
-            auto compile_result = graph_builder
-                .make_connection(pass_c, pass_a, "Scene Data")
-                .make_connection(pass_c, pass_b, "Camera")
-                .make_connection(pass_c, pass_b, "TLAS")
-                .make_connection(pass_a, pass_b, "Position Buffer")
-                .make_connection(pass_a, pass_b, "Normal Buffer")
-                .make_connection(pass_a, pass_b, "Albedo Buffer")
-                .make_connection(pass_a, pass_b, "Depth Buffer")
-                .make_connection(pass_e, pass_b, "AO Image")
-                .make_connection(pass_c, pass_e, "Camera")
-                .make_connection(pass_c, pass_e, "TLAS")
-                .make_connection(pass_a, pass_e, "Position Buffer")
-                .make_connection(pass_a, pass_e, "Normal Buffer")
-                .make_connection(pass_b, pass_d, "Lighting Result", "Final Image")
-                .compile();
-
-            m_rgctx->set_render_path(compile_result.render_path);
-        }
+        const auto initial_graph = Nebula::RenderGraph::Builder::create_initial_graph(m_rgctx);
+        m_rgctx->set_render_path(initial_graph.render_path);
 
         init_imgui();
     }
 
     void Application::run()
     {
-        static auto convert_memory = [&](uint64_t input_memory){
+        static auto convert_memory = [&](const uint64_t input_memory){
             std::tuple<float, std::string> result;
 
-            const static float kilobyte_coefficient = 1024.0f;
-            const static float megabyte_coefficient = kilobyte_coefficient * 1024.0f;
-            const static float gigabyte_coefficient = megabyte_coefficient * 1024.0f;
+            static constexpr float kilobyte_coefficient = 1024.0f;
+            static constexpr float megabyte_coefficient = kilobyte_coefficient * 1024.0f;
+            static constexpr float gigabyte_coefficient = megabyte_coefficient * 1024.0f;
 
             auto memory = static_cast<float>(input_memory);
-
             if (memory < kilobyte_coefficient)
             {
                 result = { memory, "B" };
@@ -120,13 +92,13 @@ namespace sd
             return result;
         };
 
-        auto render_command = [&](){
-            ImGuiIO& io = ImGui::GetIO();
-            if (!io.WantCaptureMouse)
+        auto render_command = [&]{
+            const ImGuiIO& _io = ImGui::GetIO();
+            if (!_io.WantCaptureMouse)
             {
                 g_rgs->mouse_handler(*m_window);
             }
-            if (!io.WantCaptureKeyboard)
+            if (!_io.WantCaptureKeyboard)
             {
                 g_rgs->key_handler(*m_window);
             }
@@ -147,16 +119,15 @@ namespace sd
             auto [ mu, mu_m] = convert_memory(memory_usage);
             auto [ mb, mb_m ] = convert_memory(memory_budget);
 
-            auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
+            const auto acquired_frame = m_swapchain->acquire_frame(s_current_frame);
 
-            auto command_buffer = m_command_buffers->begin(s_current_frame);
+            const auto command_buffer = m_command_buffers->begin(s_current_frame);
 
-            auto vp = m_swapchain->make_viewport();
-            auto sc = m_swapchain->make_scissor();
+            const auto vp = m_swapchain->make_viewport();
+            const auto sc = m_swapchain->make_scissor();
             command_buffer.setViewport(0, 1, &vp);
             command_buffer.setScissor(0, 1, &sc);
 
-            //const auto& render_path = m_rgctx->get_render_path();
             m_rgctx->get_render_path()->execute(command_buffer);
 
             std::array<vk::ClearValue, 1> clear_value;
@@ -169,7 +140,7 @@ namespace sd
                 .execute(command_buffer, [&](auto& cmd) {
                     if (s_imgui_enabled)
                     {
-                        ImGuiIO& io = ImGui::GetIO();
+                        const ImGuiIO& io = ImGui::GetIO();
 
                         ImGui_ImplVulkan_NewFrame();
                         ImGui_ImplGlfw_NewFrame();
@@ -212,8 +183,9 @@ namespace sd
 
         vk::FramebufferCreateInfo framebuffer_create_info;
         #pragma region framebuffer creation
-        vk::Extent2D extent = m_swapchain->extent();
-        std::vector<vk::ImageView> comp_attachments = { m_swapchain->view(0) };
+
+        const vk::Extent2D extent = m_swapchain->extent();
+        std::vector comp_attachments = { m_swapchain->view(0) };
         framebuffer_create_info.setRenderPass(m_renderpass);
         framebuffer_create_info.setAttachmentCount(comp_attachments.size());
         framebuffer_create_info.setPAttachments(comp_attachments.data());
@@ -223,12 +195,16 @@ namespace sd
         for (int32_t i = 0; i < 2; i++)
         {
             comp_attachments[0] = m_swapchain->view(i);
-            vk::Result result = m_context->device().createFramebuffer(&framebuffer_create_info, nullptr, &m_fbos[i]);
+            if (const vk::Result result = m_context->device().createFramebuffer(&framebuffer_create_info, nullptr, &m_fbos[i]);
+                result != vk::Result::eSuccess)
+            {
+                throw std::runtime_error(std::format("[Error] Failed to create ImGui Framebuffer #{}", i));
+            }
         }
+
         #pragma endregion
 
-
-        vk::DescriptorPoolSize pool_sizes[]
+        const vk::DescriptorPoolSize pool_sizes[]
             {
                 { vk::DescriptorType::eSampler, 1000 },
                 { vk::DescriptorType::eCombinedImageSampler, 1000 },
@@ -247,9 +223,13 @@ namespace sd
         pool_info.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
         pool_info.setMaxSets(1000 * IM_ARRAYSIZE(pool_sizes));
         pool_info.setPPoolSizes(pool_sizes);
-        pool_info.setPoolSizeCount((uint32_t) IM_ARRAYSIZE(pool_sizes));
+        pool_info.setPoolSizeCount(IM_ARRAYSIZE(pool_sizes));
 
-        auto r = m_context->device().createDescriptorPool(&pool_info, nullptr, &m_pool);
+        if (const vk::Result result = m_context->device().createDescriptorPool(&pool_info, nullptr, &m_pool);
+            result != vk::Result::eSuccess)
+        {
+            throw std::runtime_error("[Error] Failed to create ImGui DescriptorPool");
+        }
 
         auto [ui_scale, font_size] = get_ui_scale(s_extent);
 

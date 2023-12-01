@@ -15,7 +15,7 @@ namespace Nebula::RenderGraph::Algorithm
 
         while (!Q.empty())
         {
-            auto current = Q.front();
+            const auto current = Q.front();
             Q.pop();
 
             for (const auto& w : current->get_outgoing_edges())

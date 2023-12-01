@@ -5,7 +5,6 @@
 #include <iostream>
 #include <imgui.h>
 #include <imnodes.h>
-#include <Utility.hpp>
 #include <Application/Application.hpp>
 #include <VirtualGraph/Compile/DefaultCompileStrategy.hpp>
 #include <VirtualGraph/Compile/OptimizedCompileStrategy.hpp>
@@ -40,7 +39,7 @@ namespace Nebula::RenderGraph::Editor
                     {
                         if (m_has_presenter)
                         {
-                            auto msg = std::format(R"([Warning] Only one instance of Present node is allowed.)");
+                            const auto msg = std::format(R"([Warning] Only one instance of Present node is allowed.)");
                             m_messages.push_back(msg);
                             std::cout << msg << std::endl;
                         }
@@ -53,7 +52,7 @@ namespace Nebula::RenderGraph::Editor
                     {
                         if (m_has_presenter)
                         {
-                            auto msg = std::format(R"([Warning] Only one instance of Scene Provider node is allowed.)");
+                            const auto msg = std::format(R"([Warning] Only one instance of Scene Provider node is allowed.)");
                             m_messages.push_back(msg);
                             std::cout << msg << std::endl;
                         }
@@ -74,15 +73,15 @@ namespace Nebula::RenderGraph::Editor
 
                 if (ImGui::Button("Compile"))
                 {
-                    _handle_compile(Compiler::CompilerType::eNaiive);
-                }
-
-                if (ImGui::Button("Compile Optimzed"))
-                {
                     _handle_compile(Compiler::CompilerType::eResourceOptimized);
                 }
 
-                if (ImGui::Button("Reset"))
+                if (ImGui::Button("Legacy Compiler"))
+                {
+                    _handle_compile(Compiler::CompilerType::eNaive);
+                }
+
+                if (ImGui::Button("Reset Graph"))
                 {
                     _handle_reset();
                 }
@@ -138,7 +137,7 @@ namespace Nebula::RenderGraph::Editor
 
         std::unique_ptr<Compiler::GraphCompileStrategy> compiler;
 
-        if (mode == Compiler::CompilerType::eNaiive)
+        if (mode == Compiler::CompilerType::eNaive)
         {
             compiler = std::make_unique<Compiler::DefaultCompileStrategy>(m_context);
         }
@@ -175,13 +174,13 @@ namespace Nebula::RenderGraph::Editor
                 std::swap(start_attr, end_attr);
             }
 
-            auto& s_node = m_nodes[start_node];
+            const auto& s_node = m_nodes[start_node];
             auto& s_attr = s_node->get_resource(start_attr);
 
-            auto& e_node = m_nodes[end_node];
+            const auto& e_node = m_nodes[end_node];
             auto& e_attr = e_node->get_resource(end_attr);
 
-            auto edge_exists = std::any_of(m_edges.begin(), m_edges.end(), [s_attr, e_attr](const Edge& edge){
+            const auto edge_exists = std::ranges::any_of(m_edges, [s_attr, e_attr](const Edge& edge){
                 return edge.start.res_id == s_attr.id && edge.end.res_id == e_attr.id;
             });
 
@@ -251,10 +250,10 @@ namespace Nebula::RenderGraph::Editor
         }
     }
 
-    void GraphEditor::_handle_add_node(NodeType type)
+    void GraphEditor::_handle_add_node(const NodeType type)
     {
-        auto node = Node::Factory::create(type);
-        m_nodes.insert({ node->id(), std::shared_ptr<Node>(node) });
+        const auto node = NodeFactory::create_editor(type);
+        m_nodes.insert({ node->id(), node });
     }
 
     void GraphEditor::_handle_reset()
@@ -283,8 +282,8 @@ namespace Nebula::RenderGraph::Editor
                     break;
             }
 
-            const auto node = Node::Factory::create(t);
-            m_nodes.insert(std::pair { node->id(), std::shared_ptr<Node>(node) });
+            const auto node = NodeFactory::create_editor(t);
+            m_nodes.insert(std::pair { node->id(), node });
         }
     }
 }

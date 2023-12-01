@@ -5,8 +5,7 @@
 #include <string>
 #include <VirtualGraph/Editor/Edge.hpp>
 #include <VirtualGraph/Editor/Node.hpp>
-#include <VirtualGraph/Editor/ResourceDescription.hpp>
-#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/Node.hpp>
 
 namespace Nebula::RenderGraph::Compiler
@@ -17,7 +16,7 @@ namespace Nebula::RenderGraph::Compiler
     {
         CompileResult compile_result = {};
         auto start_time = std::chrono::utc_clock::now();
-        logs.push_back(std::format("[Compiler] Compiling started at {:%Y-%m-%d %H:%M}", start_time));
+        m_logs.push_back(std::format("[Compiler] Compiling started at {:%Y-%m-%d %H:%M}", start_time));
 
         if (verbose)
         {
@@ -27,7 +26,7 @@ namespace Nebula::RenderGraph::Compiler
             {
                 input_nodes << std::format(" [{}]", node->name());
             }
-            logs.push_back(input_nodes.str());
+            m_logs.push_back(input_nodes.str());
         }
 
         // 1. Find unreachable nodes (BFS Traversal)
@@ -43,7 +42,7 @@ namespace Nebula::RenderGraph::Compiler
 
         if (verbose)
         {
-            logs.push_back(std::format("[Compiler] Found and culled {} unreachable node(s)", std::to_string(nodes.size() - connected_nodes.size())));
+            m_logs.push_back(std::format("[Compiler] Found and culled {} unreachable node(s)", std::to_string(nodes.size() - connected_nodes.size())));
         }
 
         // 2. To determine execution order of nodes run Topological Sort based on Logical Nodes and Connections.
@@ -66,7 +65,7 @@ namespace Nebula::RenderGraph::Compiler
             {
                 input_nodes << std::format(" [{}]", node->name());
             }
-            logs.push_back(input_nodes.str());
+            m_logs.push_back(input_nodes.str());
         }
 
         // 3. Evaluate and optimize resources
@@ -77,7 +76,7 @@ namespace Nebula::RenderGraph::Compiler
             optimization_result = optimizer->run();
             for (const auto& msg : optimization_result.messages)
             {
-                logs.push_back(msg);
+                m_logs.push_back(msg);
             }
         }
         catch (const std::runtime_error& ex)
@@ -85,7 +84,7 @@ namespace Nebula::RenderGraph::Compiler
             return make_failed_result(ex.what());
         }
 
-        logs.push_back(std::format("[Compiler] Resource optimization finished in {} microseconds", optimization_result.time.count()));
+        m_logs.push_back(std::format("[Compiler] Resource optimization finished in {} microseconds", optimization_result.time.count()));
 
         // 4. Create resources
         std::map<std::string, std::shared_ptr<Resource>> created_resources; // optimizer_id -> resource
@@ -147,7 +146,7 @@ namespace Nebula::RenderGraph::Compiler
                                                (opt_resource.type == ResourceType::eImage || opt_resource.type == ResourceType::eDepthImage) ? "GPU " : "",
                                                get_resource_type_str(opt_resource.type),
                                                resource_name);
-            logs.push_back(res_created_msg);
+            m_logs.push_back(res_created_msg);
 
             created_resources.insert({ std::to_string(opt_resource.id), new_resource });
         }
@@ -193,10 +192,10 @@ namespace Nebula::RenderGraph::Compiler
         auto end_time = std::chrono::utc_clock::now();
         auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-        logs.push_back(std::format("[Compiler] Graph compiled in {} ms", compile_time.count()));
+        m_logs.push_back(std::format("[Compiler] Graph compiled in {} ms", compile_time.count()));
 
         compile_result.compile_time = compile_time;
-        compile_result.logs = logs;
+        compile_result.logs = m_logs;
         compile_result.render_path = render_path;
         compile_result.success = true;
 

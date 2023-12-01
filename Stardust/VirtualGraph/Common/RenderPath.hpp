@@ -30,7 +30,7 @@ namespace Nebula::RenderGraph
                     if (resource->type() == ResourceType::eImage)
                     {
                         auto image = dynamic_cast<ImageResource&>(*resource).get_image();
-                        Nebula::Sync::ImageBarrier(image, image->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+                        Sync::ImageBarrier(image, image->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
                     }
                 }
 

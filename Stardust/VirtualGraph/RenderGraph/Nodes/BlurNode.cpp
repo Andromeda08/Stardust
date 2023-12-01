@@ -7,12 +7,12 @@
 
 namespace Nebula::RenderGraph
 {
-    #pragma region Resource Specifications
+#pragma region Resource Specifications
     const std::vector<ResourceSpecification> BlurNode::s_resource_specs = {
         { "Blur Input", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Blur Output", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
     };
-    #pragma endregion
+#pragma endregion
 
     BlurNode::BlurNode(const sdvk::Context& context)
     : Node("BlurNode", NodeType::eGaussianBlur)
@@ -22,19 +22,21 @@ namespace Nebula::RenderGraph
 
     void BlurNode::execute(const vk::CommandBuffer& command_buffer)
     {
-        uint32_t current_frame = sd::Application::s_current_frame;
+        const uint32_t current_frame = sd::Application::s_current_frame;
 
-        auto blur_in = dynamic_cast<ImageResource&>(*m_resources["Blur Input"]).get_image();
-        auto blur_out = dynamic_cast<ImageResource&>(*m_resources["Blur Output"]).get_image();
+        const auto blur_in = m_resources["Blur Input"]->as<ImageResource>().get_image();
+        const auto blur_out = m_resources["Blur Output"]->as<ImageResource>().get_image();
 
-        Nebula::Sync::ImageBarrier(blur_in, blur_in->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(blur_out, blur_out->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(m_kernel.intermediate_image, m_kernel.intermediate_image->state().layout, vk::ImageLayout::eGeneral).apply(command_buffer);
+        Sync::ImageBarrierBatch({
+            Sync::ImageBarrier(blur_in, blur_in->state().layout, vk::ImageLayout::eGeneral),
+            Sync::ImageBarrier(blur_out, blur_out->state().layout, vk::ImageLayout::eGeneral),
+            Sync::ImageBarrier(m_kernel.intermediate_image, m_kernel.intermediate_image->state().layout, vk::ImageLayout::eGeneral),
+        }).apply(command_buffer);
 
-        BlurNodePushConstant pc;
-        const uint32_t group_size = 16;
-        const auto group_x = static_cast<uint32_t>((m_kernel.resolution.width + group_size - 1) / group_size);
-        const auto group_y = static_cast<uint32_t>((m_kernel.resolution.height + group_size - 1) / group_size);
+        BlurNodePushConstant pc {};
+        constexpr uint32_t group_size = 16;
+        const auto group_x = (m_kernel.resolution.width + group_size - 1) / group_size;
+        const auto group_y = (m_kernel.resolution.height + group_size - 1) / group_size;
 
         _update_descriptor(current_frame, 0);
         command_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_kernel.pipeline);
@@ -53,16 +55,12 @@ namespace Nebula::RenderGraph
 
     void BlurNode::initialize()
     {
-        auto input = dynamic_cast<ImageResource&>(*m_resources["Blur Input"]).get_image();
-        m_kernel.intermediate_image = std::make_shared<Nebula::Image>(m_context,
-                                                                      input->properties().format,
-                                                                      input->properties().extent,
-                                                                      vk::SampleCountFlagBits::e1,
-                                                                      vk::ImageUsageFlagBits::eStorage,
-                                                                      vk::ImageAspectFlagBits::eColor,
-                                                                      vk::ImageTiling::eOptimal,
-                                                                      vk::MemoryPropertyFlagBits::eDeviceLocal,
-                                                                      "GaussianBlurIntermediateImage");
+        const auto input = m_resources["Blur Input"]->as<ImageResource>().get_image();
+        m_kernel.intermediate_image = std::make_shared<Image>(m_context, input->properties().format, input->properties().extent,
+                                                              vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage,
+                                                              vk::ImageAspectFlagBits::eColor, vk::ImageTiling::eOptimal,
+                                                              vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                                              "GaussianBlurIntermediateImage");
 
         m_kernel.resolution = sd::Application::s_extent.vk_ext();
         m_kernel.frames_in_flight = sd::Application::s_max_frames_in_flight;
@@ -95,15 +93,20 @@ namespace Nebula::RenderGraph
         m_kernel.pipeline_layout = pipeline_layout;
     }
 
-    void BlurNode::_update_descriptor(uint32_t current_frame, uint32_t pass)
+    void BlurNode::_update_descriptor(const uint32_t current_frame, const uint32_t pass)
     {
+        if (pass > 1)
+        {
+            throw std::runtime_error(std::format("[Error] BlurNode tried to update descriptors for invalid pass index \"{}\"", pass));
+        }
+
         std::shared_ptr<Image> input;
         std::shared_ptr<Image> output;
         std::shared_ptr<Descriptor> descriptor;
 
         if (pass == 0)
         {
-            input = dynamic_cast<ImageResource&>(*m_resources["Blur Input"]).get_image();
+            input = m_resources["Blur Input"]->as<ImageResource>().get_image();
             output = m_kernel.intermediate_image;
             descriptor = m_kernel.descriptor_pass_x;
         }
@@ -111,12 +114,12 @@ namespace Nebula::RenderGraph
         if (pass == 1)
         {
             input = m_kernel.intermediate_image;
-            output = dynamic_cast<ImageResource&>(*m_resources["Blur Output"]).get_image();
+            output = m_resources["Blur Output"]->as<ImageResource>().get_image();
             descriptor = m_kernel.descriptor_pass_y;
         }
 
-        vk::DescriptorImageInfo input_info { m_kernel.samplers[0], input->image_view(), input->state().layout };
-        vk::DescriptorImageInfo output_info { m_kernel.samplers[1], output->image_view(), output->state().layout };
+        const vk::DescriptorImageInfo input_info { m_kernel.samplers[0], input->image_view(), input->state().layout };
+        const vk::DescriptorImageInfo output_info { m_kernel.samplers[1], output->image_view(), output->state().layout };
 
         descriptor->begin_write(current_frame)
             .storage_image(0, input_info)

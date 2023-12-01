@@ -66,12 +66,6 @@ namespace Nebula::RenderGraph
         static constexpr std::string id_depth_buffer    = "Depth Buffer";
         static constexpr std::string id_motion_vectors  = "Motion Vectors";
 
-    public:
-        const std::vector<ResourceSpecification>& get_resource_specs() const override
-        {
-            return s_resource_specs;
-        }
-
-        static const std::vector<ResourceSpecification> s_resource_specs;
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

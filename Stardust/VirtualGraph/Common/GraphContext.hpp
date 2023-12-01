@@ -59,7 +59,7 @@ namespace Nebula::RenderGraph
             m_selected_scene = std::shared_ptr<sd::Scene>(scene);
         }
 
-        void set_render_path(const std::shared_ptr<RenderGraph::RenderPath>& render_path)
+        void set_render_path(const std::shared_ptr<RenderPath>& render_path)
         {
             m_render_path = render_path;
         }
@@ -74,19 +74,19 @@ namespace Nebula::RenderGraph
             m_target_resolution = target_resolution;
         }
 
-        const std::shared_ptr<RenderGraph::RenderPath>& get_render_path() const
+        const std::shared_ptr<RenderPath>& get_render_path() const
         {
             return m_render_path;
         }
 
     private:
-        vk::Extent2D m_render_resolution;
-        vk::Extent2D m_target_resolution;
-        std::shared_ptr<sd::Scene> m_selected_scene;
-        std::shared_ptr<RenderGraph::RenderPath> m_render_path;
+        vk::Extent2D                m_render_resolution;
+        vk::Extent2D                m_target_resolution;
+        std::shared_ptr<sd::Scene>  m_selected_scene;
+        std::shared_ptr<RenderPath> m_render_path;
 
         const sdvk::CommandBuffers& m_command_buffers;
-        const sdvk::Context& m_context;
-        const sdvk::Swapchain& m_swapchain;
+        const sdvk::Context&        m_context;
+        const sdvk::Swapchain&      m_swapchain;
     };
 }

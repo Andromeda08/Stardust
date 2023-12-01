@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <VirtualGraph/Editor/Node.hpp>
-#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {

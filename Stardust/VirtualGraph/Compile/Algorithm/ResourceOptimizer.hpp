@@ -2,12 +2,9 @@
 
 #include <bitset>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <set>
-#include <sstream>
 #include <string>
-#include <tuple>
 #include <vector>
 #include <queue>
 #include <VirtualGraph/Editor/Edge.hpp>
@@ -15,6 +12,11 @@
 
 #define NEBULA_OPT_DEBUG
 // #define NEBULA_OPT_DEBUG_VERBOSE
+
+#ifdef NEBULA_OPT_DEBUG_VERBOSE
+#include <iostream>
+#include <sstream>
+#endif
 
 namespace Nebula::RenderGraph::Algorithm
 {
@@ -95,8 +97,8 @@ namespace Nebula::RenderGraph::Algorithm
 
         explicit Range(const std::set<IntOptimizerResourceUsagePoint>& points)
         {
-            auto min = std::min_element(std::begin(points), std::end(points));
-            auto max = std::max_element(std::begin(points), std::end(points));
+            const auto min = std::min_element(std::begin(points), std::end(points));
+            const auto max = std::max_element(std::begin(points), std::end(points));
 
             start = min->point;
             end = max->point;
@@ -196,9 +198,9 @@ namespace Nebula::RenderGraph::Algorithm
 
         ResourceOptimizationResult run()
         {
-            auto start_time = std::chrono::utc_clock::now();
+            const auto start_time = std::chrono::utc_clock::now();
 
-            auto R = evaluate_required_resources();
+            const auto R = evaluate_required_resources();
             std::vector<OptimizerResource> opt_resources;
 
             int32_t non_optimizable_count {0};
@@ -266,8 +268,7 @@ namespace Nebula::RenderGraph::Algorithm
                         flags[4] = ri.optimizable;
                     }
 
-                    bool can_fit = flags.all();
-                    if (can_fit)
+                    if (flags.all())
                     {
                         was_inserted = timeline.insert_usage_points(usage_points);
 
@@ -291,7 +292,7 @@ namespace Nebula::RenderGraph::Algorithm
                 }
             }
 
-            auto end_time = std::chrono::utc_clock::now();
+            const auto end_time = std::chrono::utc_clock::now();
 
             ResourceOptimizationResult result {
                 .messages = m_messages,

@@ -2,7 +2,7 @@
 
 namespace Nebula::RenderGraph
 {
-    std::string get_node_type_str(NodeType type)
+    std::string get_node_type_str(const NodeType type)
     {
         switch (type)
         {
@@ -12,7 +12,7 @@ namespace Nebula::RenderGraph
                 return "Anti-Aliasing";
             case NodeType::eBloom:
                 return "Bloom";
-            case NodeType::ePrePass:
+            case NodeType::eGBufferPass:
                 return "Deferred Pass";
             case NodeType::eDenoise:
                 return "Denoise";
@@ -38,9 +38,9 @@ namespace Nebula::RenderGraph
     std::vector<NodeType> get_node_types()
     {
         static std::vector nodes = {
-            NodeType::eAmbientOcclusion, NodeType::eAntiAliasing, NodeType::eBloom,
-            NodeType::ePrePass, NodeType::eGaussianBlur, NodeType::eLightingPass,
-            NodeType::eMeshShaderGBufferPass, NodeType::eRayTracing,
+            NodeType::eAmbientOcclusion, NodeType::eAntiAliasing, NodeType::eGBufferPass,
+            NodeType::eGaussianBlur, NodeType::eLightingPass, NodeType::eMeshShaderGBufferPass,
+            NodeType::eRayTracing,
         };
 
         return nodes;

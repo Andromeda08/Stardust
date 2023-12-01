@@ -2,8 +2,8 @@
 
 #include <string>
 #include <vulkan/vulkan.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
 #include "ResourceRole.hpp"
-#include "ResourceType.hpp"
 
 namespace Nebula::RenderGraph
 {

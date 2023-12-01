@@ -26,7 +26,7 @@ namespace Nebula::RenderGraph
     
     struct RayTracingPushConstant
     {
-        glm::ivec4 options;
+        glm::ivec4 options {};
 
         explicit RayTracingPushConstant(const RayTracingNodeOptions& _options)
         {
@@ -35,7 +35,7 @@ namespace Nebula::RenderGraph
         }
     };
 
-    class RayTracingNode : public Node
+    class RayTracingNode final : public Node
     {
     public:
         explicit RayTracingNode(const sdvk::Context& context, const RayTracingNodeOptions& options);
@@ -65,12 +65,6 @@ namespace Nebula::RenderGraph
 
         const sdvk::Context& m_context;
 
-    public:
-        const std::vector<ResourceSpecification>& get_resource_specs() const override
-        {
-            return s_resource_specs;
-        }
-
-        static const std::vector<ResourceSpecification> s_resource_specs;
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

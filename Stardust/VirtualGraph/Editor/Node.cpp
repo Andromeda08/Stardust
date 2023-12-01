@@ -1,13 +1,20 @@
 #include "Node.hpp"
 
+#include <format>
+#include <stdexcept>
 #include <imgui.h>
 #include <imnodes.h>
+#include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/BloomNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {
-    Node::Node(const std::string& name, const glm::ivec4& color, const glm::ivec4& hover, NodeType type)
-    : Nebula::Graph::Vertex(name), m_color(color), m_hover(hover), m_type(type)
+    Node::Node(const std::string& name, const glm::ivec4& color, const glm::ivec4& hover, const NodeType type)
+    : Graph::Vertex(name), m_color(color), m_hover(hover), m_type(type)
     {}
 
     void Node::render()
@@ -100,33 +107,6 @@ namespace Nebula::RenderGraph::Editor
         return m_resource_descriptions;
     }
 
-    Node* Node::Factory::create(const NodeType type)
-    {
-        switch (type)
-        {
-            case NodeType::eAmbientOcclusion:
-                return new AmbientOcclusionNode();
-            case NodeType::eAntiAliasing:
-                return new AntiAliasingNode();
-            case NodeType::eGaussianBlur:
-                return new BlurNode();
-            case NodeType::ePrePass:
-                return new PrePassNode();
-            case NodeType::eLightingPass:
-                return new LightingPassNode();
-            case NodeType::eMeshShaderGBufferPass:
-                return new MeshGBufferPassEditorNode();
-            case NodeType::ePresent:
-                return new PresentNode();
-            case NodeType::eRayTracing:
-                return new RayTracingNode();
-            case NodeType::eSceneProvider:
-                return new SceneProviderNode();
-            default:
-                throw std::runtime_error("[Error] Invalid or not implemented node type.");
-        }
-    }
-
     #pragma region Node color constants
     /**
      * Node and resource colors are taken from the default Tailwind color palette
@@ -135,36 +115,36 @@ namespace Nebula::RenderGraph::Editor
      */
 
     // Red
-    const glm::ivec4 ao_color = { 220, 38, 38, 255 };
-    const glm::ivec4 ao_hover = { 248, 113, 113, 255 };
+    constexpr glm::ivec4 ao_color = { 220, 38, 38, 255 };
+    constexpr glm::ivec4 ao_hover = { 248, 113, 113, 255 };
 
     // Lime
-    const glm::ivec4 aa_color = { 101, 163, 13, 255 };
-    const glm::ivec4 aa_hover = { 163, 230, 53, 255 };
+    constexpr glm::ivec4 aa_color = { 101, 163, 13, 255 };
+    constexpr glm::ivec4 aa_hover = { 163, 230, 53, 255 };
 
     // Cyan
-    const glm::ivec4 blur_color = { 8, 145, 178, 255 };
-    const glm::ivec4 blur_hover = { 34, 211, 238, 255 };
+    constexpr glm::ivec4 blur_color = { 8, 145, 178, 255 };
+    constexpr glm::ivec4 blur_hover = { 34, 211, 238, 255 };
 
     // Indigo
-    const glm::ivec4 pre_pass_color = { 79, 70, 229, 255 };
-    const glm::ivec4 pre_pass_hover = { 129, 140, 248, 255 };
+    constexpr glm::ivec4 pre_pass_color = { 79, 70, 229, 255 };
+    constexpr glm::ivec4 pre_pass_hover = { 129, 140, 248, 255 };
 
     // Amber
-    const glm::ivec4 lighting_pass_color = { 217, 119, 6, 255 };
-    const glm::ivec4 lighting_pass_hover = { 251, 191, 36, 255 };
+    constexpr glm::ivec4 lighting_pass_color = { 217, 119, 6, 255 };
+    constexpr glm::ivec4 lighting_pass_hover = { 251, 191, 36, 255 };
 
     // Fuchsia
-    const glm::ivec4 present_color = { 192, 38, 211, 255 };
-    const glm::ivec4 present_hover = {232, 121, 249, 255 };
+    constexpr glm::ivec4 present_color = { 192, 38, 211, 255 };
+    constexpr glm::ivec4 present_hover = {232, 121, 249, 255 };
 
     // Blue
-    const glm::ivec4 scene_provider_color = {37, 99, 235, 255 };
-    const glm::ivec4 scene_provider_hover = {96, 165, 250, 255 };
+    constexpr glm::ivec4 scene_provider_color = {37, 99, 235, 255 };
+    constexpr glm::ivec4 scene_provider_hover = {96, 165, 250, 255 };
 
     // Violet
-    const glm::ivec4 rt_color = { 124, 58, 237, 255 };
-    const glm::ivec4 rt_hover = { 167, 139, 250, 255 };
+    constexpr glm::ivec4 rt_color = { 124, 58, 237, 255 };
+    constexpr glm::ivec4 rt_hover = { 167, 139, 250, 255 };
 
     #pragma endregion
 
@@ -173,8 +153,7 @@ namespace Nebula::RenderGraph::Editor
     AmbientOcclusionNode::AmbientOcclusionNode()
     : Node("Ambient Occlusion", ao_color, ao_hover, NodeType::eAmbientOcclusion)
     {
-        const auto& specs = RenderGraph::AmbientOcclusionNode::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::AmbientOcclusionNode::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -184,8 +163,7 @@ namespace Nebula::RenderGraph::Editor
     AntiAliasingNode::AntiAliasingNode()
     : Node("Anti-Aliasing", aa_color, aa_hover, NodeType::eAntiAliasing)
     {
-        const auto& specs = RenderGraph::AntiAliasingNode::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::AntiAliasingNode::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -195,8 +173,7 @@ namespace Nebula::RenderGraph::Editor
     BlurNode::BlurNode()
     : Node("Gaussian Blur", blur_color, blur_hover, NodeType::eGaussianBlur)
     {
-        const auto& specs = RenderGraph::BlurNode::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::BlurNode::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -204,11 +181,10 @@ namespace Nebula::RenderGraph::Editor
     }
 
 
-    PrePassNode::PrePassNode()
-    : Node("G-Buffer Pass", pre_pass_color, pre_pass_hover, NodeType::ePrePass)
+    GBufferPass::GBufferPass()
+    : Node("G-Buffer Pass", pre_pass_color, pre_pass_hover, NodeType::eGBufferPass)
     {
-        const auto& specs = RenderGraph::GBufferPass::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::GBufferPass::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -218,8 +194,7 @@ namespace Nebula::RenderGraph::Editor
     LightingPassNode::LightingPassNode()
     : Node("Lighting Pass", lighting_pass_color, lighting_pass_hover, NodeType::eLightingPass)
     {
-        const auto& specs = RenderGraph::LightingPass::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::LightingPass::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -235,9 +210,7 @@ namespace Nebula::RenderGraph::Editor
     PresentNode::PresentNode()
     : Node("Present", present_color, present_hover, NodeType::ePresent)
     {
-
-        const auto& specs = RenderGraph::PresentNode::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::PresentNode::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -252,8 +225,7 @@ namespace Nebula::RenderGraph::Editor
     SceneProviderNode::SceneProviderNode()
     : Node("Scene Provider", scene_provider_color, scene_provider_hover, NodeType::eSceneProvider)
     {
-        const auto& specs = RenderGraph::SceneProviderNode::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::SceneProviderNode::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;
@@ -263,8 +235,7 @@ namespace Nebula::RenderGraph::Editor
     RayTracingNode::RayTracingNode()
     : Node("Ray Tracing", rt_color, rt_hover, NodeType::eRayTracing)
     {
-        const auto& specs = RenderGraph::RayTracingNode::s_resource_specs;
-        for (const auto& spec : specs)
+        for (const auto& spec : RenderGraph::RayTracingNode::s_resource_specs)
         {
             m_resource_descriptions.emplace_back(spec.name, spec.role, spec.type);
             m_resource_descriptions.back().spec = spec;

@@ -2,7 +2,7 @@
 
 namespace Nebula::RenderGraph
 {
-    std::vector<ResourceSpecification> SceneProviderNode::s_resource_specs = {
+    const std::vector<ResourceSpecification> SceneProviderNode::s_resource_specs = {
         { "Scene Data", ResourceRole::eOutput, ResourceType::eScene },
         { "Objects", ResourceRole::eOutput, ResourceType::eObjects },
         { "Object Descriptions", ResourceRole::eOutput, ResourceType::eBuffer },

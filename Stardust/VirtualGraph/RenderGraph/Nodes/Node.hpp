@@ -7,6 +7,11 @@
 #include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
 #include <VirtualGraph/Common/NodeType.hpp>
 
+#define DEF_RESOURCE_REQUIREMENTS()                                                                            \
+public:                                                                                                        \
+    const std::vector<ResourceSpecification>& get_resource_specs() const override { return s_resource_specs; } \
+    static const std::vector<ResourceSpecification> s_resource_specs;
+
 namespace Nebula::RenderGraph
 {
     class Node

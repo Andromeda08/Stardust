@@ -1,6 +1,7 @@
 #include "LightingPass.hpp"
 #include <Application/Application.hpp>
 #include <Nebula/Barrier.hpp>
+#include <Resources/CameraUniformData.hpp>
 #include <Vulkan/Rendering/RenderPass.hpp>
 #include <Vulkan/Rendering/PipelineBuilder.hpp>
 #include <Vulkan/Context.hpp>
@@ -8,7 +9,7 @@
 
 namespace Nebula::RenderGraph
 {
-    #pragma region Resource Specifications
+#pragma region Resource Specifications
     const std::vector<ResourceSpecification> LightingPass::s_resource_specs = {
         { "Position Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
         { "Normal Buffer", ResourceRole::eInput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
@@ -19,9 +20,9 @@ namespace Nebula::RenderGraph
         { "TLAS", ResourceRole::eInput, ResourceType::eTlas },
         { "Lighting Result", ResourceRole::eOutput, ResourceType::eImage, vk::Format::eR32G32B32A32Sfloat },
     };
-    #pragma endregion
+#pragma endregion
 
-    std::string to_string(LightingPassShadowMode shadow_mode)
+    std::string to_string(const LightingPassShadowMode shadow_mode)
     {
         {
             switch (shadow_mode)
@@ -40,73 +41,68 @@ namespace Nebula::RenderGraph
 
     LightingPass::LightingPass(const sdvk::Context& context, const LightingPassOptions& params)
     : Node("Lighting Pass", NodeType::eLightingPass)
-    , m_context(context)
-    , m_params(params)
+    , m_params(params), m_context(context)
     {
     }
 
     void LightingPass::execute(const vk::CommandBuffer& command_buffer)
     {
-        uint32_t current_frame = sd::Application::s_current_frame;
+        const uint32_t current_frame = sd::Application::s_current_frame;
 
-        auto render_commands = [&](const vk::CommandBuffer& cmd){
-            LightingPassPushConstant push_constant(m_params);
-            push_constant.light_pos = { -12, 10, 5, 1 };
-
-            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
-            cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(LightingPassPushConstant), &push_constant);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                   m_renderer.pipeline_layout, 0, 1,
-                                   &m_renderer.descriptor->set(current_frame),
-                                   0, nullptr);
-
-            cmd.draw(3, 1, 0, 0);
-        };
-
-        auto position = dynamic_cast<ImageResource&>(*m_resources["Position Buffer"]).get_image();
-        auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
-        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Buffer"]).get_image();
-        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Buffer"]).get_depth_image();
-        auto lr = dynamic_cast<ImageResource&>(*m_resources["Lighting Result"]).get_image();
+        const auto position = m_resources["Position Buffer"]->as<ImageResource>().get_image();
+        const auto normal = m_resources["Normal Buffer"]->as<ImageResource>().get_image();
+        const auto albedo = m_resources["Albedo Buffer"]->as<ImageResource>().get_image();
+        const auto depth = m_resources["Depth Buffer"]->as<DepthImageResource>().get_depth_image();
+        const auto lr = m_resources["Lighting Result"]->as<ImageResource>().get_image();
 
         if (m_params.ambient_occlusion)
         {
-            auto ao = dynamic_cast<ImageResource&>(*m_resources["AO Image"]).get_image();
-            Nebula::Sync::ImageBarrier(ao, ao->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
+            const auto ao = dynamic_cast<ImageResource&>(*m_resources["AO Image"]).get_image();
+            Sync::ImageBarrier(ao, ao->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
         }
 
-        Nebula::Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal).apply(command_buffer);
-        Nebula::Sync::ImageBarrier(lr, lr->state().layout, vk::ImageLayout::eColorAttachmentOptimal).apply(command_buffer);
+        Sync::ImageBarrierBatch({
+            Sync::ImageBarrier(position, position->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal),
+            Sync::ImageBarrier(normal, normal->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal),
+            Sync::ImageBarrier(albedo, albedo->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal),
+            Sync::ImageBarrier(depth, depth->state().layout, vk::ImageLayout::eShaderReadOnlyOptimal),
+            Sync::ImageBarrier(lr, lr->state().layout, vk::ImageLayout::eColorAttachmentOptimal),
+        }).apply(command_buffer);
 
         _update_descriptor(current_frame);
 
-        auto framebuffer = m_renderer.framebuffers->get(current_frame);
         sdvk::RenderPass::Execute()
             .with_clear_value(m_renderer.clear_values)
-            .with_framebuffer(framebuffer)
+            .with_framebuffer(m_renderer.framebuffers->get(current_frame))
             .with_render_area({{ 0, 0 }, m_renderer.render_resolution})
             .with_render_pass(m_renderer.render_pass)
-            .execute(command_buffer, render_commands);
+            .execute(command_buffer, [&](const vk::CommandBuffer& cmd){
+                LightingPassPushConstant push_constant(m_params);
+                push_constant.light_pos = { -12, 10, 5, 1 };
+
+                cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline);
+                cmd.pushConstants(m_renderer.pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(LightingPassPushConstant), &push_constant);
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_renderer.pipeline_layout, 0, 1,
+                                       &m_renderer.descriptor->set(current_frame), 0, nullptr);
+
+                cmd.draw(3, 1, 0, 0);
+            });
     }
 
     void LightingPass::initialize()
     {
-        auto ao_image = std::dynamic_pointer_cast<ImageResource>(m_resources["AO Image"]);
-        if (ao_image)
+        if (const auto ao_image = std::dynamic_pointer_cast<ImageResource>(m_resources["AO Image"]);
+            ao_image == nullptr)
         {
-            m_params.ambient_occlusion = true;
+            m_params.ambient_occlusion = false;
         }
 
-        const auto& r_lighting_result = m_resources["Lighting Result"];
-        auto lighting_result = dynamic_cast<ImageResource&>(*r_lighting_result).get_image();
+        const auto lighting_result = m_resources["Lighting Result"]->as<ImageResource>().get_image();
 
         m_renderer.render_resolution = sd::Application::s_extent.vk_ext();
         m_renderer.frames_in_flight = sd::Application::s_max_frames_in_flight;
 
-        m_renderer.clear_values[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
+        m_renderer.clear_values[0].setColor(std::array{ 0.0f, 0.0f, 0.0f, 1.0f });
 
         m_renderer.render_pass = sdvk::RenderPass::Builder()
             .add_color_attachment(lighting_result->properties().format)
@@ -121,7 +117,7 @@ namespace Nebula::RenderGraph
             .set_name("LightingPass Framebuffer")
             .create(m_context);
 
-        auto tlas_binding = m_params.ambient_occlusion ? 6 : 5;
+        const auto tlas_binding = m_params.ambient_occlusion ? 6 : 5;
         auto builder = Descriptor::Builder()
             .uniform_buffer(0, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
             .combined_image_sampler(1, vk::ShaderStageFlagBits::eFragment)
@@ -137,7 +133,7 @@ namespace Nebula::RenderGraph
 
         m_renderer.descriptor = builder.create(m_renderer.frames_in_flight, m_context);
 
-        auto fragment_shader = _select_fragment_shader();
+        const auto fragment_shader = _select_fragment_shader();
         auto [pipeline, pipeline_layout] = sdvk::PipelineBuilder(m_context)
             .add_push_constant({ vk::ShaderStageFlagBits::eFragment, 0, sizeof(LightingPassPushConstant) })
             .add_descriptor_set_layout(m_renderer.descriptor->layout())
@@ -171,16 +167,16 @@ namespace Nebula::RenderGraph
 
     void LightingPass::_update_descriptor(uint32_t current_frame)
     {
-        auto position = dynamic_cast<ImageResource&>(*m_resources["Position Buffer"]).get_image();
-        auto normal = dynamic_cast<ImageResource&>(*m_resources["Normal Buffer"]).get_image();
-        auto albedo = dynamic_cast<ImageResource&>(*m_resources["Albedo Buffer"]).get_image();
-        auto depth = dynamic_cast<DepthImageResource&>(*m_resources["Depth Buffer"]).get_depth_image();
+        const auto position = m_resources["Position Buffer"]->as<ImageResource>().get_image();
+        const auto normal = m_resources["Normal Buffer"]->as<ImageResource>().get_image();
+        const auto albedo = m_resources["Albedo Buffer"]->as<ImageResource>().get_image();
+        const auto depth = m_resources["Depth Buffer"]->as<DepthImageResource>().get_depth_image();
 
-        auto camera = *(dynamic_cast<CameraResource&>(*m_resources["Camera"]).get_camera());
+        auto camera = *m_resources["Camera"]->as<CameraResource>().get_camera();
         auto camera_data = camera.uniform_data();
         m_renderer.uniform[current_frame]->set_data(&camera_data, m_context.device());
 
-        auto& tlas = dynamic_cast<TlasResource&>(*m_resources["TLAS"]).get_tlas();
+        auto& tlas = m_resources["TLAS"]->as<TlasResource>().get_tlas();
 
         LightingPassUniform uniform_data {};
         uniform_data.view = camera_data.view;
@@ -196,7 +192,7 @@ namespace Nebula::RenderGraph
 
         if (m_params.ambient_occlusion)
         {
-            auto ao = dynamic_cast<ImageResource&>(*m_resources["AO Image"]).get_image();
+            auto ao = m_resources["AO Image"]->as<ImageResource>().get_image();
             vk::DescriptorImageInfo ao_info { m_renderer.samplers[3], ao->image_view(), ao->state().layout };
 
             m_renderer.descriptor->begin_write(current_frame)
@@ -223,7 +219,7 @@ namespace Nebula::RenderGraph
 
     }
 
-    std::string LightingPass::_select_fragment_shader()
+    std::string LightingPass::_select_fragment_shader() const
     {
         return m_params.ambient_occlusion
             ? "rg_lighting_pass_ao.frag.spv"

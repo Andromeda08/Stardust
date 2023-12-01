@@ -1,28 +1,34 @@
 #pragma once
 
-#include <format>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include <glm/vec4.hpp>
-#include <imgui.h>
 #include <uuid.h>
 #include <Math/Graph/Vertex.hpp>
 #include <VirtualGraph/Editor/ResourceDescription.hpp>
 #include <VirtualGraph/Common/NodeType.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/LightingPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/SceneProviderNode.hpp>
 
+#define DEF_BASIC_EDITOR_NODE(CN)  \
+namespace Editor {                 \
+    class CN final : public Node { \
+    public:                        \
+        CN();                      \
+    };                             \
+}
+
+#define INT_DEF_BASIC_EDITOR_NODE(CN)   \
+class CN final : public Node {          \
+public:                                 \
+    CN();                               \
+};
+
 namespace Nebula::RenderGraph::Editor
 {
-    // Zinc
-    class Node: public Nebula::Graph::Vertex
+    class Node : public Graph::Vertex
     {
     public:
         struct Builder
@@ -46,9 +52,9 @@ namespace Nebula::RenderGraph::Editor
                 return *this;
             }
 
-            Node* create()
+            Node* create() const
             {
-                auto node = new Node(_name, _color, _hover);
+                const auto node = new Node(_name, _color, _hover);
                 node->m_resource_descriptions = _resources;
                 return node;
             }
@@ -60,14 +66,16 @@ namespace Nebula::RenderGraph::Editor
             std::vector<ResourceDescription> _resources;
         };
 
-        struct Factory
-        {
-            static Node* create(NodeType type);
-        };
-
         Node(const std::string& name, const glm::ivec4& color, const glm::ivec4& hover, NodeType type = NodeType::eUnknown);
 
         virtual void render();
+
+        template <typename T>
+        T& as()
+        {
+            static_assert(std::is_base_of_v<Node, T>, "Template parameter T must be a valid Node type");
+            return dynamic_cast<T&>(*this);
+        }
 
         NodeType type() const;
 
@@ -83,35 +91,18 @@ namespace Nebula::RenderGraph::Editor
         virtual void render_options() {}
 
     private:
-        glm::ivec4 m_color { 82, 82, 91, 255 };  // zinc-600
-        glm::ivec4 m_hover { 161, 161, 170, 255 };  // zinc-400
+        glm::ivec4 m_color { 82, 82, 91, 255 };
+        glm::ivec4 m_hover { 161, 161, 170, 255 };
         NodeType   m_type = NodeType::eUnknown;
     };
 
-    class AmbientOcclusionNode: public Node
-    {
-    public:
-        AmbientOcclusionNode();
-    };
+    INT_DEF_BASIC_EDITOR_NODE(AmbientOcclusionNode);
+    INT_DEF_BASIC_EDITOR_NODE(AntiAliasingNode);
+    INT_DEF_BASIC_EDITOR_NODE(BlurNode);
+    INT_DEF_BASIC_EDITOR_NODE(GBufferPass);
+    INT_DEF_BASIC_EDITOR_NODE(SceneProviderNode);
 
-    class AntiAliasingNode: public Node
-    {
-    public:
-        AntiAliasingNode();
-    };
-
-    class BlurNode: public Node
-    {
-    public:
-        BlurNode();
-    };
-
-    class PrePassNode: public Node {
-    public:
-        PrePassNode();
-    };
-
-    class LightingPassNode : public Node {
+    class LightingPassNode final : public Node {
     public:
         LightingPassNode();
 
@@ -121,7 +112,7 @@ namespace Nebula::RenderGraph::Editor
         void render_options() override;
     };
 
-    class PresentNode : public Node
+    class PresentNode final : public Node
     {
     public:
         PresentNode();
@@ -132,13 +123,7 @@ namespace Nebula::RenderGraph::Editor
         void render_options() override;
     };
 
-    class SceneProviderNode : public Node
-    {
-    public:
-        SceneProviderNode();
-    };
-
-    class RayTracingNode : public Node
+    class RayTracingNode final : public Node
     {
     public:
         RayTracingNode();

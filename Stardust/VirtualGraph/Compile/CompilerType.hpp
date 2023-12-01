@@ -4,7 +4,7 @@ namespace Nebula::RenderGraph::Compiler
 {
     enum class CompilerType
     {
-        eNaiive,
+        eNaive,
         eResourceOptimized,
     };
 }

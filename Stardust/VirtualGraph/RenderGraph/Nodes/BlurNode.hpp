@@ -17,7 +17,7 @@ namespace Nebula::RenderGraph
         glm::ivec4 direction_vector;
     };
 
-    class BlurNode : public Node
+    class BlurNode final : public Node
     {
     public:
         explicit BlurNode(const sdvk::Context& context);
@@ -43,12 +43,6 @@ namespace Nebula::RenderGraph
 
         const sdvk::Context& m_context;
 
-    public:
-        const std::vector<ResourceSpecification>& get_resource_specs() const override
-        {
-            return s_resource_specs;
-        }
-
-        static const std::vector<ResourceSpecification> s_resource_specs;
+        DEF_RESOURCE_REQUIREMENTS();
     };
 }

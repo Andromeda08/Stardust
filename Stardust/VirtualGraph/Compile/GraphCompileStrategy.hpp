@@ -1,11 +1,10 @@
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
 #include <VirtualGraph/Common/GraphContext.hpp>
+#include <VirtualGraph/Common/NodeFactory.hpp>
 #include <VirtualGraph/Compile/CompileResult.hpp>
-#include <VirtualGraph/Compile/NodeFactory.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {
@@ -29,7 +28,7 @@ namespace Nebula::RenderGraph::Compiler
     protected:
         void write_logs_to_file(const std::string& file_name);
 
-        CompileResult make_failed_result(const std::string& message);
+        CompileResult make_failed_result(const std::string& message) const;
 
         static void write_graph_state_dump(const RenderPath& render_path, const std::string& file_name);
 
@@ -39,11 +38,8 @@ namespace Nebula::RenderGraph::Compiler
         static std::vector<std::shared_ptr<Editor::Node>>
         get_execution_order(const std::vector<std::shared_ptr<Editor::Node>>& nodes);
 
-    protected:
-        std::vector<std::string> logs;
-
+        std::vector<std::string>     m_logs;
         std::unique_ptr<NodeFactory> m_node_factory;
-
-        const RenderGraphContext& m_context;
+        const RenderGraphContext&    m_context;
     };
 }

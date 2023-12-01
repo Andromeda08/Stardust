@@ -3,7 +3,6 @@
 #include <array>
 #include <vulkan/vulkan.hpp>
 #include <Vulkan/Context.hpp>
-#include <Vulkan/CommandBuffers.hpp>
 #include "SwapchainCapabilities.hpp"
 
 namespace sdvk

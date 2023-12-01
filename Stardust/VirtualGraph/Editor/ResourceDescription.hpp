@@ -4,9 +4,9 @@
 #include <uuid.h>
 #include <glm/vec4.hpp>
 #include <Utility.hpp>
+#include <VirtualGraph/Common/ResourceType.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceSpecification.hpp>
 #include <VirtualGraph/RenderGraph/Resources/ResourceRole.hpp>
-#include <VirtualGraph/RenderGraph/Resources/ResourceType.hpp>
 
 namespace Nebula::RenderGraph::Editor
 {
