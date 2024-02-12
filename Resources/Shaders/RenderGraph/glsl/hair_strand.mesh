@@ -25,43 +25,56 @@ layout(location = 0) out MeshOutput {
     vec3 color;
 } m_out[];
 
-const vec3 OFFSET = vec3(1, 2, 0);
+const vec3 OFFSET = vec3(1, 1, 0);
 
 void main() {
     uint mi  = gl_LocalInvocationID.x;
     uint gid = gl_GlobalInvocationID.x;
     Vertices _vertices = Vertices(push_constant.vertex_address);
 
-    const uint primitive_count = 2;
-    SetMeshOutputsEXT(4, 2);
+    const uint quads         = 3;
+    const uint tri_count     = quads * 2;
+    const uint vertex_count  = tri_count * 3;
+    SetMeshOutputsEXT(vertex_count, tri_count);
 
     // A - D    0 - 3
     // | / |    | / |
     // B - C    1 - 2
     // 0,1,2 & 0,2,3
-    Vertex generated[4];
-    generated[0] = _vertices.vertices[0];
+    Vertex generated[vertex_count];
+    for (uint i = 0; i < quads; i++) {
+        uint ori_offset = i;        // Original vertices array offset
+        uint vtx_offset = i * 4;    // Generated vertices array offset
+        generated[vtx_offset + 0] = _vertices.vertices[ori_offset + 0];
 
-    generated[1] = _vertices.vertices[0];
-    generated[1].position += OFFSET;
+        generated[vtx_offset + 1] = _vertices.vertices[ori_offset + 0];
+        generated[vtx_offset + 1].position += OFFSET;
 
-    generated[2] = _vertices.vertices[1];
-    generated[2].position += OFFSET;
+        generated[vtx_offset + 2] = _vertices.vertices[ori_offset + 1];
+        generated[vtx_offset + 2].position += OFFSET;
 
-    generated[3] = _vertices.vertices[1];
-
-    const mat4 PV = camera.proj * camera.view;
-    for (uint i = 0; i < 4; i++) {
-        gl_MeshVerticesEXT[i].gl_Position = PV * vec4(generated[i].position, 1.0);
+        generated[vtx_offset + 3] = _vertices.vertices[ori_offset + 1];
     }
 
-    m_out[0].color = vec3(1, 0, 0);
-    m_out[1].color = vec3(0, 1, 0);
-    m_out[2].color = vec3(0, 0, 1);
-    m_out[3].color = vec3(1, 1, 0);
+    const mat4 PV = camera.proj * camera.view;
+    uint tri = 0;
+    for (uint q = 0; q < quads; q++) {
+        uint j = (q * 4);
+        for (uint i = 0; i < 4; i++) {
+            uint offset = j + i;
+            gl_MeshVerticesEXT[offset].gl_Position = PV * vec4(generated[offset].position, 1.0);
+        }
 
-    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);
-    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(0, 2, 3);
+        m_out[j + 0].color = vec3(1, 0, 0);
+        m_out[j + 1].color = vec3(0, 1, 0);
+        m_out[j + 2].color = vec3(0, 0, 1);
+        m_out[j + 3].color = vec3(1, 1, 0);
+
+        gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(2, 1, 0) + j;
+        tri++;
+        gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(3, 2, 0) + j;
+        tri++;
+    }
 
 //    uint tri = 0;
 //    for (uint q = 0; q < 3; q++) {

@@ -117,7 +117,7 @@ namespace Nebula::RenderGraph
             .add_shader("hair_strand.frag.spv", vk::ShaderStageFlagBits::eFragment)
             .set_attachment_count(1)
             .set_sample_count(vk::SampleCountFlagBits::e1)
-            .set_cull_mode(vk::CullModeFlagBits::eNone)
+            //.set_cull_mode(vk::CullModeFlagBits::eNone)
             .create_graphics_pipeline(m_render_pass);
 
         m_pipeline = a;
