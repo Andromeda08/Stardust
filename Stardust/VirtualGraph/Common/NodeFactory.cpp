@@ -12,6 +12,7 @@
 #include <VirtualGraph/RenderGraph/Nodes/RayTracingNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/PresentNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.hpp>
+#include <VirtualGraph/RenderGraph/Nodes/HairRenderer.hpp>
 
 namespace Nebula::RenderGraph
 {
@@ -37,6 +38,8 @@ namespace Nebula::RenderGraph
                 return std::make_shared<MeshGBufferPass>(ctx, dynamic_cast<Editor::MeshGBufferPassEditorNode&>(*en).m_params);
             case NodeType::eRayTracing:
                 return std::make_shared<RayTracingNode>(ctx, dynamic_cast<Editor::RayTracingNode&>(*en).params);
+            case NodeType::eHairRenderer:
+                return std::make_shared<HairRenderer>(ctx);
             case NodeType::ePresent:
                 return std::make_shared<PresentNode>(ctx, m_graph_context.swapchain(), dynamic_cast<Editor::PresentNode&>(*en).params);
             case NodeType::eSceneProvider:
@@ -67,6 +70,8 @@ namespace Nebula::RenderGraph
                 return std::make_shared<Editor::PresentNode>();
             case NodeType::eRayTracing:
                 return std::make_shared<Editor::RayTracingNode>();
+            case NodeType::eHairRenderer:
+                return std::make_shared<Editor::HairRendererEditorNode>();
             case NodeType::eSceneProvider:
                 return std::make_shared<Editor::SceneProviderNode>();
             case NodeType::eUnknown:

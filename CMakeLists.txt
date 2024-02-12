@@ -142,6 +142,10 @@ add_executable(${PROJECT_NAME}
         Stardust/VirtualGraph/Common/NodeFactory.hpp
         Stardust/VirtualGraph/Common/NodeFactory.cpp
         Stardust/Nebula/Utility.hpp
+
+    Stardust/Hair/TestLineGeometry.hpp
+    Stardust/VirtualGraph/RenderGraph/Nodes/HairRenderer.hpp
+    Stardust/VirtualGraph/RenderGraph/Nodes/HairRenderer.cpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)

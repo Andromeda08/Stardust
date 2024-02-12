@@ -64,30 +64,13 @@ namespace Nebula::RenderGraph
     {
         Builder builder(rgctx);
 
-        const auto pass_a = builder.add_pass(NodeType::eGBufferPass);
-        const auto pass_b = builder.add_pass(NodeType::eLightingPass);
+        const auto pass_a = builder.add_pass(NodeType::eHairRenderer);
         const auto pass_c = builder.add_pass(NodeType::eSceneProvider);
         const auto pass_d = builder.add_pass(NodeType::ePresent);
-        const auto pass_e = builder.add_pass(NodeType::eAmbientOcclusion);
-        const auto pass_f = builder.add_pass(NodeType::eAntiAliasing);
-
-        pass_b->as<Editor::LightingPassNode>().params.ambient_occlusion = true;
 
         auto compile_result = builder
             .make_connection(pass_c, pass_a, "Scene Data")
-            .make_connection(pass_c, pass_b, "Camera")
-            .make_connection(pass_c, pass_b, "TLAS")
-            .make_connection(pass_a, pass_b, "Position Buffer")
-            .make_connection(pass_a, pass_b, "Normal Buffer")
-            .make_connection(pass_a, pass_b, "Albedo Buffer")
-            .make_connection(pass_a, pass_b, "Depth Buffer")
-            .make_connection(pass_e, pass_b, "AO Image")
-            .make_connection(pass_c, pass_e, "Camera")
-            .make_connection(pass_c, pass_e, "TLAS")
-            .make_connection(pass_a, pass_e, "Position Buffer")
-            .make_connection(pass_a, pass_e, "Normal Buffer")
-            .make_connection(pass_b, pass_f, "Lighting Result", "Anti-Aliasing Input")
-            .make_connection(pass_f, pass_d, "Anti-Aliasing Output", "Final Image")
+            .make_connection(pass_a, pass_d, "Output Image", "Final Image")
             .compile(Compiler::CompilerType::eResourceOptimized);
 
         return compile_result;

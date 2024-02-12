@@ -29,13 +29,13 @@ namespace sdvk
                 .create(command_buffers, context);
         }
 
-        create_meshlets(meshlet_max_vertices, meshlet_max_indices);
-        m_meshlets_size = m_meshlets.size();
-        m_meshlet_buffer = Buffer::Builder()
-            .with_size(sizeof(Meshlet) * m_meshlets.size())
-            .as_storage_buffer()
-            .with_name(std::format("[Mesh] {} - Meshlets", name))
-            .create_with_data(m_meshlets.data(), command_buffers, context);
+//        create_meshlets(meshlet_max_vertices, meshlet_max_indices);
+//        m_meshlets_size = m_meshlets.size();
+//        m_meshlet_buffer = Buffer::Builder()
+//            .with_size(sizeof(Meshlet) * m_meshlets.size())
+//            .as_storage_buffer()
+//            .with_name(std::format("[Mesh] {} - Meshlets", name))
+//            .create_with_data(m_meshlets.data(), command_buffers, context);
     }
 
     void Mesh::draw(const vk::CommandBuffer& command_buffer) const

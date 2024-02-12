@@ -1,0 +1,74 @@
+#version 460
+#extension GL_EXT_mesh_shader : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : enable
+
+struct Vertex {
+    vec3 position;
+    vec3 normal;
+    vec2 uv;
+};
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(triangles, max_vertices = 18, max_primitives = 6) out;
+layout(push_constant) uniform PushConstant { uint64_t vertex_address; } push_constant;
+layout(binding = 0) uniform CameraUniformData {
+    mat4 view;
+    mat4 proj;
+    mat4 view_inverse;
+    mat4 proj_inverse;
+    vec4 eye;
+} camera;
+layout(buffer_reference, scalar) buffer Vertices { Vertex vertices[]; };
+layout(location = 0) out MeshOutput {
+    vec3 color;
+} m_out[];
+
+const vec3 OFFSET = vec3(1, 2, 0);
+
+void main() {
+    uint mi  = gl_LocalInvocationID.x;
+    uint gid = gl_GlobalInvocationID.x;
+    Vertices _vertices = Vertices(push_constant.vertex_address);
+
+    const uint primitive_count = 2;
+    SetMeshOutputsEXT(4, 2);
+
+    // A - D    0 - 3
+    // | / |    | / |
+    // B - C    1 - 2
+    // 0,1,2 & 0,2,3
+    Vertex generated[4];
+    generated[0] = _vertices.vertices[0];
+
+    generated[1] = _vertices.vertices[0];
+    generated[1].position += OFFSET;
+
+    generated[2] = _vertices.vertices[1];
+    generated[2].position += OFFSET;
+
+    generated[3] = _vertices.vertices[1];
+
+    const mat4 PV = camera.proj * camera.view;
+    for (uint i = 0; i < 4; i++) {
+        gl_MeshVerticesEXT[i].gl_Position = PV * vec4(generated[i].position, 1.0);
+    }
+
+    m_out[0].color = vec3(1, 0, 0);
+    m_out[1].color = vec3(0, 1, 0);
+    m_out[2].color = vec3(0, 0, 1);
+    m_out[3].color = vec3(1, 1, 0);
+
+    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);
+    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(0, 2, 3);
+
+//    uint tri = 0;
+//    for (uint q = 0; q < 3; q++) {
+//        uint i = q * 4;
+//        gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(i + 1, i + 2, i + 0);
+//        tri++;
+//        gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(i + 0, i + 2, i + 3);
+//        tri++;
+//    }
+}

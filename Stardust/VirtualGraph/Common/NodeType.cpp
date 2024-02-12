@@ -24,12 +24,12 @@ namespace Nebula::RenderGraph
                 return "Mesh Shader G-Buffer Pass";
             case NodeType::eRayTracing:
                 return "Ray Tracing";
+            case NodeType::eHairRenderer:
+                return "Hair Renderer";
             case NodeType::ePresent:
                 return "Present";
             case NodeType::eSceneProvider:
                 return "Scene Provider";
-            case NodeType::eUnknown:
-                // Falls Through
             default:
                 return "Unknown";
         }
@@ -40,7 +40,7 @@ namespace Nebula::RenderGraph
         static std::vector nodes = {
             NodeType::eAmbientOcclusion, NodeType::eAntiAliasing, NodeType::eGBufferPass,
             NodeType::eGaussianBlur, NodeType::eLightingPass, NodeType::eMeshShaderGBufferPass,
-            NodeType::eRayTracing,
+            NodeType::eRayTracing, NodeType::eHairRenderer,
         };
 
         return nodes;

@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
+#include <glm/gtx/hash.hpp>
 
 namespace sd
 {
@@ -29,6 +30,16 @@ namespace sd
         bool operator==(const VertexData& rhs) const
         {
             return position == rhs.position && normal == rhs.normal && uv == rhs.uv;
+        }
+    };
+}
+
+namespace std {
+    template<> struct hash<sd::VertexData> {
+        size_t operator()(const sd::VertexData& vertex) const {
+            return ((hash<glm::vec3>()(vertex.position) ^
+                     (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
+                   (hash<glm::vec2>()(vertex.uv) << 1);
         }
     };
 }

@@ -40,7 +40,6 @@ namespace sd
 
         virtual void mouse_handler(const Window& window);
 
-    public:
         const std::map<std::string, std::shared_ptr<sdvk::Mesh>>& meshes() { return m_meshes; }
 
         const std::shared_ptr<Camera>& camera() const { return m_camera; }
@@ -61,8 +60,7 @@ namespace sd
         void create_object_description_buffer(const sdvk::CommandBuffers& command_buffers);
 
         void default_init();
-
-    private:
+        
         std::shared_ptr<Camera>     m_camera;
         std::vector<Object>         m_objects;
         std::vector<Light>          m_lights;

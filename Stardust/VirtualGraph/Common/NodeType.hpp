@@ -17,6 +17,9 @@ namespace Nebula::RenderGraph
         eGBufferPass,
         eRayTracing,
 
+        // Hair
+        eHairRenderer,
+
         // Special Types
         ePresent,
         eSceneProvider,
