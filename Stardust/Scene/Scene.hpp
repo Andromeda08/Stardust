@@ -36,6 +36,8 @@ namespace sd
 
         Scene(const std::function<void()>& init, const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context);
 
+        virtual void update(float dt);
+
         virtual void key_handler(const Window& window);
 
         virtual void mouse_handler(const Window& window);

@@ -8,6 +8,7 @@
 #include <Resources/Primitives/Cube.hpp>
 #include <Resources/Primitives/Sphere.hpp>
 #include <Hair/TestLineGeometry.hpp>
+#include <Hair/Strand.hpp>
 #include <Scene/Transform.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
@@ -71,6 +72,15 @@ namespace sd
             64,
             126
         );
+
+        m_meshes["curved_strand"] = std::make_shared<sdvk::Mesh>(
+            Nebula::HairStrand::make_test_strand(),
+            m_command_buffers,
+            m_context,
+            "curved_strand",
+            64,
+            126
+        );
     }
 
     void Scene::create_acceleration_structure()
@@ -84,17 +94,20 @@ namespace sd
 
     void Scene::default_init()
     {
-         Object strand {};
-         strand.color = { 0.75f, 0.75f, 0.75f, 1.0f };
-         strand.mesh = m_meshes["strand"];
-         strand.name = "Object 1";
+         for (int32_t i = 0; i < 1; i++) {
+             Object strand {};
+             strand.color = { 0.75f, 0.75f, 0.75f, 1.0f };
+             strand.mesh = m_meshes["cube"];
+             strand.transform.position = { 0, i * 2, 0 };
+             strand.name = std::format("Object {}", i);
 
-         m_objects.push_back(strand);
+             m_objects.push_back(strand);
 
-         ObjDescription strand_desc {};
-         strand_desc.vertex_buffer = strand.mesh->vertex_buffer().address();
-         strand_desc.index_buffer  = strand.mesh->index_buffer().address();
-         m_obj_descriptions.push_back(strand_desc);
+             ObjDescription strand_desc {};
+             strand_desc.vertex_buffer = strand.mesh->vertex_buffer().address();
+             strand_desc.index_buffer  = strand.mesh->index_buffer().address();
+             m_obj_descriptions.push_back(strand_desc);
+         }
     }
 
     void Scene::key_handler(const Window& window)
@@ -114,5 +127,9 @@ namespace sd
             .with_size(sizeof(ObjDescription) * m_obj_descriptions.size())
             .as_storage_buffer()
             .create_with_data(m_obj_descriptions.data(), command_buffers, m_context);
+    }
+
+    void Scene::update(float dt)
+    {
     }
 }

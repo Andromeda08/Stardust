@@ -93,6 +93,10 @@ namespace sd
         };
 
         auto render_command = [&]{
+            auto current_time = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<float, std::milli> dt = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - m_previous_time);
+            m_previous_time = current_time;
+
             const ImGuiIO& _io = ImGui::GetIO();
             if (!_io.WantCaptureMouse)
             {
@@ -102,6 +106,8 @@ namespace sd
             {
                 g_rgs->key_handler(*m_window);
             }
+
+            g_rgs->update(dt.count());
 
             vk::PhysicalDeviceMemoryProperties2 mem_props;
             vk::PhysicalDeviceMemoryBudgetPropertiesEXT mem_budget;
@@ -170,6 +176,7 @@ namespace sd
             m_context->device().waitIdle();
         };
 
+        m_previous_time = std::chrono::high_resolution_clock::now();
         m_window->while_open(render_command);
     }
 

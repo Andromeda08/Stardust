@@ -1,13 +1,14 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <Application/ApplicationOptions.hpp>
 #include <Vulkan/CommandBuffers.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Presentation/Swapchain.hpp>
-#include <Window/Window.hpp>
-#include <VirtualGraph/Editor/GraphEditor.hpp>
 #include <VirtualGraph/Common/GraphContext.hpp>
+#include <VirtualGraph/Editor/GraphEditor.hpp>
+#include <Window/Window.hpp>
 
 namespace sd
 {
@@ -48,5 +49,8 @@ namespace sd
         std::unique_ptr<sdvk::CommandBuffers> m_command_buffers;
         std::unique_ptr<sdvk::Swapchain> m_swapchain;
         uint32_t m_current_frame = 0;
+
+        std::chrono::high_resolution_clock::time_point m_launch_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point m_previous_time;
     };
 }
