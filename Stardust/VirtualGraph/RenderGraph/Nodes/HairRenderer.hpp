@@ -23,7 +23,9 @@ namespace Nebula::RenderGraph
 
     struct HairRendererPushConstant
     {
-        uint64_t vertex_address;
+        glm::ivec4  params;
+        glm::vec4   offset;
+        uint64_t    vertex_address;
     };
 
     class HairRenderer : public Node

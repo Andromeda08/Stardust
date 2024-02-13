@@ -61,6 +61,8 @@ namespace Nebula::RenderGraph
                 {
                     const std::string mesh_name = object.mesh->name();
                     const HairRendererPushConstant push_constant {
+                        glm::ivec4 { 6, 0, 0, 0 },
+                        glm::vec4 { 1, 1, 0, 0 },
                         meshes.at(mesh_name)->vertex_buffer().address(),
                     };
 

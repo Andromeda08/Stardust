@@ -64,7 +64,7 @@ namespace sd
         );
 
         m_meshes["strand"] = std::make_shared<sdvk::Mesh>(
-            new Nebula::Strand(4),
+            new Nebula::Strand(6),
             m_command_buffers,
             m_context,
             "strand",
