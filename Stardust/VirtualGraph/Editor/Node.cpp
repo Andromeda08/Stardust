@@ -6,7 +6,6 @@
 #include <imnodes.h>
 #include <VirtualGraph/RenderGraph/Nodes/AmbientOcclusionNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/AntiAliasingNode.hpp>
-#include <VirtualGraph/RenderGraph/Nodes/BloomNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/BlurNode.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/GBufferPass.hpp>
 #include <VirtualGraph/RenderGraph/Nodes/MeshGBufferPass.hpp>
