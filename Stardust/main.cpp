@@ -8,6 +8,7 @@ int main()
 {
     sd::ApplicationOptions options;
     options.window_options.set_resolution(sd::Resolution::e1600x900);
+    //options.window_options.set_resolution(2240, 1260);
     options.window_options.set_title("Nebula");
 
     sd::Application::s_extent = sd::Extent(options.window_options.width(), options.window_options.height());
