@@ -8,12 +8,9 @@ set(PYTHON "py")
 # Set up dependencies
 find_package(Vulkan REQUIRED)
 
-set(BUILD_SHARED_LIBS ON FORCE)
 add_subdirectory(ThirdParty/glfw)
 
 add_subdirectory(ThirdParty/stduuid)
-
-add_subdirectory(ThirdParty/json)
 
 add_subdirectory(ThirdParty/glm)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
@@ -137,8 +134,6 @@ add_executable(${PROJECT_NAME}
 
         Stardust/Application/MeshShaderApp.cpp
         Stardust/Application/MeshShaderApp.hpp
-        Stardust/VirtualGraph/RenderGraph/Nodes/BloomNode.cpp
-        Stardust/VirtualGraph/RenderGraph/Nodes/BloomNode.hpp
         Stardust/VirtualGraph/Common/NodeFactory.hpp
         Stardust/VirtualGraph/Common/NodeFactory.cpp
         Stardust/Nebula/Utility.hpp
@@ -153,8 +148,8 @@ add_library(ffx_fsr2_api_vk_x64d SHARED IMPORTED)
 set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
 set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
 
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${Vulkan_LIBRARIES} glfw ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
-target_link_libraries(${PROJECT_NAME} PUBLIC glm stduuid nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${Vulkan_LIBRARIES} ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm stduuid glfw)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
