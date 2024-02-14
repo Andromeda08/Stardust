@@ -2,7 +2,11 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ThirdParty/FSR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ThirdParty/FSR/libs/cauldron" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ThirdParty/FSR/media/cauldron-media" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/Streamline" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ThirdParty/VulkanMemoryAllocator" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/glfw" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ThirdParty/imgui" vcs="Git" />
