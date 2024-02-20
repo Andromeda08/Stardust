@@ -23,6 +23,7 @@ namespace Nebula::RenderGraph
 
     struct HairRendererPushConstant
     {
+        glm::mat4   model;
         glm::ivec4  params;
         glm::vec4   offset;
         uint64_t    vertex_address;

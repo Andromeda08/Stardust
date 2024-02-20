@@ -8,7 +8,7 @@ set(PYTHON "py")
 # Set up dependencies
 find_package(Vulkan REQUIRED)
 
-set(BUILD_SHARED_LIBS ON FORCE)
+ # set(BUILD_SHARED_LIBS ON FORCE)
 add_subdirectory(ThirdParty/glfw)
 
 add_subdirectory(ThirdParty/stduuid)
@@ -30,6 +30,8 @@ add_executable(${PROJECT_NAME}
 
         ThirdParty/stb/stb_image.cpp ThirdParty/stb/stb_image.h
         ThirdParty/tinyobj/tiny_obj_impl.cpp
+
+        ThirdParty/cy/cyCore.h ThirdParty/cy/cyHairFile.h
 
         ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
         ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui.h ${IMGUI_DIR}/imgui_draw.cpp
@@ -146,18 +148,20 @@ add_executable(${PROJECT_NAME}
     Stardust/Hair/TestLineGeometry.hpp
     Stardust/VirtualGraph/RenderGraph/Nodes/HairRenderer.hpp
     Stardust/VirtualGraph/RenderGraph/Nodes/HairRenderer.cpp
+    Stardust/Hair/Strand.hpp
+    Stardust/Hair/HairModel.hpp
 )
 
 # target_precompile_headers(${PROJECT_NAME} PRIVATE Stardust/pch.hpp)
-add_library(ffx_fsr2_api_x64d SHARED IMPORTED)
-set_property(TARGET ffx_fsr2_api_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_x64d.dll")
-set_property(TARGET ffx_fsr2_api_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_x64d.dll")
+# add_library(ffx_fsr2_api_x64d SHARED IMPORTED)
+# set_property(TARGET ffx_fsr2_api_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_x64d.dll")
+# set_property(TARGET ffx_fsr2_api_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_x64d.dll")
 
-add_library(ffx_fsr2_api_vk_x64d SHARED IMPORTED)
-set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
-set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
+# add_library(ffx_fsr2_api_vk_x64d SHARED IMPORTED)
+# set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
+# set_property(TARGET ffx_fsr2_api_vk_x64d PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/ffx_fsr2_api_vk_x64d.dll")
 
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${Vulkan_LIBRARIES} glfw ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${Vulkan_LIBRARIES} glfw) # ffx_fsr2_api_x64d ffx_fsr2_api_vk_x64d)
 target_link_libraries(${PROJECT_NAME} PUBLIC glm stduuid nlohmann_json::nlohmann_json)
 
 target_include_directories(${PROJECT_NAME}
@@ -170,7 +174,8 @@ target_include_directories(${PROJECT_NAME}
         ThirdParty/glm
         ThirdParty/glfw/include
         ThirdParty/FFX_FSR
-        ThirdParty/json/include)
+        ThirdParty/json/include
+        ThirdParty/cy)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         GLM_ENABLE_EXPERIMENTAL
@@ -180,3 +185,14 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         SD_DEBUG
         RENDER_GRAPH_NAMESPACE=Nebula::RG
         -DImTextureID=ImU64)
+
+add_executable(load_hair_test
+    ThirdParty/cy/cyCore.h ThirdParty/cy/cyHairFile.h
+    Stardust/Hair/HairModel.hpp
+    Stardust/Hair/load_hair_test.cpp
+)
+target_link_libraries(load_hair_test PUBLIC glm)
+target_include_directories(load_hair_test PUBLIC
+    ThirdParty/glm
+    ThirdParty/cy
+)

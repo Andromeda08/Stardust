@@ -2,14 +2,11 @@
 
 #include <format>
 #include <unordered_map>
-#include <tiny_obj_loader.h>
 #include <Application/Application.hpp>
-#include <Resources/VertexData.hpp>
+#include <Hair/Strand.hpp>
+#include <Hair/TestLineGeometry.hpp>
 #include <Resources/Primitives/Cube.hpp>
 #include <Resources/Primitives/Sphere.hpp>
-#include <Hair/TestLineGeometry.hpp>
-#include <Hair/Strand.hpp>
-#include <Scene/Transform.hpp>
 #include <Vulkan/Context.hpp>
 #include <Vulkan/Raytracing/Tlas.hpp>
 #include <Vulkan/Rendering/Mesh.hpp>
@@ -25,17 +22,14 @@ namespace sd
         default_init();
         create_object_description_buffer(command_buffers);
         create_acceleration_structure();
+
+        m_hair = std::make_shared<Nebula::HairModel>("wStraight.hair");
+        m_hair->create_vertex_buffer(command_buffers, context);
     }
 
-    Scene::Scene(const std::function<void()>& init,
-                 const sdvk::CommandBuffers&  command_buffers,
-                 const sdvk::Context&         context)
-    : m_command_buffers(command_buffers), m_context(context)
+    void Scene::update(float dt)
     {
-        add_defaults();
-        init();
-        create_object_description_buffer(command_buffers);
-        create_acceleration_structure();
+
     }
 
     void Scene::add_defaults()
@@ -97,8 +91,9 @@ namespace sd
          for (int32_t i = 0; i < 1; i++) {
              Object strand {};
              strand.color = { 0.75f, 0.75f, 0.75f, 1.0f };
-             strand.mesh = m_meshes["cube"];
+             strand.mesh = m_meshes["strand"];
              strand.transform.position = { 0, i * 2, 0 };
+             strand.transform.scale = glm::vec3(0.25f);
              strand.name = std::format("Object {}", i);
 
              m_objects.push_back(strand);
@@ -127,9 +122,5 @@ namespace sd
             .with_size(sizeof(ObjDescription) * m_obj_descriptions.size())
             .as_storage_buffer()
             .create_with_data(m_obj_descriptions.data(), command_buffers, m_context);
-    }
-
-    void Scene::update(float dt)
-    {
     }
 }

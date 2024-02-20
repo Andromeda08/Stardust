@@ -4,12 +4,16 @@
 # Visual Studio
 /out/
 /.vs/
+/build/
+
+/.vscode/
 
 /Lib/
 
 # Shader binary directory
 Resources/Shaders/.vs
 Resources/Shaders/out
+Resources/Shaders/bin
 Resources/Shaders/Reflection/out
 Resources/Shaders/RenderGraph/bin
 

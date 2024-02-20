@@ -3,16 +3,18 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_scalar_block_layout : enable
+#extension GL_GOOGLE_include_directive : enable
 
 struct Vertex {
     vec3 position;
-    vec3 normal;
-    vec2 uv;
+//    vec3 normal;
+//    vec2 uv;
 };
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-layout(triangles, max_vertices = 32, max_primitives = 32) out;
+layout(triangles, max_vertices = 144, max_primitives = 64) out;
 layout(push_constant) uniform PushConstant {
+    mat4     model;
     ivec4    params;
     vec4     offset;
     uint64_t vertex_address;
@@ -30,6 +32,7 @@ layout(location = 0) out MeshOutput {
 } m_out[];
 
 int strand_length() { return push_constant.params[0]; }
+int strand_offset() { return push_constant.params[1]; }
 
 void main() {
     uint mi  = gl_LocalInvocationID.x;
@@ -47,9 +50,10 @@ void main() {
     // | / |    | / |
     // B - C    1 - 2
     // 2,1,0 & 3,2,0
-    Vertex generated[32];
+    Vertex generated[144];
     for (uint i = 0; i < quads; i++) {
-        uint ori_offset = i;            // Original vertices array offset
+        uint base = strand_offset();    // Current strand base array offset
+        uint ori_offset = base + i;     // Original vertices array offset
         uint vtx_offset = i * s_len;    // Generated vertices array offset
         generated[vtx_offset + 0] = _vertices.vertices[ori_offset + 0];
 
@@ -62,19 +66,19 @@ void main() {
         generated[vtx_offset + 3] = _vertices.vertices[ori_offset + 1];
     }
 
-    const mat4 PV = camera.proj * camera.view;
+    const mat4 MVP = camera.proj * camera.view; // * push_constant.model;
     uint tri = 0;
     for (uint q = 0; q < quads; q++) {
         uint j = (q * s_len);
         for (uint i = 0; i < s_len; i++) {
             uint offset = j + i;
-            gl_MeshVerticesEXT[offset].gl_Position = PV * vec4(generated[offset].position, 1.0);
+            gl_MeshVerticesEXT[offset].gl_Position = MVP * vec4(generated[offset].position, 1.0);
         }
 
-        m_out[j + 0].color = vec3(1, 0, 0);
-        m_out[j + 1].color = vec3(0, 1, 0);
-        m_out[j + 2].color = vec3(0, 0, 1);
-        m_out[j + 3].color = vec3(1, 1, 0);
+        m_out[j + 0].color = vec3(0, 1, 1);
+        m_out[j + 1].color = vec3(1, 1, 1);
+        m_out[j + 2].color = vec3(1, 1, 1);
+        m_out[j + 3].color = vec3(1, 0, 1);
 
         gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(2, 1, 0) + j;
         tri++;

@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include <Hair/HairModel.hpp>
 #include <Scene/Camera.hpp>
 #include <Scene/Light.hpp>
 #include <Scene/Object.hpp>
@@ -33,8 +33,6 @@ namespace sd
     {
     public:
         Scene(const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context);
-
-        Scene(const std::function<void()>& init, const sdvk::CommandBuffers& command_buffers, const sdvk::Context& context);
 
         virtual void update(float dt);
 
@@ -68,6 +66,13 @@ namespace sd
         std::vector<Light>          m_lights;
         std::vector<ObjDescription> m_obj_descriptions;
 
+        // Hair Simulation ----------------------------------------------------
+        std::shared_ptr<Nebula::HairModel> m_hair;
+    public:
+        const Nebula::HairModel& get_hair_model() const { return *m_hair; }
+        // --------------------------------------------------------------------
+
+    private:
         std::map<std::string, std::shared_ptr<sdvk::Mesh>> m_meshes;
         std::shared_ptr<sdvk::Tlas> m_acceleration_structure;
         std::shared_ptr<sdvk::Buffer> m_obj_desc_buffer;

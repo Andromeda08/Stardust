@@ -56,19 +56,37 @@ namespace Nebula::RenderGraph
                 cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
                 cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipeline_layout, 0, 1, &m_descriptor->set(current_frame), 0, nullptr);
 
-                auto& meshes = scene->meshes();
-                for (const auto& object : scene->objects())
+                auto& hair = scene->get_hair_model();
+                auto& segment = hair.get_segment(0);
+
+                const auto& segments = hair.segments();
+                for (int32_t i = 0; i < 1; i++)
                 {
-                    const std::string mesh_name = object.mesh->name();
                     const HairRendererPushConstant push_constant {
-                        glm::ivec4 { 6, 0, 0, 0 },
-                        glm::vec4 { 1, 1, 0, 0 },
-                        meshes.at(mesh_name)->vertex_buffer().address(),
+                        glm::scale(glm::mat4(), glm::vec3(0.1f)),
+                        glm::ivec4 { segments[i].point_count, segments[i].id * segments[i].point_count, 0, 0 },
+                        glm::vec4 { 0.15f, 0.15f, 0, 0 },
+                        hair.vertex_buffer().address(),
                     };
 
                     cmd.pushConstants(m_pipeline_layout, vk::ShaderStageFlagBits::eMeshEXT, 0, sizeof(HairRendererPushConstant), &push_constant);
                     cmd.drawMeshTasksEXT(1, 1, 1);
                 }
+
+//                auto& meshes = scene->meshes();
+//                for (const auto& object : scene->objects())
+//                {
+//                    const std::string mesh_name = object.mesh->name();
+//                    const HairRendererPushConstant push_constant {
+//                        object.transform.model(),
+//                        glm::ivec4 { 6, 0, 0, 0 },
+//                        glm::vec4 { 1.5f, 0.15f, 0, 0 },
+//                        meshes.at(mesh_name)->vertex_buffer().address(),
+//                    };
+//
+//                    cmd.pushConstants(m_pipeline_layout, vk::ShaderStageFlagBits::eMeshEXT, 0, sizeof(HairRendererPushConstant), &push_constant);
+//                    cmd.drawMeshTasksEXT(1, 1, 1);
+//                }
             });
     }
 
@@ -115,11 +133,12 @@ namespace Nebula::RenderGraph
             .add_push_constant({ vk::ShaderStageFlagBits::eMeshEXT, 0, sizeof(HairRendererPushConstant) })
             .add_descriptor_set_layout(m_descriptor->layout())
             .create_pipeline_layout()
-            .add_shader("hair_strand.mesh.spv", vk::ShaderStageFlagBits::eMeshEXT)
-            .add_shader("hair_strand.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .add_shader("hair.task.spv", vk::ShaderStageFlagBits::eTaskEXT)
+            .add_shader("hair.mesh.spv", vk::ShaderStageFlagBits::eMeshEXT)
+            .add_shader("hair.frag.spv", vk::ShaderStageFlagBits::eFragment)
             .set_attachment_count(1)
             .set_sample_count(vk::SampleCountFlagBits::e1)
-            //.set_cull_mode(vk::CullModeFlagBits::eNone)
+            .set_cull_mode(vk::CullModeFlagBits::eNone)
             .create_graphics_pipeline(m_render_pass);
 
         m_pipeline = a;
@@ -136,6 +155,7 @@ namespace Nebula::RenderGraph
             .add_shader("hair_strand.frag.spv", vk::ShaderStageFlagBits::eFragment)
             .set_attachment_count(4)
             .set_sample_count(vk::SampleCountFlagBits::e1)
+            //.set_cull_mode(vk::CullModeFlagBits::eNone)
             .create_graphics_pipeline(m_render_pass);
 
         m_pipeline = a;

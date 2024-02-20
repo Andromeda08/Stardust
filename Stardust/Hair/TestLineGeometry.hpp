@@ -20,6 +20,7 @@ namespace Nebula
             {
                 VertexData vertex {};
                 vertex.position = axis * static_cast<float>(i);
+                vertex.position.y -= glm::sqrt(static_cast<float>(i));
                 vertex.normal = glm::vec3(0);
                 vertex.uv = glm::vec2(0);
                 m_vertices.push_back(vertex);
