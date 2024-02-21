@@ -35,6 +35,7 @@ namespace sd
                 VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
                 VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
                 VK_EXT_MESH_SHADER_EXTENSION_NAME,
+                VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
             })
             .add_raytracing_extensions(true)
             .create_context();
